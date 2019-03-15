@@ -1,0 +1,3 @@
+#!/bin/bash
+
+$HOME/eclipse/jee-latest-released/eclipse/eclipse </dev/null &>/dev/null &

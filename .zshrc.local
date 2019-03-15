@@ -1,0 +1,13 @@
+export EDITOR=vim
+export BROWSER=/usr/bin/google-chrome-stable
+export PATH="$HOME/android-studio/bin:$HOME/Android/Sdk/tools:$HOME/Android/Sdk/tools/bin:$HOME/idea/bin:$HOME/tomcat/bin:$HOME/flutter/bin:$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$HOME/.scripts:$PATH"
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+export ANDROID_HOME=$HOME/Android/Sdk
+export ANDROID_SDK_ROOT=$HOME/Android/Sdk
+export REPO_OS_OVERRIDE=linux
+export CLASSPATH=/usr/share/java/mysql.jar
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh

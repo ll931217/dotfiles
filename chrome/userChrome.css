@@ -1,0 +1,245 @@
+/* Modify to change window drag space width */
+:root[tabsintitlebar="true"] #nav-bar{ --window-drag-space-width: 24px }
+
+.titlebar-buttonbox-container{
+  display: none;
+  /* position: fixed; */
+  /* top:0; */
+  /* right:0; */
+  /* height: 40px; */
+}
+spacer, .titlebar-spacer { display: none; }
+#toolbar-menubar[inactive] > .titlebar-buttonbox-container{ opacity: 0 }
+
+:root[sizemode="maximized"] > #navigator-toolbox{ padding-top: 8px !important; }
+:root[sizemode="maximized"] .titlebar-buttonbox-container{ top: 8px }
+
+:root[uidensity="compact"] .titlebar-buttonbox-container{ height: 32px }
+.titlebar-buttonbox-container > .titlebar-buttonbox{ height: 100%; }
+/* :root[tabsintitlebar="true"] #nav-bar{ */
+/*   padding-right: calc(138px + var(--window-drag-space-width,0px)); */
+/*   padding-left: var(--window-drag-space-width,0px) */
+/* } */
+/* .titlebar-placeholder, #TabsToolbar .titlebar-spacer{ display: none; } */
+/* Also hide the toolbox bottom border which isn't at bottom with this setup */
+#navigator-toolbox::after{ display: none !important; }
+
+/* Menubar on top patch - use with Fx65_tabs_on_bottom.css */
+/* Only really useful if menubar is ALWAYS visible */
+
+#toolbar-menubar{
+  position: fixed;
+  top: 0px;
+  height: 22px;
+  margin-top:1px;
+  width: 100%;
+  overflow: hidden;
+}
+
+#toolbar-menubar .titlebar-buttonbox-container{ height: 22px; }
+#toolbar-menubar .titlebar-button{ padding: 2px 17px !important;  }
+
+/* This will allow you to MAYBE put some items to the menubar */
+#toolbar-menubar > *{ float: left }
+#toolbar-menubar .toolbarbutton-1 { --toolbarbutton-inner-padding: 3px }
+
+/* MINE */
+.tab-background:not([selected=true]),
+.tab-background[selected="true"],
+#titlebar-buttonbox,
+#TabsToolbar,
+#PersonalToolbar,
+#urlbar,
+#nav-bar {
+  background: #31363b !important;
+}
+#PanelUI-menu-button{
+  margin-right: 6px !important;
+}
+#back-button {
+  margin-left: 6px !important;
+}
+
+/* No Black Line */
+#navigator-toolbox{
+  margin-top: -1px !important;
+}
+
+/* Height */
+#nav-bar {
+  min-height: 40px !important;
+  z-index: 3
+}
+#urlbar {
+  border: none !important;
+  box-shadow: none !important;
+  min-height: 30px !important;
+}
+
+/* Adjust Pinned Tab Width */
+.tabbrowser-tab[pinned="true"] {
+  min-width: 40px;
+}
+label[pinned="true"] {
+  display: none !important;
+}
+.tab-icon-image[pinned="true"] {
+  margin-left: 4px
+}
+
+/* Clean Up */
+#urlbar .urlbar-input-box {
+  text-align: center;
+}
+.urlbar-input-box > .urlbar-input::placeholder {
+  opacity: 0 !important;
+}
+
+/* Remove Tab Borders */
+.tabbrowser-tab::after, .tabbrowser-tab::before {
+  border-left: none !important;
+}
+:root {
+  --tabs-border: transparent !important;
+}
+
+/* Tab Line At Bottom */
+.tab-line {
+  display: none !important;
+  /* -moz-box-ordinal-group: 3; */
+  /* min-height: 3px; */
+}
+
+/* Tabs don't move when dragging. */
+#TabsToolbar[movingtab] {
+  padding-bottom: -0px !important;
+}
+#TabsToolbar[movingtab] > .tabbrowser-tabs {
+  padding-bottom: -0px !important;
+  margin-bottom: -0px !important;
+}
+#TabsToolbar[movingtab] + #nav-bar {
+  margin-top: -0px !important;
+  pointer-events: none;
+}
+
+/* Client Side Decorations */
+#titlebar-buttonbox {
+  height: 40px !important;
+}
+#nav-bar {
+  box-shadow: none !important;
+}
+#titlebar-buttonbox {
+  z-index: 3 !important;
+}
+.titlebar-placeholder {
+  display:none !important;
+}
+
+@-moz-document domain(start.duckduckgo.com) {
+  .tag-home__item {
+    display: none !important;
+  }
+  #search_button_homepage,
+  .header--aside {
+    opacity: 0;
+  }
+}
+
+/* Fix back button */
+#back-button>.toolbarbutton-icon {
+  transform: scale(.85, .85) !important;
+  animation: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#back-button:not(:hover),
+#back-button:not(:hover) > .toolbarbutton-icon {
+  background: none !important;
+}
+
+#back-button:hover,
+#back-button:hover > .toolbarbutton-icon {
+  border-radius: 2px !important;
+}
+
+/* Hide window controls */
+#window-controls {
+  display:none!important;
+}
+
+/* Change tab loading indicator */
+#tabbrowser-tabs{ --tab-loader-size: 20px; }
+.tabbrowser-tab .tab-throbber,.tabbrowser-tab[bursting] .tab-icon-image{display: none !important;}
+.tabbrowser-tab .tab-content::before{
+  display: -moz-box;
+  content: "";
+  width:var(--tab-loader-size);
+  height:var(--tab-loader-size);
+  margin-right:6px;
+  background: center no-repeat url('data:image/svg+xml,<?xml version="1.0" encoding="UTF-8" ?><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" version="1.1" stroke="red" fill="none" width="100%" height="100%" stroke-width="1.7"><circle cx="7.5" cy="7.5" r="5.7"/></svg>') !important;
+  clip-path: polygon(50% 50%,50% 0%,50% 0%,50% 0%, 50% 0%,50% 0%, 50% 0%);
+  transition: clip-path 0.3s ease-out, opacity 0.3s linear 0.1s;
+}
+.tabbrowser-tab:-moz-any([busy],[bursting]) .tab-content{ padding-left: calc( 9px - (var(--tab-loader-size) - 16px)) !important;}
+.tabbrowser-tab[pinned] .tab-content::before{ margin-right: 0px }
+@keyframes loadprogress{
+  from{clip-path: polygon(50% 50%,50% 0%,100% 0%,100% 50%, 100% 50%,100% 50%, 100% 50%);}
+  25%{clip-path: polygon(50% 50%,50% 0%,100% 0%,100% 100%, 100% 100%,100% 100%, 100% 100%);}
+  50%{clip-path: polygon(50% 50%,50% 0%,100% 0%,100% 100%, 0% 100%,0% 100%,0% 100%);}
+  75%{clip-path: polygon(50% 50%,50% 0%,100% 0%,100% 100%, 0% 100%,0% 0%,0% 0%);}
+  to{clip-path: polygon(50% 50%,50% 0%,100% 0%,100% 100%, 0% 100%, 0% 0%, 50% 0%);}
+}
+.tabbrowser-tab:not([busy]):not([bursting]) .tab-content::before{visibility: collapse;}
+.tabbrowser-tab:not([busy]) .tab-content::before{ opacity: 0 }
+.tabbrowser-tab[busy]:not([progress]) .tab-content::before{
+  clip-path: polygon(50% 50%,50% 0%,100% 0%,100% 50%, 100% 50%,100% 50%, 100% 50%);
+}
+.tabbrowser-tab[busy][progress] .tab-content::before{
+  animation: loadprogress 2s linear !important;
+}
+.tabbrowser-tab[bursting] .tab-content::before{
+  clip-path: polygon(50% 50%,50% 0%,100% 0%,100% 100%, 0% 100%,0% 0%, 50% 0%) !important;
+}
+
+/* Hide tab throbber */
+.tab-throbber {
+  visibility: hidden;
+}
+
+/* Hide tab line */
+.tabbrowser-tab {
+  padding-bottom: 3px !important;
+  margin-bottom: -6px !important;
+}
+
+/* Vertically align tab icon properly */
+.tab-icon-image {
+  margin-top: 0;
+  margin-bottom: 3px;
+}
+
+/* change colour of active tab */
+.tab-background[selected="true"] {
+  background-color: #474f57 !important;
+  background-image: none !important;
+}
+
+/* Autohide Tabs */
+#navigator-toolbox:hover > #nav-bar {
+  margin-top: 0 !important;
+  transition: all .3s ease-in-out !important;
+}
+#navigator-toolbox > #titlebar {
+  min-height: 40px !important;
+  line-height: 40px !important;
+  margin-top: -40px !important;
+  -moz-box-ordinal-group: 2;
+  -moz-appearance: none !important;
+  transition: all .3s ease-in-out !important;
+}
+#navigator-toolbox:hover > #titlebar {
+  margin-top: 0 !important;
+}

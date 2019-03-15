@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# vim:fdm=marker
+# PROMPT {{{
+
+__prompt_command(){
+local EXIT="$?" # This needs to be first
+
+# Colors
+local RESET='\[\e[0m\]'
+local RED='\[\e[1;31m\]'
+local GREEN='\[\e[1;32m\]'
+local BLUE='\[\e[1;34m\]'
+local PURPLE='\[\e[1;35m\]'
+
+PS1="" # start prompt as blank
+
+# exit status check
+if [[ $EXIT -ne 0 ]]; then
+        # red if exit status is non-zero
+        PS1+="${RED}[\w]${RESET}"
+else
+        PS1+="${GREEN}[\w]${RESET}"
+fi
+
+# git directory check
+if git rev-parse --git-dir &>/dev/null; then
+        # check if HEAD is detached from branch
+        if [[ $(git status) =~ "detached" ]]; then
+                BRANCH=$(git status | awk '/detached/ {print $4}')
+        else
+                BRANCH=$(git symbolic-ref --short HEAD)
+        fi
+
+        # check how many uncommitted changes
+        ## condition check is in brackets to make sure it only reports a number < zero
+        if [[ $(git status -s --porcelain --ignore-submodules=dirty) ]]; then
+                DIRTY=$(git status -s --porcelain --ignore-submodules=dirty | wc -l)
+                STATUS="${RESET}+${RED}${DIRTY}${PURPLE}"
+        else
+                STATUS=""
+        fi
+
+        PS1+="${PURPLE} (${BRANCH}${STATUS})${RESET}"
+else
+        PS1+=""
+fi
+PS1+="${BLUE} >> ${RESET}"
+
+}
+PROMPT_COMMAND=__prompt_command
+
+# }}}
+
+# COMMAND NOT FOUND {{{
+
+command_not_found_handle () {
+        lazyRandom=$((1 + RANDOM % 9))
+        case $lazyRandom in
+                1)
+                        echo "Ugh, are you done with your stupid command already?"
+                        ;;
+                2)
+                        echo "LOOK AT WHAT YOU TYPING, FFS!"
+                        ;;
+                3)
+                        echo "I think you're better off using Windows™"
+                        ;;
+                4)
+                        echo "okay, but no."
+                        ;;
+                5)
+                        echo "You make me want to die!"
+                        ;;
+                6)
+                        echo "Y U DO DIS!?"
+                        ;;
+                7)
+                        echo "YU MAKE ME CRI!"
+                        ;;
+                8)
+                        echo "Retard."
+                        ;;
+                9)
+                        echo "..."
+        esac
+  return 127
+}
+
+# }}}
