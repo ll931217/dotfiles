@@ -5,6 +5,13 @@ echo Copying Configs
 cp -R .vimrc .vimrc.bundles .zshrc .tmux.conf .bash_aliases .config/ .scripts .local ~/
 echo "Done: Copying Configs"
 
+echo Installing NVM
+mkdir $HOME/.nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+echo 'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}"  ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+[ -s "$NVM_DIR/nvm.sh"  ] && \. "$NVM_DIR/nvm.sh" # This loads nvm' >> $HOME/.zshrc.local
+echo "Done: Installing NVM"
+
 # Install Powerlevel9k
 echo "Installing Powerlevel9k"
 if [ ! -d "~/Documents/GitHub" ]; then
