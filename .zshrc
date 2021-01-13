@@ -22,26 +22,8 @@ antigen bundle zsh-users/zsh-syntax-highlighting
 antigen bundle chrissicool/zsh-256color
 
 # ZSH Theme
-# git clone https://github.com/bhilburn/powerlevel9k.git
-POWERLEVEL9K_MODE='nerdfont-complete'
-
-source ~/Documents/GitHub/powerlevel9k/powerlevel9k.zsh-theme
-
-POWERLEVEL9K_PROMPT_ON_NEWLINE=true
-POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ )"
-POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=""
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(ssh dir vcs)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status node_version time)
-
-#POWERLEVEL9K_USER_ICON="\uF415" # 
-POWERLEVEL9K_ROOT_ICON="\uF09C"
-#POWERLEVEL9K_SUDO_ICON=$'\uF09C' # 
-POWERLEVEL9K_TIME_FORMAT="%D{%H:%M}"
-#POWERLEVEL9K_VCS_GIT_ICON='\uF408 '
-#POWERLEVEL9K_VCS_GIT_GITHUB_ICON='\uF408 '
-#
 # Load the theme.
-# antigen theme refined
+antigen theme romkatv/powerlevel10k
 
 # Tell Antigen that you're done.
 antigen apply

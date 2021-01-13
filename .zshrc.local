@@ -3,22 +3,12 @@
 # Set default editor
 export EDITOR=vim
 
-# Set default environment for programming
-export ENVIRONMENT=development
-export DB_PASS=eRL14kMf
-# export DB_PASS=gsi5613686
-
 function cheat(){ curl cheat.sh/"$@";  }
 
 # Export Directories
 export BROWSER=/usr/bin/firefox
-export PATH="$PATH:$HOME/tibco/tibrv/8.4/bin:$HOME/Documents/GitHub/depot_tools:$HOME/android-studio/bin:$HOME/Android/Sdk/tools:$HOME/Android/Sdk/tools/bin:$HOME/idea/bin:$HOME/tomcat/bin:$HOME/flutter/bin:$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$HOME/.scripts:$HOME/Programs/flutter/bin:$HOME/.local/bin"
-export JAVA_HOME=/usr/lib/jvm/java-8-openjdk
-export ANDROID_HOME=$HOME/Android/Sdk
-export ANDROID_SDK_ROOT=$HOME/Android/Sdk
+export PATH="$PATH:$HOME/.yarn/bin:$HOME/.scripts:$HOME/.local/bin"
 export REPO_OS_OVERRIDE=linux
-export CLASSPATH=/usr/share/java/mysql.jar
-export LD_LIBRARY_PATH=$HOME/tibco/tibrv/8.4/lib
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
