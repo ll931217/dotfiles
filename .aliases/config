@@ -1,0 +1,11 @@
+#!/bin/zsh
+
+# Config Aliases
+alias aliasrc="$EDITOR ~/.bash_aliases ~/.aliases/* && source ~/.bash_aliases"
+alias zshconf="$EDITOR ~/.zshrc && exec zsh"
+alias fzfconf="$EDITOR ~/.fzf.zsh && exec zsh"
+alias ohmyzsh="$EDITOR ~/.oh-my-zsh && exec zsh"
+alias myposh="$EDITOR ~/.myposhtheme.omp.json && exec zsh"
+alias vimp="$EDITOR ~/.vimrc.bundles"
+alias nvurc="$EDITOR ~/.config/nvim/lua/user/init.lua && nvim  --headless -c 'autocmd User PackerComplete quitall' -c 'PackerSync'"
+alias tmuxrc="$EDITOR ~/.tmux.conf && tmux source ~/.tmux.conf"

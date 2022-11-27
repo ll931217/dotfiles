@@ -1,0 +1,8 @@
+#!/bin/zsh
+
+# Tmux
+alias tmux='tmux -2'
+alias ta='tmux -2 a -t'
+alias tk='tmux -2 kill-session -t'
+alias tl='tmux -2 list-sessions'
+alias tn='tmux -2 new -s'
