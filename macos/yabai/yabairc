@@ -1,0 +1,102 @@
+yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
+sudo yabai --load-sa
+
+# default layout (can be bsp, stack or float)
+yabai -m config layout bsp
+
+# new window spawns to the right if vertical split, or bottom if horizontal split
+yabai -m config window_placement second_child
+
+# window settings
+yabai -m config external_bar               all:35:0
+yabai -m config window_border              on
+yabai -m config focus_follows_mouse        off
+yabai -m config window_zoom_persist        off
+yabai -m config window_placement           second_child
+yabai -m config window_topmost             on
+yabai -m config window_shadow              float
+yabai -m config window_opacity             on
+yabai -m config window_opacity_duration    0.0
+yabai -m config active_window_opacity      1.0
+yabai -m config normal_window_opacity      0.0
+yabai -m config window_border_width        5
+yabai -m config window_border_hidpi        on
+yabai -m config window_border_radius       11
+yabai -m config window_border_blur         off
+yabai -m config window_animation_duration  0.3
+# yabai -m config active_window_border_color 0xffe1e3e4
+yabai -m config active_window_border_color 0xffd80032
+yabai -m config normal_window_border_color 0xff494d64
+yabai -m config split_type                 auto
+
+# padding set to 12px
+yabai -m config top_padding 16
+yabai -m config bottom_padding 16
+yabai -m config left_padding 12
+yabai -m config right_padding 12
+yabai -m config window_gap 14
+
+# -- mouse settings --
+
+# center mouse on window with focus
+yabai -m config mouse_follows_focus off
+
+# modifier for clicking and dragging with mouse
+yabai -m config mouse_modifier alt
+# set modifier + left-click drag to move window
+yabai -m config mouse_action1 move
+# set modifier + right-click drag to resize window
+yabai -m config mouse_action2 resize
+
+# when window is dropped in center of another window, swap them (on edges it will split it)
+yabai -m mouse_drop_action swap
+
+
+# disable specific apps
+yabai -m rule --add app="^Arc$" subrole="^AXSystemDialog$" manage=off mouse_follows_focus=off
+yabai -m rule --add app="^Arc$" manage=off border=off mouse_follows_focus=off
+yabai -m rule --add app="^Loom$" manage=off border=off mouse_follows_focus=off
+yabai -m rule --add app="^Steam Helper$" title="^Special Offers$" manage=off
+yabai -m rule --add app="^System Settings$" manage=off
+yabai -m rule --add app="^Calculator$" manage=off
+yabai -m rule --add app="^Karabiner-Elements$" manage=off
+yabai -m rule --add app="^QuickTime Player$" manage=off
+
+# applications="(Arc|Calendar|Mail|Reminders|Notes|Discord|Messages|Slack|Chrome|Code|Preview|Terminal|iTerm2|QuickTime|Player|Spotify|Alacritty)"
+# yabai -m rule --add app="^${applications}$" manage=on layer=below
+yabai -m rule --add app="^Alacritty$" manage=on border=on layer=below
+yabai -m rule --add app="^iTerm2$" manage=on border=on layer=below
+yabai -m rule --add app="^Fig$" manage=off border=off layer=above
+
+# Assign spaces to displays
+yabai -m space 1  --display 1
+yabai -m space 2  --display 1
+yabai -m space 3  --display 1
+yabai -m space 4  --display 1
+yabai -m space 5  --display 2
+yabai -m space 6  --display 2
+yabai -m space 7  --display 2
+yabai -m space 8  --display 2
+yabai -m space 9  --display 2
+yabai -m space 10 --display 2
+
+# Assign apps to spaces
+yabai -m rule --add app="^Arc$" space=1
+# yabai -m rule --add app="^Alacritty$" space=2
+yabai -m rule --add app="^Code$" space=3
+yabai -m rule --add app="^Neovide$" space=3
+yabai -m rule --add app="^pgAdmin 4$" space=4
+yabai -m rule --add app="^Obsidian$" space=5
+yabai -m rule --add app="^NoSQL Workbench$" space=5
+yabai -m rule --add app="^Postman$" space=6
+yabai -m rule --add app="^OpenLens$" space=7
+yabai -m rule --add app="^Docker Desktop$" space=7
+yabai -m rule --add app="^LINE$" space=8
+yabai -m rule --add app="^Notion$" space=8
+yabai -m rule --add app="^Slack$" space=9
+yabai -m rule --add app="^Spotify$" space=10
+
+# Setting for sketchybar
+yabai -m signal --add event=window_focused action="sketchybar --trigger window_focus"
+yabai -m signal --add event=window_created action="sketchybar --trigger windows_on_spaces"
+yabai -m signal --add event=window_destroyed action="sketchybar --trigger windows_on_spaces"

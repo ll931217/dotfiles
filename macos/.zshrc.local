@@ -1,0 +1,72 @@
+export NODE_ENV=development
+
+# Set default editor
+export EDITOR=nvim
+
+# Export Directories
+export PATH="$HOME/.scripts:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.bun/bin:$PATH"
+export PATH="$(npm config get prefix)/bin:$PATH"
+export PATH="/Applications/Alacritty.app/Contents/MacOS/:$PATH"
+
+# Setup Sketchybar app font
+export CONFIG_DIR=$HOME/.config/sketchybar
+
+# PostgreSQL
+export LDFLAGS="-L/opt/homebrew/opt/postgresql@15/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/postgresql@15/include"
+
+# Init starship
+export STARSHIP_CONFIG=$HOME/.config/starship/starship.toml
+eval "$(starship init zsh)"
+
+function cheat(){ curl cheat.sh/"$@";  }
+
+# nnn with cd on quit
+n() {
+    # Block nesting of nnn in subshells
+    [ "${NNNLVL:-0}" -eq 0 ] || {
+        echo "nnn is already running"
+        return
+    }
+
+    export NNN_TMPFILE="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/.lastd"
+
+    command nnn "$@"
+
+    [ ! -f "$NNN_TMPFILE" ] || {
+        . "$NNN_TMPFILE"
+        rm -f -- "$NNN_TMPFILE" > /dev/null
+    }
+}
+
+# Check if what app is using port
+checkport() {
+  if [ -z "$1" ]; then
+    echo "Usage: $0 <port>"
+    exit 1
+  fi
+
+  lsof -i -P | grep LISTEN | grep :$1
+}
+
+## Completions ##
+# Load autocompletion
+fpath=($fpath ~/.zsh/completion)
+
+# Update outdated packages after running brew commands
+function brew() {
+  command brew "$@" 
+
+  if [[ $* =~ "upgrade" ]] || [[ $* =~ "update" ]] || [[ $* =~ "outdated" ]]; then
+    sketchybar --trigger brew_update
+  fi
+}
+
+# Source different env configs
+# [ -f $HOME/.zshrc.leap ] && source $HOME/.zshrc.leap
+# [ -f $HOME/.zshrc.aws ] && source $HOME/.zshrc.aws
+
+# Keybind to expand magic-space
+bindkey ' ' magic-space

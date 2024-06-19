@@ -1,0 +1,18 @@
+lastupdatecheck: 0
+recentrepos:
+    - /Users/ll931217/GitHub/dotfiles
+    - /Users/ll931217/leapin/leap
+    - /Users/ll931217/.config/nvim
+    - /Users/ll931217/vaults/second_brain
+    - /Users/ll931217/leapin/leapin-app
+    - /Users/ll931217/vaults
+startuppopupversion: 5
+lastversion: 0.42.0
+customcommandshistory: []
+hidecommandlog: false
+ignorewhitespaceindiffview: false
+diffcontextsize: 2
+localbranchsortorder: recency
+remotebranchsortorder: alphabetical
+gitlogorder: topo-order
+gitlogshowgraph: always
