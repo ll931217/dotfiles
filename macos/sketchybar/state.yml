@@ -1,17 +1,15 @@
 lastupdatecheck: 0
 recentrepos:
-    - /Users/ll931217/GitHub/dotfiles
     - /Users/ll931217/leapin/leap
     - /Users/ll931217/.config/nvim
-    - /Users/ll931217/vaults/second_brain
-    - /Users/ll931217/leapin/leapin-app
-    - /Users/ll931217/vaults
+    - /Users/ll931217/.local/share/nvim/lazy/vscode-js-debug
 startuppopupversion: 5
-lastversion: 0.42.0
+lastversion: 0.44.1
 customcommandshistory: []
 hidecommandlog: false
 ignorewhitespaceindiffview: false
-diffcontextsize: 2
+diffcontextsize: 3
+renamesimilaritythreshold: 50
 localbranchsortorder: recency
 remotebranchsortorder: alphabetical
 gitlogorder: topo-order
