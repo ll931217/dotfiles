@@ -1,0 +1,58 @@
+
+[font]
+size = 12.0
+
+[font.normal]
+family = "JetBrainsMonoNL Nerd Font"
+# style = "Regular"
+style = "Bold"
+
+[[keyboard.bindings]]
+action = "ToggleViMode"
+key = "V"
+mods = "Shift|Alt"
+
+[[keyboard.bindings]]
+action = "ToggleViMode"
+key = "Q"
+mode = "Vi"
+
+[[keyboard.bindings]]
+action = "SearchStart"
+key = "Slash"
+mode = "Vi"
+
+[[keyboard.bindings]]
+action = "SearchEnd"
+key = "Q"
+mode = "Vi|Search"
+
+[[keyboard.bindings]]
+action = "SearchNext"
+key = "N"
+mode = "Vi"
+
+[[keyboard.bindings]]
+action = "SearchPrevious"
+key = "N"
+mode = "Vi"
+mods = "Shift"
+
+[window]
+decorations = "buttonless"
+opacity = 0.8
+# option_as_alt = "Both"
+
+[window.dimensions]
+columns = 120
+lines = 35
+
+[window.padding]
+x = 12
+y = 12
+
+[general]
+import = [
+  # "/home/ll931217/.config/alacritty/catppuccin/catppuccin-macchiato.toml",
+  "/home/ll931217/.config/alacritty/tokyo-night-storm.toml",
+]

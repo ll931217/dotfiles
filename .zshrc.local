@@ -1,21 +1,26 @@
-# /usr/bin/setxkbmap -option "caps:swapescape"
+# export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_CURRENT_DESKTOP=Sway
 
-# Set default editor
-export EDITOR=vim
+# Setup Sketchybar app font
+export CONFIG_DIR=$HOME/.config/sketchybar
 
-function cheat(){ curl cheat.sh/"$@";  }
+# Init starship
+export STARSHIP_CONFIG=$HOME/.config/starship/starship.toml
+eval "$(starship init zsh)"
 
-# Export Directories
-export BROWSER=/usr/bin/firefox
-export PATH="$PATH:$HOME/.yarn/bin:$HOME/.scripts:$HOME/.local/bin"
-export REPO_OS_OVERRIDE=linux
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+## Completions ##
+# Load autocompletion
+fpath=($fpath ~/.zsh/completion)
 
-# export GTK_IM_MODULE=xim
-# export XMODIFIERS=@im=ibus
-# export QT_IM_MODULE=xim
-# ibus-daemon -drx
+# Source different env configs
+# [ -f $HOME/.zshrc.leap ] && source $HOME/.zshrc.leap
+# [ -f $HOME/.zshrc.aws ] && source $HOME/.zshrc.aws
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# Keybind to expand magic-space
+bindkey ' ' magic-space
+bindkey -v
+
+# Auto activate python venv
+source /usr/share/zsh/plugins/zsh-auto-venv/auto-venv.zsh
+
+fastfetch

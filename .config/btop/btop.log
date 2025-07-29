@@ -1,0 +1,3 @@
+
+2024/10/23 (06:22:41) | ===> btop++ v.1.4.0
+2024/10/23 (06:22:41) | ERROR: Exception during Config::unlock() : unordered_map::at

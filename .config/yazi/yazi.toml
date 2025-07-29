@@ -1,0 +1,22 @@
+[mgr]
+ratio = [1, 2, 4]
+show_hidden = false
+linemode = "size"
+
+# [plugin]
+# prepend_previewers = [{ name = "*.md", run = "glow" }]
+
+[opener]
+edit = [{ run = '$EDITOR "$1"', block = true, for = "unix" }]
+reveal = [
+  { run = '''exiftool "$1"; echo "Press enter to exit"; read''', block = true, desc = "Show EXIF", for = "unix" },
+]
+# extract = [{ run = 'unar "$1"', desc = "Extract here", for = "unix" }]
+play = [
+  { run = 'mpv "$@"', orphan = true, for = "unix" },
+  { run = '''mediainfo "$1"; echo "Press enter to exit"; read''', block = true, desc = "Show media info", for = "unix" },
+]
+image = [
+  { run = 'feh --scale-down --image-bg black "$@"', block = false, for = "unix" },
+]
+pdf = [{ run = 'brave "$@"', block = false, for = "unix" }]
