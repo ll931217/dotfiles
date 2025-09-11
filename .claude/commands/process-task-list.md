@@ -60,6 +60,6 @@ When working with task lists, the AI must:
 5. Before starting work, check which sub-task is next.
 6. After implementing a sub-task, update the file and then pause for user approval.
 7. Deploy relevant subagents to help you with tasks and subtasks.
-8. Use tests to discover bugs, if tests fail use the test-automator and relevant language subagent to help fix it.
+8. Use tests to discover bugs, if tests fail use the test-automator and relevant language subagent to help fix it. **DO NOT** move onto the next task until all tests pass
 9. Maintain the DRY (Don't Repeat Yourself) principle.
 10. Do not overcomplicate the implementation, it makes it hard for the user to review the changes.
