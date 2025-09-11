@@ -1,8 +1,3 @@
----
-description: Generating a Task List from a PRD
-globs: null
-alwaysApply: false
----
 # Rule: Generating a Task List from a PRD
 
 ## Goal
@@ -19,12 +14,14 @@ To guide an AI assistant in creating a detailed, step-by-step task list in Markd
 
 1. **Receive PRD Reference:** The user points the AI to a specific PRD file
 2. **Analyze PRD:** The AI reads and analyzes the functional requirements, user stories, and other sections of the specified PRD.
-3. **Phase 1: Generate Parent Tasks:** Based on the PRD analysis, create the file and generate the main, high-level tasks required to implement the feature. Use your judgement on how many high-level tasks to use. It's likely to be about 5. Present these tasks to the user in the specified format (without sub-tasks yet). Inform the user: "I have generated the high-level tasks based on the PRD. Ready to generate the sub-tasks? Respond with 'Go' to proceed."
-4. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
-5. **Phase 2: Generate Sub-Tasks:** Once the user confirms, break down each parent task into smaller, actionable sub-tasks necessary to complete the parent task. Ensure sub-tasks logically follow from the parent task and cover the implementation details implied by the PRD.
-6. **Identify Relevant Files:** Based on the tasks and PRD, identify potential files that will need to be created or modified. List these under the `Relevant Files` section, including corresponding test files if applicable.
-7. **Generate Final Output:** Combine the parent tasks, sub-tasks, relevant files, and notes into the final Markdown structure.
-8. **Save Task List:** Save the generated document in the `/tasks/` directory with the filename `tasks-[prd-file-name].md`, where `[prd-file-name]` matches the base name of the input PRD file (e.g., if the input was `prd-user-profile-editing.md`, the output is `tasks-prd-user-profile-editing.md`).
+3. **Assess Current State:** Review the existing codebase to understand existing infrastructre, architectural patterns and conventions. Also, identify any existing components or features that already exist and could be relevant to the PRD requirements. Then, identify existing related files, components, and utilities that can be leveraged or need modification.
+4. **Phase 1: Generate Parent Tasks:** Based on the PRD analysis and current state assessment, create the file and generate the main, high-level tasks required to implement the feature. Use your judgement on how many high-level tasks to use. It's likely to be about 5. These parent tasks should each be full features that can be tested where the user will only proceed to next parent task until satisfied. Present these tasks to the user in the specified format (without sub-tasks yet). Inform the user: "I have generated the high-level tasks based on the PRD. Ready to generate the sub-tasks? Respond with 'Go' to proceed."
+5. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
+6. **Phase 2: Generate Sub-Tasks:** Once the user confirms, break down each parent task into smaller, actionable sub-tasks necessary to complete the parent task. Ensure sub-tasks logically follow from the parent task, cover the implementation details implied by the PRD, and consider existing codebase patterns where relevant without being constrained by them.
+7. Phase 3: Update sub-tasks to mark sub-tasks that can be processed in parallel with a "[P]" before the task description, example: "- [ ] 1.1 [P] Example task". Make sure to group these sub-tasks together. Keep a context file that can be referenced by subagents to communicate between each other. The context files should be located in `/tasks/context/`, so the naming could be `/tasks/context/2.2.1_create_unit_test_for_auth.md` (Naming convention of the context file is `{subtask_number}_{subtask_description}.md`), then include that at the end of the associated sub-task.
+8. **Identify Relevant Files:** Based on the tasks and PRD, identify potential files that will need to be created or modified. List these under the `Relevant Files` section, including corresponding test files if applicable.
+9. **Generate Final Output:** Combine the parent tasks, sub-tasks, relevant files, and notes into the final Markdown structure.
+10. **Save Task List:** Save the generated document in the `/tasks/` directory with the filename `tasks-[prd-file-name].md`, where `[prd-file-name]` matches the base name of the input PRD file (e.g., if the input was `prd-user-profile-editing.md`, the output is `tasks-prd-user-profile-editing.md`).
 
 ## Output Format
 
@@ -42,8 +39,17 @@ The generated task list _must_ follow this structure:
 
 ### Notes
 
-- Unit tests should typically be placed alongside the code files they are testing (e.g., `MyComponent.tsx` and `MyComponent.test.tsx` in the same directory).
-- Use `npx jest [optional/path/to/test/file]` to run tests. Running without a path executes all tests found by the Jest configuration.
+- Unit tests should typically be placed in the `tests` directory unless otherwise specified or unless if there is a test directory.
+- Maintain the DRY (Don't Repeat Yourself) principle.
+- Do not overcomplicate the implementation, it makes it hard for the user to review the changes.
+- Keep "Relevant Files" accurate and up to date.
+- Add newly discovered tasks.
+- Deploy relevant subagents to help you with tasks and subtasks.
+- Use tests to discover bugs, if tests fail use the test-automator and relevant language subagent to help fix it.
+- When processing parallel tasks (Tasks marked with "[P]"), please:
+  - Use relevant sub-agents
+  - Always update the context file when you have completed a change.
+  - Stay up to date with the latest contexts of sub-agents in the current parallel sub-tasks processing group by reading their context files to see if they have worked on files you are using or will be using.
 
 ## Tasks
 
@@ -52,6 +58,9 @@ The generated task list _must_ follow this structure:
   - [ ] 1.2 [Sub-task description 1.2]
 - [ ] 2.0 Parent Task Title
   - [ ] 2.1 [Sub-task description 2.1]
+  - [ ] 2.2 [Sub-task description 2.2]
+    - [ ] 2.2.1 [P] [Parallel sub-task description 2.2.1] [Context file for other subagents to communicate with]
+    - [ ] 2.2.2 [P] [Parallel sub-task description 2.2.2] [Context file for other subagents to communicate with]
 - [ ] 3.0 Parent Task Title (may not require sub-tasks if purely structural or configuration)
 ```
 
@@ -61,5 +70,6 @@ The process explicitly requires a pause after generating parent tasks to get use
 
 ## Target Audience
 
-Assume the primary reader of the task list is a **junior developer** who will implement the feature.
+Assume the primary reader of the task list is a **junior developer** who will implement the feature with awareness of the existing codebase context.
 
+ULTRATHINK
