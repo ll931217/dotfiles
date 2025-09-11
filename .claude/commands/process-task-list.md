@@ -73,23 +73,69 @@ Advanced guidelines for managing task lists with parallel/concurrent execution c
   # Mark task as failed
   sed -i 's/- \[>\] TaskID/- [!] TaskID/' tasks-file.md
   
-  # Log error in context file
+  # Log detailed error in context file
   echo "## Error Log - $(date)" >> /tasks/context/TaskID_name.md
+  echo "Task: TaskID - [task description]" >> /tasks/context/TaskID_name.md
   echo "Error: [detailed error description]" >> /tasks/context/TaskID_name.md
+  echo "Exit code: $?" >> /tasks/context/TaskID_name.md
   echo "Recovery steps: [specific actions needed]" >> /tasks/context/TaskID_name.md
+  echo "Dependencies: [list of blocking/blocked tasks]" >> /tasks/context/TaskID_name.md
   ```
-- **Recovery strategies:**
-  - **Analyze failure**: Check logs, test outputs, and error messages
-  - **Retry with fixes**: Address root cause before re-attempting 
+- **Enhanced recovery strategies:**
+  - **Analyze failure**: Check logs, test outputs, error messages, and exit codes
+  - **Test failure handling**: Use test-automator for comprehensive test debugging
+    ```bash
+    # For test failures, get detailed analysis
+    Task "test-automator" "Analyze and fix failing tests in TaskID [Context: /tasks/context/TaskID_name.md]"
+    ```
+  - **Dependency management**: Identify which tasks are blocked by failures
+    ```bash
+    # Check task dependencies before retry
+    grep -A 5 -B 5 "TaskID" tasks-file.md | grep -E "\[(x|!)\]"
+    ```
+  - **Retry with fixes**: Address root cause before re-attempting
+  - **Parallel task recovery**: Handle failures in concurrent execution gracefully
   - **Skip blocked tasks**: Continue with non-dependent tasks when possible
   - **Escalate if needed**: Mark as `[!]` and provide clear recovery guidance
 - **Never leave tasks in `[>]` state** on exit - always resolve to `[x]` or `[!]`
+- **Test-specific failure patterns:**
+  ```bash
+  # Handle TDD violations (tests not failing when they should)
+  if ! npm test 2>&1 | grep -q "FAIL"; then
+    echo "TDD VIOLATION: Contract tests must fail before implementation" >> /tasks/context/TaskID_name.md
+    sed -i 's/- \[>\] TaskID/- [!] TaskID/' tasks-file.md
+  fi
+  
+  # Handle post-implementation test failures  
+  if npm test 2>&1 | grep -q "FAIL"; then
+    echo "IMPLEMENTATION INCOMPLETE: Tests still failing after implementation" >> /tasks/context/TaskID_name.md
+    Task "test-automator" "Fix failing tests after implementation [Context: /tasks/context/TaskID_name.md]"
+  fi
+  ```
 
-### Constitutional Compliance & Validation
-- **After each phase**: Run package validation commands (`npm run lint`, `npm test`, etc.)
-- **Before implementation**: Verify contract tests exist and fail (TDD)
-- **After implementation**: Verify contract tests pass
-- **Before completion**: Run full compliance validation
+### TDD Enforcement & Constitutional Compliance
+- **NON-NEGOTIABLE TDD RULE**: Tests MUST fail before implementation
+  - **Before any implementation task**: Verify contract tests exist and fail
+  - **Block progression** until all tests exist and fail as expected
+  - **Never skip failed tests** - TDD is mandatory
+- **Contract test validation sequence:**
+  ```bash
+  # 1. Verify tests exist and fail
+  npm test 2>&1 | grep -E "(FAIL|failed|error)" || echo "ERROR: Tests must fail before implementation"
+  
+  # 2. Only proceed if tests fail appropriately
+  if [[ $? -eq 0 ]]; then
+    echo "✓ Contract tests failing as expected - proceeding with implementation"
+  else
+    echo "✗ BLOCKED: Tests must fail before implementation"
+    exit 1
+  fi
+  ```
+- **Phase validation (after each phase)**:
+  - Run package validation commands (`npm run lint`, `npm test`, `npm run check:all`)
+  - Verify all tests pass after implementation
+  - Check constitutional compliance
+- **Before completion**: Run full compliance validation and ensure 100% test pass rate
 
 - Stop after each sub‑task and wait for the user's go-ahead, unless it is a parallel sub-task.
 
@@ -151,7 +197,7 @@ When working with task lists, the AI must:
 6. **Error handling:** Mark failed tasks with `[!]` and provide recovery guidance
 7. **Validation:** Run tests and compliance checks after each phase
 8. **Documentation:** Keep "Relevant Files" accurate and up to date
-9. **TDD compliance:** Use test-automator and relevant language subagents for test failures
+9. **TDD compliance:** CRITICAL - Never skip failed tests, use test-automator and relevant language subagents for test failures
 10. **Simplicity:** Maintain DRY principle and avoid overcomplication
 
 ### Usage Examples
@@ -179,4 +225,20 @@ grep -E "\[(x|!|>| )\]" tasks-file.md
 cat /tasks/context/T001_shared_state.md
 # Update context after completion
 echo "## Agent: backend-architect\nCompleted API endpoint: /auth/login\nDatabase table: users" >> /tasks/context/T002_auth_api.md
+```
+
+**TDD enforcement example:**
+```bash
+# Phase 3.2: Contract Tests (TDD) - CRITICAL PHASE
+sed -i 's/- \[ \] T005/- [>] T005/' tasks-file.md  # Contract test creation
+
+# Execute test creation with test-automator
+Task "test-automator" "Create failing contract test for user authentication [Context: /tasks/context/T005_auth_test.md]"
+
+# MANDATORY: Verify test fails before proceeding
+npm test 2>&1 | grep "FAIL.*auth" && echo "✓ Test failing correctly" || { echo "✗ BLOCKED: Test must fail first"; exit 1; }
+
+sed -i 's/- \[>\] T005/- [x] T005/' tasks-file.md  # Mark test creation complete
+
+# Only after ALL contract tests fail, proceed to implementation phase
 ```
