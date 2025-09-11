@@ -27,19 +27,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   , written out in great detail.
 - Always create unit tests for new features, try to keep code coverage above \
   80%. Keep these tests simple and only test the most critical functionality.
-- Use TDD (Test driven development), first create tests on what you expect the code to do, and create code to pass those tests.
+- Use TDD (Test driven development), first create tests on what you expect the\
+  code to do, and create code to pass those tests.
 - Commit code for fixes, refactors, minor and major fixes.
+- Keep code change summaries inside a CHANGELOG.md file in the project's root directory.
+- Always use Claude Code sub-agents for research before implementing.
 
 ## MCP Servers available
 
 The following are MCP servers that I have provided which you should use when needed:
 
-- GitLab MCP Server: Access my local self-hosted GitLab instance.
-- GitHub MCP Server: Access my GitHub account.
-- Context7 MCP Server: This is used to get documentation data for languages and frameworks that we will use.
-- Supermemory MCP Server: Use this as a memory store to store things that you think you need to keep for long term
-- Linear MCP Server: Linear is my project management tool, use this MCP server to get or update details about projects I am working on.
-
-## Memories
-
-- `/home/ll931217/.config/zsh/aliases.zsh` please read this file for updated aliases that could cause issues for running commands
+- Context7 MCP Server: This is used to get documentation data for languages and \
+  frameworks that we will use.
