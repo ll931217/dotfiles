@@ -32,6 +32,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Commit code for fixes, refactors, minor and major fixes.
 - Keep code change summaries inside a CHANGELOG.md file in the project's root directory.
 - Always use Claude Code sub-agents for research before implementing.
+- When in plan mode, always try to group tasks that can be processed in parallel together. When the user is satisfied and want you to implement it, try to work on as many tasks on the todo list as possible by delegating tasks to appropriate sub-agents
 
 ## MCP Servers available
 

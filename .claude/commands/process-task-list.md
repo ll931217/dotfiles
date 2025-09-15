@@ -4,10 +4,22 @@ Guidelines for managing task lists in markdown files to track progress on comple
 
 ## Task Implementation
 
-- **Smart Task Execution Strategy:**
-  - Do **NOT** start the next sub-task until you ask the user for permission and they say "yes" or "y"
-  - **Sequential Tasks:** Execute one at a time, waiting for user confirmation
-  - **Parallel Groups:** Execute all tasks within a group concurrently using specialized sub-agents
+- **Smart Task Execution Strategy with 3-Condition Permission Logic:**
+  
+  **Condition 1 - Sequential Tasks (no parallel flags):**
+  - Ask user for permission before starting: "Ready to start task [TaskID]? (yes/y to proceed)"
+  - Wait for user confirmation ("yes" or "y") before proceeding
+  - Execute one task at a time
+  
+  **Condition 2 - Parallel Group Start ([P:Group-X] flags):**
+  - When encountering the **first task** in a new parallel group, ask for permission: "Ready to start parallel group [Group-X] with [N] tasks? (yes/y to proceed)"
+  - Wait for user confirmation ("yes" or "y") before starting the entire group
+  - Once confirmed, execute ALL tasks in the group concurrently using specialized sub-agents
+  
+  **Condition 3 - Within Active Parallel Group:**
+  - **NO permission needed** for subsequent tasks within the same group
+  - All tasks in the group execute automatically once group permission is granted
+  - Continue until all tasks in the group are completed
 
 - **Parallel Group Execution ([P:Group-X] flags):**
   - **Phase 1 - Pre-execution Analysis:** Before starting any parallel group:
@@ -45,7 +57,10 @@ Guidelines for managing task lists in markdown files to track progress on comple
 
   - Once all the subtasks are marked completed and changes have been committed, mark the **parent task** as completed.
 
-- Stop after each sub‑task and wait for the user's go-ahead, unless it is a parallel group (all [P:Group-X] tasks in the same group execute together).
+- **Permission Control Summary:**
+  - **Sequential tasks**: Stop and ask for user permission before each task
+  - **Parallel group start**: Stop and ask for user permission before starting the group
+  - **Within parallel group**: NO stopping, execute all group tasks automatically
 
 ## Context File Management
 
@@ -71,6 +86,46 @@ Guidelines for managing task lists in markdown files to track progress on comple
 - Update context files immediately when starting/finishing file modifications
 - If conflict detected, coordinate resolution via context files or sequential execution
 
+## Group State Tracking Logic
+
+**Tracking Active Parallel Groups:**
+- **Group Detection:** Scan upcoming tasks for `[P:Group-X]` patterns to identify group boundaries
+- **State Variables:**
+  - `CURRENT_GROUP_ID`: Track which group is currently being processed (null if none)
+  - `GROUP_TASK_COUNT`: Number of tasks remaining in current group
+  - `GROUP_START_REQUESTED`: Whether permission was already requested for current group
+
+**Group State Management:**
+```bash
+# Detect if next task starts a new parallel group
+detect_task_type() {
+  local next_task="$1"
+  if echo "$next_task" | grep -q "\[P:Group-"; then
+    local group_id=$(echo "$next_task" | grep -o "Group-[^]]*")
+    if [[ "$group_id" != "$CURRENT_GROUP_ID" ]]; then
+      echo "NEW_GROUP_START"
+    else
+      echo "GROUP_CONTINUE"
+    fi
+  else
+    echo "SEQUENTIAL"
+  fi
+}
+
+# Update group state after task completion
+update_group_state() {
+  local completed_task="$1"
+  if [[ "$CURRENT_GROUP_ID" != "" ]]; then
+    GROUP_TASK_COUNT=$((GROUP_TASK_COUNT - 1))
+    if [[ $GROUP_TASK_COUNT -eq 0 ]]; then
+      CURRENT_GROUP_ID=""
+      GROUP_START_REQUESTED=false
+      echo "Group completed - returning to sequential mode"
+    fi
+  fi
+}
+```
+
 **Reference:** Use the context file templates and coordination strategies in `~/.claude/commands/parallel-task-analyzer.md` for detailed implementation guidance.
 
 ## Task List Maintenance
@@ -87,12 +142,14 @@ Guidelines for managing task lists in markdown files to track progress on comple
 
 When working with task lists, the AI must:
 
-1. **Task Execution Strategy:**
-   - For sequential tasks: Execute one at a time, get user approval before proceeding
-   - For parallel groups: Execute all tasks in the group simultaneously using multiple subagents
+1. **3-Condition Permission System:**
+   - **Condition 1 (Sequential)**: Ask "Ready to start task [TaskID]? (yes/y to proceed)" and wait for confirmation
+   - **Condition 2 (New Group)**: Ask "Ready to start parallel group [Group-X] with [N] tasks? (yes/y to proceed)" and wait for confirmation
+   - **Condition 3 (Within Group)**: NO permission needed - execute automatically
    - Always check context files before starting any task
 
-2. **Pre-execution Checks:**
+2. **Pre-execution Checks (apply task type detection first):**
+   - Use `detect_task_type()` function to determine which permission condition applies
    - Read group coordination files to understand current file usage
    - Verify no file conflicts exist with running tasks
    - Check individual context files for blockers or dependencies
@@ -105,6 +162,7 @@ When working with task lists, the AI must:
 4. **Completion Protocol:**
    - Mark each finished **sub‑task** `[x]` immediately
    - Update context files with completion status and final file list
+   - Use `update_group_state()` to track group completion
    - Mark **parent task** `[x]` once **ALL** subtasks are `[x]`
    - Run full test suite before committing group changes
 
@@ -117,3 +175,78 @@ When working with task lists, the AI must:
    - Use test-automator and language-specific subagents for failing tests
    - **DO NOT** proceed to next task/group until all tests pass
    - Document any blockers or issues in context files
+
+## Permission Logic Examples & Decision Tree
+
+### Task Type Detection Examples
+```bash
+# Example task list entries:
+# - [ ] 1.1 Setup database schema                    # Sequential - ask permission
+# - [ ] 1.2 [P:Group-A] Create User model           # New group - ask permission  
+# - [ ] 1.3 [P:Group-A] Create Auth service         # Same group - no permission
+# - [ ] 1.4 [P:Group-A] Create API endpoints        # Same group - no permission
+# - [ ] 1.5 Integration testing                     # Sequential - ask permission
+
+# Detection logic in action:
+TASK_1_1="Setup database schema"                    # detect_task_type() → "SEQUENTIAL"
+TASK_1_2="[P:Group-A] Create User model"           # detect_task_type() → "NEW_GROUP_START"  
+TASK_1_3="[P:Group-A] Create Auth service"         # detect_task_type() → "GROUP_CONTINUE"
+TASK_1_4="[P:Group-A] Create API endpoints"        # detect_task_type() → "GROUP_CONTINUE"
+TASK_1_5="Integration testing"                     # detect_task_type() → "SEQUENTIAL"
+```
+
+### Permission Decision Tree
+```
+┌─ Next Task Available
+│
+├─ detect_task_type(next_task)
+│  │
+│  ├─ "SEQUENTIAL"
+│  │  └─ Ask: "Ready to start task [TaskID]? (yes/y to proceed)"
+│  │     └─ Wait for user input → Execute single task
+│  │
+│  ├─ "NEW_GROUP_START"  
+│  │  └─ Count tasks in group → Ask: "Ready to start parallel group [Group-X] with [N] tasks? (yes/y to proceed)"
+│  │     └─ Wait for user input → Set CURRENT_GROUP_ID → Execute all group tasks concurrently
+│  │
+│  └─ "GROUP_CONTINUE"
+│     └─ NO permission needed → Execute task automatically (part of approved group)
+│
+└─ After task completion
+   └─ update_group_state() → Reset group if all tasks complete → Continue to next task
+```
+
+### Practical Implementation Flow
+```bash
+# Before each task execution:
+next_task=$(get_next_pending_task)
+task_type=$(detect_task_type "$next_task")
+
+case $task_type in
+  "SEQUENTIAL")
+    echo "Ready to start task $next_task? (yes/y to proceed)"
+    read user_input
+    if [[ "$user_input" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+      execute_single_task "$next_task"
+    fi
+    ;;
+  "NEW_GROUP_START")
+    group_id=$(extract_group_id "$next_task")
+    task_count=$(count_group_tasks "$group_id")
+    echo "Ready to start parallel group $group_id with $task_count tasks? (yes/y to proceed)"
+    read user_input
+    if [[ "$user_input" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+      CURRENT_GROUP_ID="$group_id"
+      GROUP_TASK_COUNT="$task_count"
+      execute_parallel_group "$group_id"
+    fi
+    ;;
+  "GROUP_CONTINUE")
+    # No permission needed - execute automatically
+    execute_group_task "$next_task"
+    ;;
+esac
+
+# After completion:
+update_group_state "$completed_task"
+```
