@@ -11,7 +11,7 @@ add_newline = false
 # $character
 # """
 format = """
-$cmd_duration 󰜥 $python 󰜥 $directory $git_branch
+$cmd_duration 󰜥 $python $directory $git_branch
 $character
 """
 
@@ -98,7 +98,7 @@ format = '[](bold fg:green)[󰉋 $path]($style)[](bold fg:green)'
 
 [python]
 style = "bg:blue fg:black"
-format = '[](bold fg:blue)[$symbol($version )(\($virtualenv\) )](bg:blue fg:black)[](bold fg:blue)'
+format = '[](bold fg:blue)[$symbol($version )(\($virtualenv\) )](bg:blue fg:black)[](bold fg:blue) 󰜥 '
 pyenv_version_name = false
 pyenv_prefix = "pyenv "
 detect_extensions = ["py"]
