@@ -40,3 +40,4 @@ The following are MCP servers that I have provided which you should use when nee
 
 - Context7 MCP Server: This is used to get documentation data for languages and \
   frameworks that we will use.
+- Always use multiple sub-agents when doing research and forming a plan for code implementation

@@ -11,12 +11,12 @@ add_newline = false
 # $character
 # """
 format = """
-$cmd_duration 󰜥 $directory $git_branch
+$cmd_duration 󰜥 $python 󰜥 $directory $git_branch
 $character
 """
 
 # Replace the "❯" symbol in the prompt with "➜"
-[character]                            # The name of the module we are configuring is "character"
+[character] # The name of the module we are configuring is "character"
 success_symbol = "[   ](bold fg:blue)"
 error_symbol = "[   ](bold fg:red)"
 
@@ -53,7 +53,7 @@ deleted = " 🗑 "
 
 [hostname]
 ssh_only = false
-format =  "[•$hostname](bg:cyan bold fg:black)[](bold fg:cyan)"
+format = "[•$hostname](bg:cyan bold fg:black)[](bold fg:cyan)"
 trim_at = ".companyname.com"
 disabled = false
 
@@ -95,6 +95,21 @@ format = '[](bold fg:green)[󰉋 $path]($style)[](bold fg:green)'
 "Pictures" = "  "
 "Videos" = "  "
 "GitHub" = " 󰊤 "
+
+[python]
+style = "bg:blue fg:black"
+format = '[](bold fg:blue)[$symbol($version )(\($virtualenv\) )](bg:blue fg:black)[](bold fg:blue)'
+pyenv_version_name = false
+pyenv_prefix = "pyenv "
+detect_extensions = ["py"]
+detect_files = [
+    ".python-version",
+    "Pipfile",
+    "__init__.py",
+    "pyproject.toml",
+    "requirements.txt",
+]
+detect_folders = []
 
 [cmd_duration]
 min_time = 0
