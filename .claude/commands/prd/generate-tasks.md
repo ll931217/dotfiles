@@ -52,6 +52,7 @@ The generated task list _must_ follow this structure:
 
 ### Notes
 
+- The first task should always be the core system architecture, should be functional enough that the user can a minimal viable system.
 - Unit tests should typically be placed in the `tests` directory unless otherwise specified or unless if there is a test directory.
 - Maintain the DRY (Don't Repeat Yourself) principle.
 - Do not overcomplicate the implementation, it makes it hard for the user to review the changes.
