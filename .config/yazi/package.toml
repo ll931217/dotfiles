@@ -1,5 +1,9 @@
-[plugin]
-deps = [{ use = "Reledia/glow", rev = "4e016fa" }]
+[[plugin.deps]]
+use = "Reledia/glow"
+rev = "4e016fa"
+hash = ""
 
-[flavor]
-deps = []
+[[flavor.deps]]
+use = "yazi-rs/flavors:dracula"
+rev = "4296a38"
+hash = "eefb18cb038121aed2b6eeaacea5a63e"
