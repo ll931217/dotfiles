@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# GitHub Repository Details
+OWNER="bambulab"   # Replace with the repository owner
+REPO="BambuStudio" # Replace with the repository name
+
+# Local file to be replaced
+LOCAL_FILE="$HOME/Applications/Bambu_Studio.AppImage" # Replace with the path to the file you want to replace
+
+# Optional: Specific asset name pattern (if you want to filter assets)
+# Leave empty to download the first asset
+# ASSET_PATTERN="Bambu_Studio_linux_ubuntu_*.AppImage" # Example: "*.zip" or "myapp-linux"
+
+# GitHub API endpoint for latest release
+RELEASE_URL="https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+VERSION="$(curl -s "$RELEASE_URL" | jq -r ".tag_name")"
+echo "https://github.com/bambulab/BambuStudio/releases/download/v01.10.01.50/Bambu_Studio_linux_fedora-v01.10.01.50.AppImage"
+echo "https://github.com/bambulab/BambuStudio/releases/download/$VERSION/Bambu_Studio_linux_fedora-$VERSION.AppImage"
+curl -L -o "$LOCAL_FILE" "https://github.com/bambulab/BambuStudio/releases/download/$VERSION/Bambu_Studio_linux_fedora-$VERSION.AppImage"
+
+# Fetch the latest release data
+# ASSET_INFO=$(curl -s "$RELEASE_URL" | jq -r ".assets[] | select(.name | test(\"$ASSET_PATTERN\")) | .browser_download_url" | head -n 1)
+#
+# # Check if an asset was found
+# if [ -z "$ASSET_INFO" ]; then
+#   echo "No matching asset found for download."
+#   exit 1
+# fi
+#
+# # Download the asset
+# echo "Downloading: $ASSET_INFO"
+# curl -L -o "/tmp/downloaded_asset" "$ASSET_INFO"
+#
+# # Replace the local file
+# mv "/tmp/downloaded_asset" "$LOCAL_FILE"
+#
+# echo "File updated successfully from latest GitHub release."

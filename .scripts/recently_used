@@ -1,0 +1,16 @@
+#!/bin/sh
+
+before=$(grep "pacman -Syu" /var/log/pacman.log |
+  tail -n 1 |
+  awk -FT '{print substr($1,2)}' |
+  xargs -I{} date +%s -d "{} +2 day")
+
+pacman -Qettlq |
+  grep -v '/$' |
+  xargs -d \\n stat -c "%X %n" 2>/dev/null |
+  awk -v T=$before '$1 > T { $1=""; print substr($0,2); }' |
+  tr '\n' '\0' |
+  xargs -0 pacman -Qqo |
+  sort -u >|/tmp/recently_used
+
+pacman -Qettq | sort | comm -13 /tmp/recently_used -

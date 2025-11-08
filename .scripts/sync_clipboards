@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# Function to check if required commands are available
+check_dependencies() {
+  local missing_deps=()
+
+  for cmd in wl-paste wl-copy xclip; do
+    if ! command -v "$cmd" &>/dev/null; then
+      missing_deps+=("$cmd")
+    fi
+  done
+
+  if [ ${#missing_deps[@]} -ne 0 ]; then
+    echo "Error: Missing required dependencies: ${missing_deps[*]}"
+    echo -e "\nPlease install the missing dependencies:"
+    echo "For wl-paste and wl-copy: Install 'wl-clipboard'"
+    echo "For xclip: Install 'xclip'"
+    exit 1
+  fi
+}
+
+# Function to check if Wayland clipboard contains text
+is_wayland_text() {
+  wl-paste --list-types 2>/dev/null | grep -qE "text/|STRING"
+}
+
+# Function to check if XWayland clipboard contains text
+is_xwayland_text() {
+  xclip -selection clipboard -t TARGETS -o 2>/dev/null | grep -qE "text/|STRING"
+}
+
+# Function to get Wayland clipboard content (text only)
+get_wayland_clipboard() {
+  if is_wayland_text; then
+    wl-paste --no-newline 2>/dev/null || echo ""
+  else
+    echo ""
+  fi
+}
+
+# Function to get XWayland clipboard content (text only)
+get_xwayland_clipboard() {
+  if is_xwayland_text; then
+    xclip -o -selection clipboard 2>/dev/null || echo ""
+  else
+    echo ""
+  fi
+}
+
+# Function to set Wayland clipboard
+set_wayland_clipboard() {
+  echo -n "$1" | wl-copy --type text/plain
+}
+
+# Function to set XWayland clipboard
+set_xwayland_clipboard() {
+  echo -n "$1" | xclip -selection clipboard -t text/plain
+}
+
+# Main clipboard monitoring function
+monitor_clipboards() {
+  local last_wayland=""
+  local last_xwayland=""
+  local current_wayland
+  local current_xwayland
+
+  echo "Starting clipboard synchronization (text content only)..."
+  echo "Press Ctrl+C to stop"
+
+  while true; do
+    # Check Wayland clipboard
+    current_wayland=$(get_wayland_clipboard)
+    if [ "$current_wayland" != "$last_wayland" ] && [ -n "$current_wayland" ]; then
+      last_wayland="$current_wayland"
+      last_xwayland="$current_wayland"
+      set_xwayland_clipboard "$current_wayland"
+      echo "Synchronized Wayland → XWayland (text)"
+    fi
+
+    # Check XWayland clipboard
+    current_xwayland=$(get_xwayland_clipboard)
+    if [ "$current_xwayland" != "$last_xwayland" ] && [ -n "$current_xwayland" ]; then
+      last_xwayland="$current_xwayland"
+      last_wayland="$current_xwayland"
+      set_wayland_clipboard "$current_xwayland"
+      echo "Synchronized XWayland → Wayland (text)"
+    fi
+
+    sleep 0.5
+  done
+}
+
+# Cleanup function
+cleanup() {
+  echo -e "\nStopping clipboard synchronization..."
+  exit 0
+}
+
+# Main script
+main() {
+  # Check dependencies
+  check_dependencies
+
+  # Set up trap for Ctrl+C
+  trap cleanup SIGINT SIGTERM
+
+  # Start monitoring
+  monitor_clipboards
+}
+
+# Run the script
+main

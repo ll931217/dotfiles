@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Makes sure the Applications directory is available
+mkdir -p "$HOME/Applications"
+
+# GitHub Repository Details
+OWNER="zen-browser" # Replace with the repository owner
+REPO="desktop"      # Replace with the repository name
+
+# Local file to be replaced
+TEMP_FILE="/tmp/zen-browser.AppImage"
+LOCAL_FILE="$HOME/Applications/zen-browser.AppImage" # Replace with the path to the file you want to replace
+
+# Check if a specific version tag was provided
+if [ -n "$1" ]; then
+  VERSION="$1"
+  echo "Using specified version: $VERSION"
+else
+  # GitHub API endpoint for latest release
+  RELEASE_URL="https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+  VERSION="$(curl -s "$RELEASE_URL" | jq -r ".tag_name")"
+  echo "Using latest version: $VERSION"
+fi
+
+# Download the file to temp dir then moved to ~/Applications
+DOWNLOAD_URL="https://github.com/$OWNER/$REPO/releases/download/$VERSION/zen-x86_64.AppImage"
+echo "$DOWNLOAD_URL"
+curl -L -o "$TEMP_FILE" "$DOWNLOAD_URL"
+mv "$TEMP_FILE" "$LOCAL_FILE"
+chmod +x "$LOCAL_FILE"
+
+# Check and create .desktop file if it doesn't exist
+DESKTOP_FILE="$HOME/.local/share/applications/ZenBrowser.desktop"
+if [ ! -f "$DESKTOP_FILE" ]; then
+  cat >"$DESKTOP_FILE" <<'EOL'
+[Desktop Entry]
+Name=Zen Browser
+Comment=Experience tranquillity while browsing the web without people tracking you!
+Exec=$HOME/Applications/zen-browser.AppImage %u
+Icon=$HOME/.local/share/icons/ZenBrowser.png
+Type=Application
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;application/x-xpinstall;application/pdf;application/json;
+StartupWMClass=zen-alpha
+Categories=Network;WebBrowser;
+StartupNotify=true
+Terminal=false
+X-MultipleArgs=false
+Keywords=Internet;WWW;Browser;Web;Explorer;
+Actions=new-window;new-private-window;profilemanager;
+
+[Desktop Action new-window]
+Name=Open a New Window
+Exec=$HOME/Applications/zen-browser.AppImage %u
+
+[Desktop Action new-private-window]
+Name=Open a New Private Window
+Exec=$HOME/Applications/zen-browser.AppImage --private-window %u
+
+[Desktop Action profilemanager]
+Name=Open the Profile Manager
+Exec=$HOME/Applications/zen-browser.AppImage --ProfileManager %u
+EOL
+  # Replace $HOME with actual home path in the file
+  sed -i "s|\$HOME|$HOME|g" "$DESKTOP_FILE"
+  echo "Created desktop entry at $DESKTOP_FILE"
+fi
