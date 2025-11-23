@@ -186,25 +186,25 @@ mode "$mode_gaps_outer" {
 default_border pixel 2
 
 # Floating
-for_window [class="^(com\.mitchellh\.ghostty|ghostty)$"] floating disable, border none
+for_window [class="^(com\.mitchellh\.ghostty|ghostty)$"] floating disable, border none, debug_log
 # for_window [class="com.mitchellh.ghostty"] floating disable, border none
 # for_window [class="ghostty"] floating disable, border none
 
 for_window [class="^(steam)"] floating enable, border none
-for_window [class="Lutris"] floating enable, border none
-for_window [class="winboat"] floating enable, border none
-for_window [class="pavucontrol"] floating enable, border none
-for_window [class="pwvucontrol"] floating enable, border none
-for_window [class="itch"] floating enable, border none
-for_window [class="Picture-in-Picture"] floating enable, border none, sticky enable
-for_window [class="awakened-poe-trade"] floating enable, border none
-for_window [title="Path of Exile"] floating enable, border none
+for_window [class="^(Lutris)$"] floating enable, border none
+for_window [class="^(winboat)$"] floating enable, border none
+for_window [class="^(pavucontrol)$"] floating enable, border none
+for_window [class="^(pwvucontrol)"] floating enable, border none
+for_window [class="^(itch)$"] floating enable, border none
+for_window [class="^(Picture-in-Picture)$"] floating enable, border none, sticky enable
+for_window [class="^(awakened-poe-trade)$"] floating enable, border none
+for_window [title="^(Path of Exile)$"] floating enable, border none
 
-for_window [class="zen"] border none
-for_window [class="Chromium"] border none
-for_window [class="qutebrowser"] border none
+for_window [class="^(zen)$"] border none
+for_window [class="^(Chromium)$"] border none
+for_window [class="^(qutebrowser)$"] border none
 
-for_window [class="Emulator"] resize 1396 628
+for_window [class="^(Emulator)$"] resize 1396 628
 
 # switch to workspace with urgent window automatically
 for_window [urgent=latest] focus
@@ -212,7 +212,7 @@ for_window [urgent=latest] focus
 focus_on_window_activation none
 
 # If there is a pop-up when the window is in fullscreen, do something
-# popup_during_fullscreen smart
+popup_during_fullscreen smart
 
 # Quick workspace switching
 workspace_auto_back_and_forth yes
