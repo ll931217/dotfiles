@@ -1,10 +1,39 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo "Copying Configs"
-cp -R .zshrc .tmux.conf .bash_aliases .config/ .scripts .local ~/
+# cp -R .zshrc .tmux.conf .config/ .scripts .local ~/
+ln -s "$(pwd)/.zshrc" "$HOME/.zshrc"
+ln -s "$(pwd)/.zshrc.fzf" "$HOME/.zshrc.fzf"
+ln -s "$(pwd)/.zshrc.local" "$HOME/.zshrc.local"
+ln -s "$(pwd)/.tmux.conf" "$HOME/.tmux.conf"
+ln -s "$(pwd)/.scripts" "$HOME/.scripts"
+
+mkdir -p "$HOME/.local/share"
+ln -s "$(pwd)/.local/share/fonts" "$HOME/.local/share/fonts"
+
+SOURCE_DIR="$(pwd)/.config"
+TARGET_DIR="$XDG_CONFIG_HOME"
+
+# Build an array of *entries* in the source directory
+mapfile -t entries < <(find "$SOURCE_DIR" -maxdepth 1 -mindepth 1)
+
+for item in "${entries[@]}"; do
+  base=$(basename "$item")
+  target="$TARGET_DIR/$base"
+
+  # If the target already exists, handle it
+  if [[ -e "$target" || -L "$target" ]]; then
+    echo "Skipping existing: $target"
+    continue
+  fi
+
+  ln -s "$item" "$target"
+  echo "Linked: $target → $item"
+done
 echo "Done: Copying Configs"
 
 echo "Downloading Terminal Fonts"
+# TODO: Add more fonts
 mkdir -p "$HOME/.local/share/fonts/MesloLGS"
 wget -nc -P "$HOME/.local/share/fonts/MesloLGS" -i ./font_urls/meslo-urls.txt
 echo "Done: Downloading Terminal Fonts"
