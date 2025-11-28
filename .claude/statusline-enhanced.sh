@@ -173,14 +173,14 @@ get_git_info() {
         while IFS= read -r line; do
             if [ -n "$line" ]; then
                 case "${line:0:2}" in
-                    "A "*|"M "*|"R "*|"C "*|"D "*) staged=$((staged + 1)) ;;
-                    " M"|" D") modified=$((modified + 1)) ;;
-                    " A") staged=$((staged + 1)) ;;
-                    "??") untracked=$((untracked + 1)) ;;
-                    *D*) deleted=$((deleted + 1)) ;;
+                "A "* | "M "* | "R "* | "C "* | "D "*) staged=$((staged + 1)) ;;
+                " M" | " D") modified=$((modified + 1)) ;;
+                " A") staged=$((staged + 1)) ;;
+                "??") untracked=$((untracked + 1)) ;;
+                *D*) deleted=$((deleted + 1)) ;;
                 esac
             fi
-        done <<< "$status_output"
+        done <<<"$status_output"
 
         # Get ahead/behind information
         local ahead_behind=""
@@ -225,7 +225,7 @@ get_git_info() {
 detect_language() {
     local dir="$1"
     local lang_info=""
-    
+
     # Check for various language/framework indicators
     if [ -f "$dir/package.json" ]; then
         # Node.js/JavaScript/TypeScript
@@ -293,7 +293,7 @@ detect_language() {
         # Zig
         lang_info="Zig"
     fi
-    
+
     echo "$lang_info"
 }
 
@@ -323,6 +323,6 @@ git_display=$(get_git_info "$current_dir")
 claude_session_display=$(get_claude_session_info)
 
 # Build the complete status line
-printf "${venv_info}${debian_chroot:+(${debian_chroot})}\033[01;34m${current_dir}\033[00m${lang_display}"
+printf "${lang_display} ${venv_info}${debian_chroot:+(${debian_chroot})}\033[01;34m${current_dir}\033[00m"
 [ -n "$git_display" ] && printf " $git_display"
 [ -n "$claude_session_display" ] && printf " $claude_session_display"
