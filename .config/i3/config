@@ -14,8 +14,8 @@ set $inactive-text-color #676E7D
 set $urgent-bg-color #E53935
 
 # bindsym $mod+Return exec kitty
-# bindsym $mod+Return exec alacritty
-bindsym $mod+Return exec ghostty
+bindsym $mod+Return exec alacritty
+# bindsym $mod+Return exec ghostty
 
 bindsym $mod+q kill
 bindsym $mod+d exec killall rofi || ~/.config/rofi/launchers/type-7/launcher.sh
