@@ -49,6 +49,9 @@ bindsym $mod+s exec --no-startup-id sh -c 'i3-msg "workspace number 9" && (pgrep
 # bindsym $mod+w layout tabbed
 # bindsym $mod+e layout toggle split
 
+bindsym $mod+a scratchpad show
+bindsym $mod+Shift+a move scratchpad
+
 # toggle tiling / floating
 bindsym $mod+Shift+space floating toggle
 
@@ -56,7 +59,7 @@ bindsym $mod+Shift+space floating toggle
 bindsym $mod+space focus mode_toggle
 
 # focus the parent container
-bindsym $mod+a focus parent
+bindsym $mod+g focus parent
 
 bindsym $mod+Shift+s exec flameshot gui
 # bindsym $mod+Shift+s exec scrot -s -f -e 'xclip -selection clipboard -t image/png -i $f && mv $f ~/Pictures/Screenshots/ && notify-send "Screenshot saved to ~/Pictures/Screenshots/"'
@@ -191,15 +194,18 @@ for_window [class="^(com\.mitchellh\.ghostty|ghostty)$"] floating disable, borde
 # for_window [class="com.mitchellh.ghostty"] floating disable, border none
 # for_window [class="ghostty"] floating disable, border none
 
-for_window [class="^(steam)"] floating enable, border none
-for_window [class="^(Lutris)$"] floating enable, border none
-for_window [class="^(winboat)$"] floating enable, border none
-for_window [class="^(pavucontrol)$"] floating enable, border none
-for_window [class="^(pwvucontrol)"] floating enable, border none
-for_window [class="^(itch)$"] floating enable, border none
-for_window [class="^(Picture-in-Picture)$"] floating enable, border none, sticky enable
-for_window [class="^(awakened-poe-trade)$"] floating enable, border none
-for_window [title="^(Path of Exile)$"] floating enable, border none
+for_window [class="^(steam)"] floating enable, border none, move position center
+for_window [class="^(Lutris)$"] floating enable, border none, move position center
+for_window [class="^(winboat)$"] floating enable, border none, move position center
+for_window [class="^(pavucontrol)$"] floating enable, border none, move position center
+for_window [class="^(pwvucontrol)"] floating enable, border none, move position center
+for_window [class="^(itch)$"] floating enable, border none, move position center
+for_window [class="^(Picture-in-Picture)$"] floating enable, border none, sticky enable, move position center
+for_window [class="^(awakened-poe-trade)$"] floating enable, border none, move position center
+for_window [title="^(Path of Exile)$"] floating enable, border none, move position center
+
+for_window [class="crx_bhiddlincedceoffjjcmckafahggpmdp"] move to scratchpad
+for_window [class="crx_bhiddlincedceoffjjcmckafahggpmdp"] floating enable
 
 for_window [class="^(zen)$"] border none
 for_window [class="^(Chromium)$"] border none
