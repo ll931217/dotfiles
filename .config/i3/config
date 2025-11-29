@@ -191,8 +191,6 @@ default_border pixel 2
 
 # Floating
 for_window [class="^(com\.mitchellh\.ghostty|ghostty)$"] floating disable, border none, debug_log
-# for_window [class="com.mitchellh.ghostty"] floating disable, border none
-# for_window [class="ghostty"] floating disable, border none
 
 for_window [class="^(steam)"] floating enable, border none, move position center
 for_window [class="^(Lutris)$"] floating enable, border none, move position center
@@ -204,8 +202,7 @@ for_window [class="^(Picture-in-Picture)$"] floating enable, border none, sticky
 for_window [class="^(awakened-poe-trade)$"] floating enable, border none, move position center
 for_window [title="^(Path of Exile)$"] floating enable, border none, move position center
 
-for_window [class="crx_bhiddlincedceoffjjcmckafahggpmdp"] move to scratchpad
-for_window [class="crx_bhiddlincedceoffjjcmckafahggpmdp"] floating enable
+for_window [class="^(ChatGPT)$"] move to scratchpad
 
 for_window [class="^(zen)$"] border none
 for_window [class="^(Chromium)$"] border none
