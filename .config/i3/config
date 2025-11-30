@@ -70,6 +70,8 @@ bindsym $mod+Shift+d exec rofi-rbw
 bindsym $mod+v exec ~/.scripts/screen_record.sh start DP-0
 bindsym $mod+Shift+v exec ~/.scripts/screen_record.sh stop
 
+bindsym $mod+Shift+t exec ~/.scripts/randwall.sh
+
 # focus the child container
 #bindsym $mod+d focus child
 
