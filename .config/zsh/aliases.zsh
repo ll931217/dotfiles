@@ -23,7 +23,8 @@ alias k="kubectl"
 alias oc="opencode"
 alias ccusage="npx ccusage@latest"
 alias ma="mcpm-aider"
-alias ff="fastfetch"
+# alias ff="fastfetch"
+alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
 
 # History
 alias h='history -10000'
@@ -36,6 +37,8 @@ alias hsi='history -10000 | grep -i'
 alias ghcu="gh extension upgrade gh-copilot"
 alias ghce="gh copilot explain"
 alias ghcs="gh copilot suggest"
+
+alias ubd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
 
 alias zshrc='cd ~ ; $EDITOR ~/.zshrc.local ~/.config/zsh/aliases.zsh ~/.config/zsh/env.zsh ; cd - ; exec zsh'
 alias nvrc='cd ~/.config/nvim ; $EDITOR init.lua ; cd -'
@@ -77,19 +80,19 @@ alias nvd="neovide"
 alias psg="ps aux | grep -v grep | grep -i -e VSZ -e" 
 alias mkdir="mkdir -p"
 alias fm='yazi'
-alias sf='superfile'
 alias pacin="pacman -Slq | fzf -m --preview 'cat <(pacman -Si {1}) <(pacman -Fl {1} | awk \"{print \$2}\")' | xargs -ro sudo pacman -S"
 alias yayin="yay -Slq | fzf -m --preview 'cat <(yay -Si {1}) <(yay -Fl {1} | awk \"{print \$2}\")' | xargs -ro yay -S"
 alias pacrem="pacman -Qq | fzf --multi --preview 'pacman -Qi {1}' | xargs -ro sudo pacman -Rns"
 alias pac="pacman -Q | fzf"
 alias cleanpac='sudo pacman -Rns $(pacman -Qtdq); yay -c'
 alias installed="grep -i installed /var/log/pacman.log | fzf"
-alias ls="eza --color=auto --icons --group-directories-first"
+alias ls="eza --color=always --icons=always --group-directories-first"
 alias l="ls -l"
 alias la="ls -a"
 alias lla="ls -la"
 alias lt="ls --tree"
-alias cat="bat --color always"
+alias bat="bat --color=always"
+alias cat="bat --plain --color=auto --pager=never"
 alias grep='grep --color=auto'
 alias mv='mv -v'
 alias cp='cp -vr'

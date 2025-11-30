@@ -1,11 +1,28 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "includeCoAuthoredBy": false,
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0"
+  },
+  "includeCoAuthoredBy": false,
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' 'User Input Required'"
+          }
+        ]
+      }
+    ]
   },
   "statusLine": {
     "type": "command",
     "command": "bash $HOME/.claude/statusline-enhanced.sh"
-  }
+  },
+  "enabledPlugins": {
+    "osgrep@osgrep": true
+  },
+  "alwaysThinkingEnabled": true
 }

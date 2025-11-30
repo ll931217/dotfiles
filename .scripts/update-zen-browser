@@ -1,7 +1,65 @@
 #!/bin/bash
 
+# Color definitions for prettier output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+GRAY='\033[0;90m'
+NC='\033[0m' # No Color
+
+# Special characters
+ARROW='➜'
+STAR='★'
+CHECK='✓'
+CROSS='✗'
+INFO='ℹ'
+ROCKET='🚀'
+PACKAGE='📦'
+GEAR='⚙'
+
+# Function to print colored messages
+print_info() {
+    echo -e "${BLUE}${INFO} $1${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}${CHECK} $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}${STAR} $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}${CROSS} $1${NC}"
+}
+
+print_header() {
+    echo -e "${WHITE}${GEAR} $1${NC}"
+}
+
+print_section() {
+    echo -e "${PURPLE}${ARROW} $1${NC}"
+}
+
+print_download() {
+    echo -e "${CYAN}${ROCKET} $1${NC}"
+}
+
+print_package() {
+    echo -e "${GRAY}${PACKAGE} $1${NC}"
+}
+
 # Makes sure the Applications directory is available
 mkdir -p "$HOME/Applications"
+
+# Version tracking file
+VERSIONS_FILE="$HOME/.scripts/versions"
+mkdir -p "$(dirname "$VERSIONS_FILE")"
 
 # GitHub Repository Details
 OWNER="zen-browser" # Replace with the repository owner
@@ -11,27 +69,145 @@ REPO="desktop"      # Replace with the repository name
 TEMP_FILE="/tmp/zen-browser.AppImage"
 LOCAL_FILE="$HOME/Applications/zen-browser.AppImage" # Replace with the path to the file you want to replace
 
+print_header "Zen Browser Update Script Starting..."
+print_section "Checking dependencies and directories"
+
 # Check if a specific version tag was provided
 if [ -n "$1" ]; then
   VERSION="$1"
-  echo "Using specified version: $VERSION"
+  print_info "Using specified version: $VERSION"
 else
   # GitHub API endpoint for latest release
   RELEASE_URL="https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+  print_section "Fetching latest release information..."
   VERSION="$(curl -s "$RELEASE_URL" | jq -r ".tag_name")"
-  echo "Using latest version: $VERSION"
+  print_success "Latest version found: $VERSION"
+fi
+
+if [[ ! $VERSION =~ ^[0-9]+(\.[0-9]+){2}[a-zA-Z]?$ ]]; then
+  print_error "Invalid version format: $VERSION"
+  exit 1
+fi
+
+# Read current version from versions file
+CURRENT_VERSION=$(grep "^zen-browser=" "$VERSIONS_FILE" 2>/dev/null | cut -d'=' -f2)
+print_section "Version comparison..."
+
+# Version comparison function
+version_compare() {
+    local version1=$1
+    local version2=$2
+    
+    # Remove any non-numeric prefix (like 'v') if present
+    version1=${version1#v}
+    version2=${version2#v}
+    
+    # Split version numbers into arrays
+    IFS='.' read -ra V1 <<< "$version1"
+    IFS='.' read -ra V2 <<< "$version2"
+    
+    # Compare each part of the version
+    for ((i=0; i<${#V1[@]}; i++)); do
+        local num1=${V1[i]}
+        local num2=${V2[i]:-0}  # Default to 0 if component doesn't exist
+        
+        # Extract numbers from strings (handles "1.2.3a" -> "123")
+        num1=$(echo "$num1" | sed 's/[^0-9]//g')
+        num2=$(echo "$num2" | sed 's/[^0-9]//g')
+        
+        if (( num1 < num2 )); then
+            echo "less"
+            return
+        elif (( num1 > num2 )); then
+            echo "greater"
+            return
+        fi
+    done
+    
+    # Check if version2 has more components (all zero or not)
+    if (( ${#V2[@]} > ${#V1[@]} )); then
+        # Check if remaining components are all zeros
+        local all_zero=true
+        for ((i=${#V1[@]}; i<${#V2[@]}; i++)); do
+            local component=${V2[i]}
+            component=$(echo "$component" | sed 's/[^0-9]//g')
+            if (( component > 0 )); then
+                all_zero=false
+                break
+            fi
+        done
+        if [ "$all_zero" = "true" ]; then
+            echo "equal"
+        else
+            echo "less"
+        fi
+    else
+        echo "equal"
+    fi
+}
+
+# Compare versions if current version exists
+if [ -n "$CURRENT_VERSION" ]; then
+    comparison=$(version_compare "$CURRENT_VERSION" "$VERSION")
+    case "$comparison" in
+        "equal")
+            print_success "Already up to date! Current version ($CURRENT_VERSION) is the same as latest version ($VERSION)"
+            print_info "No update needed. Zen Browser is already the latest version."
+            exit 0
+            ;;
+        "greater")
+            print_warning "Current version ($CURRENT_VERSION) is newer than latest release ($VERSION)"
+            print_info "No update needed. You're already running a newer version."
+            exit 0
+            ;;
+        "less")
+            print_warning "Update available! Current version ($CURRENT_VERSION) → Latest version ($VERSION)"
+            ;;
+    esac
+else
+    print_info "No current version found in $VERSIONS_FILE"
+    print_info "Installing latest version for the first time..."
 fi
 
 # Download the file to temp dir then moved to ~/Applications
 DOWNLOAD_URL="https://github.com/$OWNER/$REPO/releases/download/$VERSION/zen-x86_64.AppImage"
-echo "$DOWNLOAD_URL"
+
+print_section "Downloading Zen Browser..."
+print_download "Downloading from: $DOWNLOAD_URL"
 curl -L -o "$TEMP_FILE" "$DOWNLOAD_URL"
+
+print_section "Installing Zen Browser..."
 mv "$TEMP_FILE" "$LOCAL_FILE"
 chmod +x "$LOCAL_FILE"
+print_success "Zen Browser AppImage installed successfully!"
 
+print_section "Version tracking..."
+# Store the current version before updating
+if [ -n "$CURRENT_VERSION" ]; then
+  print_package "Previous version: $CURRENT_VERSION"
+else
+  print_info "No previous version found - first time installation"
+fi
+
+# Update the versions file with the new version
+if grep -q "^zen-browser=" "$VERSIONS_FILE" 2>/dev/null; then
+  # Update existing entry
+  sed -i "s/^zen-browser=.*/zen-browser=$VERSION/" "$VERSIONS_FILE"
+  print_package "Version updated in tracking file"
+else
+  # Add new entry
+  echo "zen-browser=$VERSION" >> "$VERSIONS_FILE"
+  print_package "New version entry added to tracking file"
+fi
+
+print_success "Zen Browser updated to version: $VERSION"
+print_info "Version tracked in: $VERSIONS_FILE"
+
+print_section "Desktop integration..."
 # Check and create .desktop file if it doesn't exist
 DESKTOP_FILE="$HOME/.local/share/applications/ZenBrowser.desktop"
 if [ ! -f "$DESKTOP_FILE" ]; then
+  print_package "Creating desktop entry..."
   cat >"$DESKTOP_FILE" <<'EOL'
 [Desktop Entry]
 Name=Zen Browser
@@ -62,5 +238,9 @@ Exec=$HOME/Applications/zen-browser.AppImage --ProfileManager %u
 EOL
   # Replace $HOME with actual home path in the file
   sed -i "s|\$HOME|$HOME|g" "$DESKTOP_FILE"
-  echo "Created desktop entry at $DESKTOP_FILE"
+  print_success "Desktop entry created at $DESKTOP_FILE"
+else
+  print_info "Desktop entry already exists"
 fi
+
+print_header "Zen Browser update completed successfully! 🎉"

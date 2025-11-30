@@ -2,8 +2,16 @@
 ## PATH & ENV Var
 ##
 
+# export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_CURRENT_DESKTOP=Sway
+
+# Init starship
+export STARSHIP_CONFIG=$HOME/.config/starship/starship.toml
+
 # Set default editor
 export EDITOR=nvim
+
+export EZA_CONFIG_DIR=$XDG_CONFIG_HOME/eza
 
 export NODE_ENV=development
 export NODE_NO_WARNINGS=1
@@ -21,6 +29,23 @@ export XMODIFIERS=@im=fcitx
 #   export BW_SESSION="`bw unlock --raw --passwordfile $HOME/.pvt/pass.txt`"
 # fi
 
+# For Claude using ZAI
+export ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
+export ANTHROPIC_AUTH_TOKEN=$GLM_API_KEY
+export ANTHROPIC_DEFAULT_OPUS_MODEL="GLM-4.7"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="GLM-4.7"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="GLM-4.5-Air"
+export API_TIMEOUT_MS=3000000
+
+export OPENAI_BASE_URL=http://localhost:11434
+export DEFAULT_MODEL="llama3.1"
+
+export AIDER_EDITOR=nvim
+export AIDER_ATTRIBUTE_AUTHOR=false
+export AIDER_ATTRIBUTE_COMMITTER=false
+
+export AIDER_DESK_PYTHON=/usr/bin/python3.12
+
 # Ollama
 export OLLAMA_HOST="http://0.0.0.0:11434"
 export OLLAMA_API_BASE="http://127.0.0.1:11434"
@@ -33,11 +58,31 @@ export OLLAMA_KV_CACHE_TYPE=f16
 # Docker improve compose build performance by delegating it
 export COMPOSE_BAKE=true
 
+export STEAM_HOME="$HOME/.steam/steam"
+export LAST_EPOCH_FILTERS="$STEAM_HOME/steamapps/compatdata/899770/pfx/drive_c/users/steamuser/AppData/LocalLow/Eleventh Hour Games/Last Epoch/Filters"
+
 export CHROME_EXECUTABLE=/usr/bin/google-chrome-stable
 
-export PATH="$PNPM_HOME:$PATH"
+export PATH="$HOME/.spicetify:$PATH"
 export PATH="$HOME/.scripts:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
+export PATH="$HOME/.pulumi/bin:$PATH"
+export PATH=$HOME/.millennium/ext/bin:$PATH
+export PATH=$HOME/.opencode/bin:$PATH
+export PATH=$HOME/Android/Sdk/platform-tools/:$PATH
+export PATH="$($HOME/.local/share/pnpm/npm config get prefix)/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/home/ll931217/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+export NODE_PATH=$NODE_PATH:$($HOME/.local/share/pnpm/npm root -g)
 
 # Remove duplicates
 PATH=$(printf "%s" "$PATH" | awk -v RS=':' '!a[$1]++ { if (NR > 1) printf RS; printf $1 }')
@@ -45,6 +90,7 @@ PATH=$(printf "%s" "$PATH" | awk -v RS=':' '!a[$1]++ { if (NR > 1) printf RS; pr
 export GPG_TTY="${TTY:-$(tty)}"
 
 export SUDO_PROMPT="passwd: "
+export SUDO_EDITOR="nvim"
 export TERMINAL="alacritty"
 export BROWSER="brave"
 # export BROWSER="qutebrowser"

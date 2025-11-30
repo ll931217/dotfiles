@@ -1,0 +1,96 @@
+#!/usr/bin/env sh
+
+_help()
+{
+	echo
+	echo "Usage: lazywal-cli [OPTION] [PATH_TO_VIDEO]"
+	echo "Options:"
+	echo "		-h		- Display this message"
+	echo "		-r		- Restore last wallpaper"
+	echo "		-k		- Kill wallpaper"
+	echo "		-d		- Debug"
+	echo "		-D		- Display with specification (e.g., 1980x1080+0)"
+}
+
+xwinwrap_func()
+{
+	if [ "$display" = "" ];then
+		# https://superuser.com/questions/196532/how-do-i-find-out-my-screen-resolution-from-a-shell-script
+		display=$(xdpyinfo | grep dimensions | sed -r 's/^[^0-9]*([0-9]+x[0-9]+).*$/\1/')
+		xwinwrap_args="-g $display -ni -b -st -un -o 1.0 -ov -debug"
+	else
+		xwinwrap_args="-g $display -ni -b -st -un -o 1.0 -ov -debug"
+	fi
+}
+
+_set_display()
+{
+	display=$1
+}
+
+_kill()
+{
+	pkill xwinwrap
+	sleep 0.05
+}
+
+_use_wal()
+{
+	_kill
+	file_path=$1
+	xwinwrap_func
+	mpv_args="-wid %WID --loop --no-audio --no-resume-playback --panscan=1.0"
+
+	if [ "$debug" = "true" ];
+	then
+		xwinwrap $xwinwrap_args -- mpv $mpv_args $file_path 
+	else
+		xwinwrap $xwinwrap_args -- mpv $mpv_args $file_path &> /dev/null &
+	fi
+}
+
+_restore()
+{
+	file_path=$(cat $HOME/.lazywal)
+	_use_wal $file_path
+}
+
+if [ $# -lt 1 ]
+then
+	echo "No options found!"
+	_help
+	exit 1
+fi
+
+while getopts "hdrkD:" option; do
+	case $option in
+		h) # display Help
+			_help
+			exit;;
+		k) # kill wallpaper
+			_kill
+			exit;;
+		d) # debug
+			debug="true"
+			echo debug
+			continue;;
+		r) # restore wal
+			_restore
+			exit;;
+		D) # display on specification (use this for external monitors)
+			_set_display ${OPTARG}
+			continue;;
+		*) # Illegal option
+			_help
+			exit;;
+	esac
+done
+
+for i in "$@"; do
+	if [ -e $i ]
+	then
+		file_path=$(realpath $i)
+		echo $file_path > $HOME/.lazywal
+		_restore
+	fi
+done

@@ -1,0 +1,571 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+// ANSI color codes
+const colors = {
+  reset: '\x1b[0m',
+  green: '\x1b[32m',
+  blue: '\x1b[34m',
+  yellow: '\x1b[33m',
+  red: '\x1b[31m',
+  cyan: '\x1b[36m',
+};
+
+function log(message, color = 'reset') {
+  console.log(`${colors[color]}${message}${colors.reset}`);
+}
+
+function error(message) {
+  log(`× ${message}`, 'red');
+}
+
+function success(message) {
+  log(`√ ${message}`, 'green');
+}
+
+function info(message) {
+  log(`i ${message}`, 'cyan');
+}
+
+// Check if we're in a Node.js project
+function isNodeProject() {
+  return fs.existsSync(path.join(process.cwd(), 'package.json'));
+}
+
+// Check if components.json exists
+function hasComponentsJson() {
+  return fs.existsSync(path.join(process.cwd(), 'components.json'));
+}
+
+// Create components.json
+function createComponentsJson() {
+  const componentsConfig = {
+    "$schema": "https://ui.shadcn.com/schema.json",
+    "style": "default",
+    "rsc": false,
+    "tsx": true,
+    "tailwind": {
+      "config": "tailwind.config.js",
+      "css": "src/index.css",
+      "baseColor": "slate",
+      "cssVariables": true
+    },
+    "aliases": {
+      "components": "@/components",
+      "utils": "@/lib/utils"
+    }
+  };
+
+  fs.writeFileSync(
+    path.join(process.cwd(), 'components.json'),
+    JSON.stringify(componentsConfig, null, 2)
+  );
+  success('Created components.json');
+}
+
+// Ensure directory exists
+function ensureDir(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+    success(`Created directory: ${dirPath}`);
+  }
+}
+
+// Get shadcn-ui source directory
+function getShadcnSourceDir() {
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  return path.join(homeDir, 'GitHub', 'shadcn-ui');
+}
+
+// Find component file in shadcn-ui repo
+function findComponentFile(componentName, sourceDir) {
+  // Common locations for components in shadcn-ui repo
+  // $HOME/GitHub/shadcn-ui/apps/v4/registry/new-york-v4/ui
+
+  const possiblePaths = [
+    path.join(sourceDir, 'apps', 'v4', 'registry', 'new-york-v4', 'ui', `${componentName}.tsx`),
+  ];
+
+  info(`Possible Paths: ${possiblePaths}`)
+
+  for (const filePath of possiblePaths) {
+    if (fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+
+  return null;
+}
+
+// Extract dependencies from component file
+function extractDependencies(filePath) {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const dependencies = new Set();
+
+  // Match import statements
+  const importRegex = /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g;
+  let match;
+
+  while ((match = importRegex.exec(content)) !== null) {
+    const importPath = match[1];
+    
+    // Only capture external dependencies (not relative imports)
+    if (!importPath.startsWith('.') && !importPath.startsWith('@/')) {
+      dependencies.add(importPath);
+    }
+  }
+
+  return Array.from(dependencies);
+}
+
+// Install dependencies
+function installDependencies(deps) {
+  if (deps.length === 0) return;
+
+  info(`Installing dependencies: ${deps.join(', ')}`);
+  
+  try {
+    // Detect package manager
+    const hasYarnLock = fs.existsSync(path.join(process.cwd(), 'yarn.lock'));
+    const hasPnpmLock = fs.existsSync(path.join(process.cwd(), 'pnpm-lock.yaml'));
+    
+    let installCmd;
+    if (hasPnpmLock) {
+      installCmd = `pnpm add ${deps.join(' ')}`;
+    } else if (hasYarnLock) {
+      installCmd = `yarn add ${deps.join(' ')}`;
+    } else {
+      installCmd = `npm install ${deps.join(' ')}`;
+    }
+
+    execSync(installCmd, { stdio: 'inherit' });
+    success('Dependencies installed');
+  } catch (err) {
+    error('Failed to install dependencies');
+    console.error(err.message);
+  }
+}
+
+// Read components.json to get aliases
+function getAliases() {
+  const componentsJsonPath = path.join(process.cwd(), 'components.json');
+  if (fs.existsSync(componentsJsonPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(componentsJsonPath, 'utf-8'));
+      return config.aliases || {
+        components: "@/components",
+        utils: "@/lib/utils"
+      };
+    } catch (err) {
+      error('Failed to parse components.json');
+    }
+  }
+  
+  return {
+    components: "@/components",
+    utils: "@/lib/utils"
+  };
+}
+
+// Convert relative imports to path aliases
+function convertImportsToAliases(content, aliases) {
+  let converted = content;
+
+  // Convert shadcn-ui registry imports (e.g., @/registry/new-york-v4/ui/separator)
+  converted = converted.replace(
+    /from\s+["']@\/registry\/[^\/]+\/ui\/(.+?)["']/g,
+    (match, componentPath) => {
+      return `from "${aliases.components}/ui/${componentPath}"`;
+    }
+  );
+  
+  // Convert relative imports for components
+  // e.g., from "../ui/button" or "./button" to "@/components/ui/button"
+  converted = converted.replace(
+    /from\s+['"](\.\.?\/)+(.+?)['"]/g,
+    (match, dots, importPath) => {
+      // Check if it's a UI component import
+      if (importPath.includes('ui/') || importPath.startsWith('ui')) {
+        const componentPath = importPath.replace(/^ui\//, '');
+        return `from "${aliases.components}/ui/${componentPath}"`;
+      }
+      // Check if it's a lib/utils import
+      else if (importPath.includes('lib/utils') || importPath.includes('utils')) {
+        return `from "${aliases.utils}"`;
+      }
+      // Check if it's importing from lib
+      else if (importPath.includes('lib/')) {
+        const libPath = importPath.replace(/.*lib\//, '');
+        return `from "@/lib/${libPath}"`;
+      }
+      
+      return match;
+    }
+  );
+  
+  return converted;
+}
+
+// Ensure utils file exists
+function ensureUtilsFile() {
+  const libDir = path.join(process.cwd(), 'src', 'lib');
+  const utilsFile = path.join(libDir, 'utils.ts');
+  
+  if (!fs.existsSync(utilsFile)) {
+    ensureDir(libDir);
+    
+    const utilsContent = `import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+`;
+    
+    fs.writeFileSync(utilsFile, utilsContent);
+    success('Created lib/utils.ts');
+    
+    return ['clsx', 'tailwind-merge'];
+  }
+  
+  return [];
+}
+
+// Copy component
+function copyComponent(componentName, sourceDir, targetDir) {
+  const sourceFile = findComponentFile(componentName, sourceDir);
+  
+  if (!sourceFile) {
+    error(`Component "${componentName}" not found in ${sourceDir}`);
+    return null;
+  }
+
+  const targetFile = path.join(targetDir, `${componentName}.tsx`);
+  
+  try {
+    // Read the component file
+    let content = fs.readFileSync(sourceFile, 'utf-8');
+    
+    // Get aliases from components.json
+    const aliases = getAliases();
+    
+    // Convert relative imports to path aliases
+    content = convertImportsToAliases(content, aliases);
+    
+    // Write the modified content
+    fs.writeFileSync(targetFile, content);
+    success(`Added component: ${componentName}`);
+    
+    // Extract and return dependencies
+    return extractDependencies(sourceFile);
+  } catch (err) {
+    error(`Failed to copy component "${componentName}": ${err.message}`);
+    return null;
+  }
+}
+
+// Configure Tailwind
+function configureTailwind() {
+  const tailwindConfigPath = path.join(process.cwd(), 'tailwind.config.js');
+  
+  const tailwindConfig = `/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+}
+`;
+
+  fs.writeFileSync(tailwindConfigPath, tailwindConfig);
+  success('Configured tailwind.config.js');
+}
+
+// Add CSS variables
+function addCSSVariables() {
+  const possibleCssPaths = [
+    path.join(process.cwd(), 'src', 'index.css'),
+    path.join(process.cwd(), 'src', 'App.css'),
+    path.join(process.cwd(), 'src', 'styles', 'globals.css'),
+    path.join(process.cwd(), 'app', 'globals.css'),
+  ];
+
+  let cssPath = possibleCssPaths.find(p => fs.existsSync(p));
+  
+  if (!cssPath) {
+    // Create default CSS file
+    cssPath = path.join(process.cwd(), 'src', 'index.css');
+    ensureDir(path.dirname(cssPath));
+  }
+
+  const cssVariables = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+`;
+
+  fs.writeFileSync(cssPath, cssVariables);
+  success(`Added CSS variables to ${path.relative(process.cwd(), cssPath)}`);
+}
+
+// Initialize project
+function initProject() {
+  log('\n🚀 Initializing shadcn/ui...', 'blue');
+
+  // Check if we're in a Node.js project
+  if (!isNodeProject()) {
+    error('Not in a Node.js project. package.json not found.');
+    process.exit(1);
+  }
+
+  info('Detected Node.js project');
+
+  // Create components.json
+  if (!hasComponentsJson()) {
+    createComponentsJson();
+  } else {
+    info('components.json already exists, skipping...');
+  }
+
+  // Ensure directories
+  const projectRoot = process.cwd();
+  const componentsDir = path.join(projectRoot, 'src', 'components', 'ui');
+  const libDir = path.join(projectRoot, 'src', 'lib');
+  
+  ensureDir(componentsDir);
+  ensureDir(libDir);
+
+  // Create utils file
+  const utilsDeps = ensureUtilsFile();
+
+  // Configure Tailwind
+  log('\nConfiguring Tailwind CSS...', 'blue');
+  configureTailwind();
+
+  // Add CSS variables
+  log('\nAdding CSS variables...', 'blue');
+  addCSSVariables();
+
+  // Install dependencies
+  const baseDependencies = [
+    'tailwindcss',
+    'tailwindcss-animate',
+    'class-variance-authority',
+    ...utilsDeps
+  ];
+
+  log('\nInstalling dependencies...', 'blue');
+  installDependencies(baseDependencies);
+
+  log('\n✨ Initialization complete!', 'green');
+  log('\nYou can now add components:', 'cyan');
+  log('  shadcn-cli add button card dialog', 'cyan');
+}
+
+// Main function
+function main() {
+  const args = process.argv.slice(2);
+  
+  if (args.length === 0) {
+    log('Usage:', 'yellow');
+    log('  shadcn-cli init                                      Initialize shadcn/ui', 'cyan');
+    log('  shadcn-cli add <component1> [component2] ...         Add components', 'cyan');
+    process.exit(1);
+  }
+
+  const command = args[0];
+
+  if (command === 'init') {
+    initProject();
+    return;
+  }
+
+  if (command !== 'add') {
+    error(`Unknown command: ${command}`);
+    log('Available commands: init, add', 'yellow');
+    process.exit(1);
+  }
+
+  // Check if we're in a Node.js project
+  if (!isNodeProject()) {
+    error('Not in a Node.js project. package.json not found.');
+    process.exit(1);
+  }
+
+  info('Detected Node.js project');
+
+  // Check shadcn-ui source directory
+  const sourceDir = getShadcnSourceDir();
+  if (!fs.existsSync(sourceDir)) {
+    error(`shadcn-ui directory not found at: ${sourceDir}`);
+    error('Please clone the repository: git clone https://github.com/shadcn-ui/ui ~/GitHub/shadcn-ui');
+    process.exit(1);
+  }
+
+  info(`Using shadcn-ui source: ${sourceDir}`);
+
+  // Create components.json if it doesn't exist
+  if (!hasComponentsJson()) {
+    info('components.json not found, creating...');
+    createComponentsJson();
+  }
+
+  // Ensure target directory exists
+  const projectRoot = process.cwd();
+  const targetDir = path.join(projectRoot, 'src', 'components', 'ui');
+  ensureDir(targetDir);
+
+  // Ensure utils file exists and collect its dependencies
+  const utilsDeps = ensureUtilsFile();
+  const allDependencies = new Set(utilsDeps);
+
+  // Process components
+  const components = args.slice(1);
+
+  log('\nAdding components...', 'blue');
+  
+  for (const component of components) {
+    const deps = copyComponent(component, sourceDir, targetDir);
+    if (deps) {
+      deps.forEach(dep => allDependencies.add(dep));
+    }
+  }
+
+  // Install dependencies
+  if (allDependencies.size > 0) {
+    log('\nInstalling dependencies...', 'blue');
+    installDependencies(Array.from(allDependencies));
+  }
+
+  log('\n✨ Done!', 'green');
+}
+
+main();

@@ -1,79 +1,84 @@
-# ZDOTDIR=$HOME/.config/zsh
-ANTIGEN_LOG=/tmp/antigen.log
-# Download antigen if you haven't already
-if [[ ! -f $HOME/.config/antigen.zsh ]]; then
-  curl -L git.io/antigen > $HOME/.config/antigen.zsh
+# --------------------------------------------
+# Znap: the fast-as-hell plugin manager
+# --------------------------------------------
+if [[ ! -f ~/.znap/znap.zsh ]]; then
+  git clone https://github.com/marlonrichert/zsh-snap.git ~/.znap
 fi
-source $HOME/.config/antigen.zsh
+source ~/.znap/znap.zsh
 
-# Load the oh-my-zsh's library.
-antigen use oh-my-zsh
+# --------------------------------------------
+# Proper ZSH history configuration
+# --------------------------------------------
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=50000
+SAVEHIST=50000
 
-# Bundles from the default repo (robbyrussell's oh-my-zsh).
-antigen bundle git
-antigen bundle heroku
-antigen bundle pip
-antigen bundle lein
-antigen bundle command-not-found
+setopt appendhistory              # Append, don't overwrite
+setopt sharehistory               # Share history between sessions
+setopt inc_append_history         # Write commands immediately
+setopt hist_ignore_dups           # Ignore duplicates
+setopt hist_ignore_all_dups
+setopt hist_reduce_blanks         # Clean up whitespace
+setopt hist_verify                # Don't run expanded history immediately
+setopt extended_history           # Save timestamps
+setopt hist_save_no_dups          # Don’t save duplicates
 
-antigen bundle zsh-users/zsh-completions
-antigen bundle zsh-users/zsh-autosuggestions
-antigen bundle zsh-users/zsh-syntax-highlighting
-antigen bundle zsh-users/zsh-history-substring-search
+# --------------------------------------------
+# Plugins (Znap auto-clones, caches & compiles)
+# --------------------------------------------
 
-antigen bundle thewtex/tmux-mem-cpu-load
+# Change plugin home directory
+zstyle ':znap:*' repos-dir ~/.config/zsh/plugins
 
-antigen bundle Aloxaf/fzf-tab
-antigen bundle junegunn/fzf-bin
-antigen bundle hlissner/zsh-autopair
-antigen bundle chrissicool/zsh-256color
-antigen bundle MichaelAquilina/zsh-you-should-use
-antigen bundle zdharma-continuum/history-search-multi-word
+# Git aliases from Oh-My-Zsh without Oh-My-Zsh
+znap source ohmyzsh/ohmyzsh plugins/git/git.plugin.zsh
 
-# Tell Antigen that you're done.
-antigen apply
+# Common Zsh plugins
+znap source zsh-users/zsh-completions
+znap source zsh-users/zsh-autosuggestions
+znap source zsh-users/zsh-syntax-highlighting
+znap source zsh-users/zsh-history-substring-search
+znap source zdharma-continuum/history-search-multi-word
 
-[ -f $HOME/.zshrc.local ] && source $HOME/.zshrc.local
-[ -f $HOME/.zshrc.fzf ] && source $HOME/.zshrc.fzf
-[ -f $HOME/.config/zsh/functions.zsh ] && source $HOME/.config/zsh/functions.zsh
-[ -f $HOME/.config/zsh/aliases.zsh ] && source $HOME/.config/zsh/aliases.zsh
-[ -f $HOME/.config/zsh/env.zsh ] && source $HOME/.config/zsh/env.zsh
-[ -f /opt/miniconda3/etc/profile.d/conda.sh ] && source /opt/miniconda3/etc/profile.d/conda.sh
+# Extra utilities
+znap source thewtex/tmux-mem-cpu-load
+znap source Aloxaf/fzf-tab
+znap source hlissner/zsh-autopair
+znap source chrissicool/zsh-256color
+znap source MichaelAquilina/zsh-you-should-use
 
-autoload -Uz compinit && compinit
-
-# Must be added after compinit for completions to work
+# --------------------------------------------
+# External tools (moved before completion for better startup)
+# --------------------------------------------
 eval "$(zoxide init zsh)"
 eval "$(direnv hook zsh)"
+eval "$(starship init zsh)"
+eval "$(goose term init zsh)"
 eval "$(atuin init zsh)"
 
-# bun completions
-[ -s "/home/ll931217/.bun/_bun" ] && source "/home/ll931217/.bun/_bun"
+# --------------------------------------------
+# Your extra config files (conditional loading)
+# --------------------------------------------
 
-# pnpm
-export PNPM_HOME="/home/ll931217/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
+# Load essential configs immediately
+[ -f $HOME/.zshrc.local ] && source $HOME/.zshrc.local
+[ -f $HOME/.zshrc.fzf ] && source $HOME/.zshrc.fzf
+
+# Fast startup configs
+[ -f /opt/miniconda3/etc/profile.d/conda.sh ] && source /opt/miniconda3/etc/profile.d/conda.sh
+
+# --------------------------------------------
+# Completion System
+# --------------------------------------------
+# Skip security checks for faster startup (run compinit -C)
+autoload -Uz compinit && compinit -C
+
+# --------------------------------------------
+# External tools - remaining
+# --------------------------------------------
+# Bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /usr/bin/terraform terraform
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/home/ll931217/google-cloud-sdk/path.zsh.inc' ]; then . '/home/ll931217/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/ll931217/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/ll931217/google-cloud-sdk/completion.zsh.inc'; fi
-
-export PATH=$PATH:/home/ll931217/.millennium/ext/bin
-
-# Added by LM Studio CLI (lms)
-export PATH="$PATH:/home/ll931217/.lmstudio/bin"
-source /usr/share/doc/pkgfile/command-not-found.zsh
-
-# opencode
-export PATH=/home/ll931217/.opencode/bin:$PATH
-
-[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
+export PATH=$PATH:/home/ll931217/go/bin

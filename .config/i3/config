@@ -13,12 +13,21 @@ set $text-color #f3f4f5
 set $inactive-text-color #676E7D
 set $urgent-bg-color #E53935
 
+# variables for workspaces
+set $w1 "1 "
+set $w2 "2 "
+set $w3 "3 "
+set $w4 "4 "
+set $w5 "5 "
+set $w10 "10 "
+
 # bindsym $mod+Return exec kitty
 bindsym $mod+Return exec alacritty
 # bindsym $mod+Return exec ghostty
 
 bindsym $mod+q kill
-bindsym $mod+d exec killall rofi || ~/.config/rofi/launchers/type-7/launcher.sh
+# bindsym $mod+d exec killall rofi || ~/.config/rofi/launchers/type-7/launcher.sh
+bindsym $mod+d exec rofi -show drun
 bindsym $mod+Shift+q exec ~/.config/rofi/scripts/powermenu_t1
 
 # change focus
@@ -70,16 +79,12 @@ bindsym $mod+Shift+d exec rofi-rbw
 bindsym $mod+v exec ~/.scripts/screen_record.sh start DP-0
 bindsym $mod+Shift+v exec ~/.scripts/screen_record.sh stop
 
+# bindsym $mod+Shift+t exec ~/.scripts/randwall.sh
+bindsym $mod+Shift+t exec ~/.scripts/randwall_new.sh
+bindsym $mod+Shift+n exec ~/.scripts/randwall.sh ~/.pvt/NSFW/
+
 # focus the child container
 #bindsym $mod+d focus child
-
-# variables for workspaces
-set $w1 "1 "
-set $w2 "2 "
-set $w3 "3 "
-set $w4 "4 "
-set $w5 "5 "
-set $w10 "10 "
 
 # switch to workspace
 bindsym $mod+1 workspace 1
@@ -128,6 +133,7 @@ assign [class="winboat"] 7
 assign [class="Discord"] 8
 assign [class="Spotify"] 9
 assign [class="spotify"] 9
+assign [class="mpv"] 10
 
 # reload the configuration file
 bindsym $mod+Shift+c reload
@@ -186,29 +192,36 @@ mode "$mode_gaps_outer" {
   bindsym Escape mode "default"
 }
 
-# IMPORTANT: Fix for undrawn block on top, a bug that comes from i3-gaps
 default_border pixel 2
 
-# Floating
+# Window rules
 for_window [class="^(com\.mitchellh\.ghostty|ghostty)$"] floating disable, border none, debug_log
 
-for_window [class="^(steam)"] floating enable, border none, move position center
-for_window [class="^(Lutris)$"] floating enable, border none, move position center
 for_window [class="^(winboat)$"] floating enable, border none, move position center
 for_window [class="^(pavucontrol)$"] floating enable, border none, move position center
 for_window [class="^(pwvucontrol)"] floating enable, border none, move position center
-for_window [class="^(itch)$"] floating enable, border none, move position center
-for_window [class="^(Picture-in-Picture)$"] floating enable, border none, sticky enable, move position center
-for_window [class="^(awakened-poe-trade)$"] floating enable, border none, move position center
-for_window [title="^(Path of Exile)$"] floating enable, border none, move position center
 
-for_window [class="^(ChatGPT)$"] move to scratchpad
-
+# Browsers
 for_window [class="^(zen)$"] border none
+for_window [class="^(Brave-browser)$"] border none
 for_window [class="^(Chromium)$"] border none
 for_window [class="^(qutebrowser)$"] border none
+for_window [class="^(ChatGPT)$"] move to scratchpad
 
+# Gaming windows
+for_window [class="^(steam)"] floating enable, border none, move position center
+for_window [class="^(Lutris)$"] floating enable, border none, move position center
+for_window [class="^(itch)$"] floating enable, border none, move position center
+for_window [class="^(Picture-in-Picture)$"] floating enable, border none, sticky enable, move position center
+for_window [class="^(xwinwrap)$"] floating enable, border none, move position center
+for_window [class="^(awakened-poe-trade)$"] floating enable, border none, move position center
+for_window [title="^(Path of Exile)$"] floating enable, border none, move position center
 for_window [class="^(Emulator)$"] resize 1396 628
+
+# Specialized configuration for mpv
+# for_window [class="mpv"] floating enable, workspace 0, resize 1058 595, move position 8 1282
+# for_window [class="mpv"] resize 1058 595, move position 8 1282
+for_window [class="mpv"] resize 1058 595, move position bottom
 
 # switch to workspace with urgent window automatically
 for_window [urgent=latest] focus
@@ -231,6 +244,8 @@ exec --no-startup-id xrandr --output DP-0 --primary --output HDMI-0 --auto --rot
 exec_always --no-startup-id $HOME/GitHub/i3-alternating-layout/alternating_layouts.py
 exec_always --no-startup-id picom --config $HOME/.config/picom.conf
 exec_always --no-startup-id sh $HOME/.fehbg
+# Dynamic picom slide animation for workspace transitions
+# exec --no-startup-id python3 $HOME/.scripts/dynamic_picom_slide.py
 
 # Pulse Audio controls
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume 0 +5% #increase sound volume

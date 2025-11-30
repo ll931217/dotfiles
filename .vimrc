@@ -84,12 +84,6 @@ augroup END
 " shell for syntax highlighting purposes.
 let g:is_posix = 1
 
-" Softtabs, 2 spaces
-set tabstop=2
-set shiftwidth=2
-set shiftround
-set expandtab
-
 " Display extra whitespace
 set list listchars=tab:»·,trail:·,nbsp:·
 
@@ -224,13 +218,6 @@ let g:airline_theme='dark'
 let g:bufferline_echo=0
 
 let g:airline_powerline_fonts=1
-
-let g:tmuxline_preset = {
-      \'a'    : '#S',
-      \'win'  : ['#I', '#W'],
-      \'cwin' : ['#I', '#W', '#F'],
-      \'y'    : ['%R', '%a', '%Y'],
-      \'z'    : '#H'}
 
 " Airline Smart tabline
 " let g:airline#extensions#tabline#enabled=1
