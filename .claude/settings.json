@@ -21,5 +21,8 @@
     "type": "command",
     "command": "bash $HOME/.claude/statusline-enhanced.sh"
   },
+  "enabledPlugins": {
+    "osgrep@osgrep": true
+  },
   "alwaysThinkingEnabled": true
 }
