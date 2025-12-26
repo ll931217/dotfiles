@@ -22,7 +22,11 @@
     "command": "bash $HOME/.claude/statusline-enhanced.sh"
   },
   "enabledPlugins": {
-    "osgrep@osgrep": true
+    "osgrep@osgrep": true,
+    "frontend-design@claude-code-plugins": true,
+    "code-review@claude-code-plugins": true,
+    "commit-commands@claude-code-plugins": true,
+    "feature-dev@claude-code-plugins": true
   },
   "alwaysThinkingEnabled": true
 }

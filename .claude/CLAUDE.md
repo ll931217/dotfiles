@@ -53,5 +53,14 @@ Use the following Claude Code Agent skills when you see fit:
 - MCP Builder: Use this when the user wants to create their own custom MCP servers.
 - Skill Creator: Use this when the user wants you to create a new Agent Skill.
 - Webapp Testing: Use this when you are testing frontend web UI changes. This should be used with the Chrome DevTools MCP to further improve results.
-- Always use multiple sub-agents when doing research and forming a plan for code implementation
+
+## Memories
+
+You MUST follow these user specified guidelines where necessary:
+
+- Web frontend:
+  - You can test changes with Chrome DevTools MCP
+  - React: If data is passed down to multiple components, use react context instead
+  - React: If there is too many handlers for a single state, use the reducer instead
+  - React: Please keep react components compact and focused, do not overcomplicate a single react component
 
