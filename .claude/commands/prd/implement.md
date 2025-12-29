@@ -158,6 +158,133 @@ When working with task lists, the AI must:
    - Use test-automator and language-specific subagents for failing tests
    - **DO NOT** proceed to next task/group until all tests pass
 
+## Ralph Wiggum Loops (Iterative Development)
+
+For tasks that require iteration until success (e.g., getting tests to pass, fixing bugs), use the Ralph Wiggum technique - a self-referential loop that keeps iterating until a completion condition is met.
+
+### Prerequisites
+
+**Check if Ralph plugin is installed** before using Ralph commands:
+```bash
+# Check if /ralph-loop command is available
+# If not installed, skip Ralph loops and use manual iteration instead
+```
+
+If the Ralph plugin is not installed, fall back to manual iterative development:
+- Run tests → Fix failures → Run tests again → Repeat until passing
+- Do NOT attempt to use `/ralph-loop` or `/cancel-ralph` commands
+
+### When to Use Ralph Loops
+
+| Good For | Not Good For |
+|----------|--------------|
+| Tasks with clear success criteria | Tasks requiring human judgment |
+| Getting tests to pass | Design decisions |
+| Bug fixing with automatic verification | Unclear success criteria |
+| Greenfield implementation | Production debugging |
+
+### Starting a Ralph Loop
+
+When a task requires iteration (especially TDD or bug fixing), start a Ralph loop:
+
+```bash
+/ralph-loop "<prompt>" --max-iterations <n> --completion-promise "<text>"
+```
+
+**Example for a beads task:**
+```bash
+/ralph-loop "Implement task BD-123: User authentication.
+
+Requirements from PRD:
+- JWT-based auth with refresh tokens
+- Password hashing with bcrypt
+- Rate limiting on login attempts
+
+Follow TDD:
+1. Write failing tests first
+2. Implement to make tests pass
+3. Refactor if needed
+4. Run full test suite
+
+Output <promise>COMPLETE</promise> when:
+- All tests passing
+- Code reviewed for security
+- README updated" --max-iterations 30 --completion-promise "COMPLETE"
+```
+
+### Structuring Ralph Prompts
+
+**Include in every Ralph prompt:**
+1. **Clear task reference:** Link to beads issue ID and PRD
+2. **Success criteria:** Specific, verifiable conditions
+3. **Completion promise:** The exact phrase to output when done
+4. **Escape hatch:** What to do if stuck after N iterations
+
+**Template:**
+```markdown
+Implement task <issue-id>: <title>
+
+Requirements:
+- [List from PRD]
+
+Acceptance criteria:
+- [Testable conditions]
+
+Process:
+1. [Step-by-step approach]
+2. Run tests after each change
+3. If tests fail, debug and fix
+4. Repeat until all green
+
+If stuck after 20 iterations:
+- Document what's blocking
+- List approaches tried
+- Suggest alternatives
+
+Output <promise>DONE</promise> when all acceptance criteria met.
+```
+
+### Safety: Always Set Max Iterations
+
+**Never run unbounded loops.** Always use `--max-iterations`:
+
+```bash
+# Good - bounded loop
+/ralph-loop "Fix bug X" --max-iterations 20 --completion-promise "FIXED"
+
+# Dangerous - could loop forever
+/ralph-loop "Fix bug X" --completion-promise "FIXED"
+```
+
+### Canceling a Ralph Loop
+
+If a loop is running and you need to stop it:
+
+```bash
+/cancel-ralph
+```
+
+### Ralph + Beads Integration
+
+When using Ralph for a beads task:
+
+1. **Before starting:** Update beads status
+   ```bash
+   bd update <issue-id> --status in_progress
+   bd update <issue-id> --notes "Starting Ralph loop"
+   ```
+
+2. **On completion:** Close the task
+   ```bash
+   bd close <issue-id> --reason "Completed via Ralph loop"
+   ```
+
+3. **On failure (max iterations reached):** Mark as blocked
+   ```bash
+   bd update <issue-id> --status blocked
+   bd update <issue-id> --notes "Ralph loop reached max iterations. See iteration log."
+   ```
+
 ## Blocked Task Handling
 
 When a task cannot proceed (test failures, missing dependencies, blockers):
