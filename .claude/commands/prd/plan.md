@@ -39,11 +39,14 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
     - **Warning message should include:**
       - An explanation that PRDs are best created in isolated worktrees for better branch/feature management.
     - **Offer 3 choices:**
-      1. **Create worktree now** - Ask for a feature name, then show and confirm the command:
+      1. **Create worktree now** - Ask for a feature name, create the worktree, then instruct user to start a new session:
          ```bash
          gwq add -b feature/<user-provided-name>
          ```
-         Only run if user confirms. After creation, continue with the PRD process.
+         After creation, tell the user:
+         - Exit this Claude Code session
+         - Run `gwq exec feature/<name> -- claude` to open Claude Code in the new worktree
+         - Then re-run `/prd:plan` to continue
       2. **Continue without worktree** - Proceed with the current directory.
       3. **Exit** - Gracefully exit the process.
     - Example interaction:
@@ -58,8 +61,14 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
       > a
       Enter feature name: auth
 
-      Will run: gwq add -b feature/auth
-      Proceed? (y/n)
+      ✓ Created worktree: feature/auth
+
+      To continue in the new worktree:
+      1. Exit this Claude Code session (Ctrl+C or type 'exit')
+      2. Run: gwq exec feature/auth -- claude
+      3. Then run: /prd:plan
+
+      Goodbye!
       ```
 
 3.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
