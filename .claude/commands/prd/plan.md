@@ -1,3 +1,6 @@
+---
+description: Generating a Product Requirements Document (PRD)
+---
 # Rule: Generating a Product Requirements Document (PRD)
 
 ## Goal
@@ -6,24 +9,58 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
 
 ## Process
 
-1.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
+1.  **Verify Git Worktree:** Before proceeding, check if the current directory is a Git worktree. If it is not a worktree, warn the user and ask if they want to continue.
+    - **Warning message should include:**
+      - An explanation that PRDs are best created in isolated worktrees for better branch/feature management.
+      - A simple example of using the `gwq` command to create a worktree:
+        ```bash
+        # Create a new worktree for your feature
+        gwq add -b feature/auth
+        # Create a new Claude task with priority
+        gwq task add claude -b feature/auth "Authentication system implementation" -p 75
+        ```
+    - If the user chooses not to continue, gracefully exit the process.
+    - If the user confirms they want to proceed anyway, continue with the next step.
+
+2.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
 2.  **Ask Clarifying Questions:** Before writing the PRD, the AI *must* ask clarifying questions to gather sufficient detail. The goal is to understand the "what" and "why" of the feature, not necessarily the "how" (which the developer will figure out). Make sure to provide options in letter/number lists so I can respond easily with my selections.
+    - Ask **3-5 clarifying questions at a time** to avoid overwhelming the user. Prioritize the most critical unknowns first.
 3.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
 4.  **Save PRD:** Save the generated document as `prd-[feature-name].md` inside the `/tasks` directory.
+5.  **Track Tasks with Beads:** Use the **beads tool** (`read_todos` and `write_todos`) to track implementation tasks derived from the PRD. Do NOT create a separate tasks markdown file.
+6.  **Review & Refine:** Present the draft PRD to the user for feedback. Iterate on the document until the user approves it.
 
-## Clarifying Questions (Examples)
+## Clarifying Questions
 
-The AI should adapt its questions based on the prompt, but here are some common areas to explore:
+The AI should adapt its questions based on the prompt. Group questions into categories to systematically cover all areas:
 
+### Business Context
 *   **Problem/Goal:** "What problem does this feature solve for the user?" or "What is the main goal we want to achieve with this feature?"
 *   **Target User:** "Who is the primary user of this feature?"
+*   **Priority/Timeline:** "What is the priority or target timeline for this feature?"
+*   **Similar Features:** "Are there any existing features similar to this we should reference?"
+
+### Functional Scope
 *   **Core Functionality:** "Can you describe the key actions a user should be able to perform with this feature?"
 *   **User Stories:** "Could you provide a few user stories? (e.g., As a [type of user], I want to [perform an action] so that [benefit].)"
 *   **Acceptance Criteria:** "How will we know when this feature is successfully implemented? What are the key success criteria?"
 *   **Scope/Boundaries:** "Are there any specific things this feature *should not* do (non-goals)?"
-*   **Data Requirements:** "What kind of data does this feature need to display or manipulate?"
-*   **Design/UI:** "Are there any existing design mockups or UI guidelines to follow?" or "Can you describe the desired look and feel?"
 *   **Edge Cases:** "Are there any potential edge cases or error conditions we should consider?"
+
+### Technical Context
+*   **Data Requirements:** "What kind of data does this feature need to display or manipulate?"
+*   **Existing Systems:** "Are there existing systems, APIs, or modules this should integrate with?"
+*   **Constraints:** "Are there any known technical constraints or dependencies?"
+
+### UX/Design
+*   **Design/UI:** "Are there any existing design mockups or UI guidelines to follow?" or "Can you describe the desired look and feel?"
+*   **Accessibility:** "Are there accessibility requirements to consider?"
+*   **Responsive/Mobile:** "Does this need to work on mobile or different screen sizes?"
+
+### Non-Functional Requirements
+*   **Performance:** "Are there any performance requirements or expectations?"
+*   **Security/Privacy:** "Are there security or privacy considerations?"
+*   **Internationalization:** "Does this need to support multiple languages?"
 
 ## PRD Structure
 
@@ -34,10 +71,21 @@ The generated PRD should include the following sections:
 3.  **User Stories:** Detail the user narratives describing feature usage and benefits.
 4.  **Functional Requirements:** List the specific functionalities the feature must have. Use clear, concise language (e.g., "The system must allow users to upload a profile picture."). Number these requirements.
 5.  **Non-Goals (Out of Scope):** Clearly state what this feature will *not* include to manage scope.
-6.  **Design Considerations (Optional):** Link to mockups, describe UI/UX requirements, or mention relevant components/styles if applicable.
-7.  **Technical Considerations (Optional):** Mention any known technical constraints, dependencies, or suggestions (e.g., "Should integrate with the existing Auth module").
-8.  **Success Metrics:** How will the success of this feature be measured? (e.g., "Increase user engagement by 10%", "Reduce support tickets related to X").
-9.  **Open Questions:** List any remaining questions or areas needing further clarification.
+6.  **Assumptions:** Document what you're taking for granted (e.g., "User is already authenticated").
+7.  **Dependencies:** List any features, systems, or APIs this feature relies on.
+8.  **Acceptance Criteria:** Detailed, testable criteria for each functional requirement.
+9.  **Design Considerations (Optional):** Link to mockups, describe UI/UX requirements, or mention relevant components/styles if applicable.
+10. **Technical Considerations (Optional):** Mention any known technical constraints, dependencies, or suggestions (e.g., "Should integrate with the existing Auth module").
+11. **Risks & Mitigations:** Identify potential blockers and how to address them.
+12. **Success Metrics:** How will the success of this feature be measured? (e.g., "Increase user engagement by 10%", "Reduce support tickets related to X").
+13. **Priority/Timeline:** Indicate urgency or target release if known.
+14. **Open Questions:** List any remaining questions or areas needing further clarification.
+15. **Glossary (Optional):** Define technical terms, especially helpful for junior developers.
+
+## Complexity Guidance
+
+- **Simple features:** Keep the PRD concise (1-2 pages). Focus on core sections.
+- **Complex features:** Be more thorough (3-5 pages). Include all optional sections.
 
 ## Target Audience
 
@@ -49,9 +97,19 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 *   **Location:** `/tasks/`
 *   **Filename:** `prd-[feature-name].md`
 
+## Task Tracking
+
+After the PRD is approved, use the **beads tool** to create and track implementation tasks:
+- Use `write_todos` to create tasks derived from the functional requirements
+- Use `read_todos` to check task status
+- Mark tasks as `doing`, `done`, or `cancelled` as work progresses
+
+**Do NOT create a separate tasks markdown file.** The beads tool provides built-in task management.
+
 ## Final instructions
 
 1. Do NOT start implementing the PRD
-2. Make sure to ask the user clarifying questions
+2. Make sure to ask the user clarifying questions (3-5 at a time)
 3. Take the user's answers to the clarifying questions and improve the PRD
-4. ULTRATHINK
+4. Use the beads tool (`read_todos`/`write_todos`) for task tracking
+5. ULTRATHINK

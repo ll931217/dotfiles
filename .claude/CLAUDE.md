@@ -58,6 +58,8 @@ Use the following Claude Code Agent skills when you see fit:
 
 You MUST follow these user specified guidelines where necessary:
 
+- Use beads tool to keep track of issues instead of markdown todos list, the `bd` command can provide much more context. Use `bd quickstart` to get a quick rundown of what subcommands and features are available.
+- Always use beads to keep track of context.
 - Web frontend:
   - You can test changes with Chrome DevTools MCP
   - React: If data is passed down to multiple components, use react context instead
