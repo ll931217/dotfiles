@@ -26,9 +26,11 @@ bd init
 3. **Assess Current State:** Review the existing codebase to understand existing infrastructure, architectural patterns and conventions. Also, identify any existing components or features that already exist and could be relevant to the PRD requirements. Then, identify existing related files, components, and utilities that can be leveraged or need modification.
 4. **Phase 1: Generate Parent Issues (Epics):** Based on the PRD analysis and current state assessment, create the main, high-level issues required to implement the feature. Use your judgement on how many high-level issues to use. It's likely to be about 5. These parent issues should each be full features that can be tested where the user will only proceed to next parent issue until satisfied. Present these issues to the user. Inform the user: "I have generated the high-level issues based on the PRD. Ready to generate the sub-issues? Respond with 'Go' to proceed."
 
-   **Create parent issues using:**
+   **Create parent issues with PRD reference:**
    ```bash
-   bd create "Epic: [Parent Task Title]" -p 1 -t epic
+   bd create "Epic: [Parent Task Title]" -p 1 -t epic --external-ref "prd-[feature-name].md" -d "PRD: /tasks/prd-[feature-name].md
+
+   [Epic description here]"
    ```
 
 5. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
@@ -125,6 +127,16 @@ Epic: User Authentication System (proj-abc123)
 ### Notes
 
 - The first epic should always be the core system architecture, functional enough for a minimal viable system.
+- **Always include a "Testing Strategy" epic** as one of the parent issues:
+  ```bash
+  bd create "Epic: Testing Strategy" -p 1 -t epic --external-ref "prd-[feature-name].md" -d "PRD: /tasks/prd-[feature-name].md
+
+  Comprehensive test coverage for the feature:
+  - Unit tests for core logic
+  - Integration tests for API/service layer
+  - E2E tests for critical user flows (if applicable)"
+  ```
+  The testing epic should depend on core implementation epics (use `bd dep add`).
 - Unit tests should typically be placed in the `tests` directory unless otherwise specified.
 - Maintain the DRY (Don't Repeat Yourself) principle.
 - Do not overcomplicate the implementation, it makes it hard for the user to review the changes.

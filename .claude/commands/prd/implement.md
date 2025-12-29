@@ -94,45 +94,38 @@ bd list --status open
   - **Parallel group start**: Stop and ask for user permission before starting the group
   - **Within parallel group**: NO stopping, execute all group tasks automatically
 
-## Group State Tracking Logic
+## Group State Tracking with Beads
 
-**Tracking Active Parallel Groups:**
-- **Group Detection:** Scan upcoming tasks for `[P:Group-X]` patterns to identify group boundaries
-- **State Variables:**
-  - `CURRENT_GROUP_ID`: Track which group is currently being processed (null if none)
-  - `GROUP_TASK_COUNT`: Number of tasks remaining in current group
-  - `GROUP_START_REQUESTED`: Whether permission was already requested for current group
+Use beads labels to persist parallel group membership in the database (not in-memory variables).
 
-**Group State Management:**
+**Tagging tasks with group:**
 ```bash
-# Detect if next task starts a new parallel group
-detect_task_type() {
-  local next_task="$1"
-  if echo "$next_task" | grep -q "\[P:Group-"; then
-    local group_id=$(echo "$next_task" | grep -o "Group-[^]]*")
-    if [[ "$group_id" != "$CURRENT_GROUP_ID" ]]; then
-      echo "NEW_GROUP_START"
-    else
-      echo "GROUP_CONTINUE"
-    fi
-  else
-    echo "SEQUENTIAL"
-  fi
-}
-
-# Update group state after task completion
-update_group_state() {
-  local completed_task="$1"
-  if [[ "$CURRENT_GROUP_ID" != "" ]]; then
-    GROUP_TASK_COUNT=$((GROUP_TASK_COUNT - 1))
-    if [[ $GROUP_TASK_COUNT -eq 0 ]]; then
-      CURRENT_GROUP_ID=""
-      GROUP_START_REQUESTED=false
-      echo "Group completed - returning to sequential mode"
-    fi
-  fi
-}
+bd label add <issue-id> "parallel:Group-A"
 ```
+
+**Finding all tasks in a group:**
+```bash
+bd list --label "parallel:Group-A"
+```
+
+**Checking group completion:**
+```bash
+bd list --label "parallel:Group-A" --status open
+# If empty, all group tasks are complete
+```
+
+**Task Type Detection Logic:**
+
+| Task Pattern | Detection | Action |
+|--------------|-----------|--------|
+| No `[P:Group-X]` | Sequential | Ask permission before each task |
+| `[P:Group-X]` with new group | New group start | Ask permission to start entire group |
+| `[P:Group-X]` with active group | Group continue | No permission needed, execute automatically |
+
+**After group completion:**
+- All tasks in group closed → Group is complete
+- Remove labels if desired: `bd label remove <issue-id> "parallel:Group-A"`
+- Return to sequential mode for next task
 
 ## Task List Maintenance
 
@@ -181,7 +174,29 @@ When working with task lists, the AI must:
 6. **Error Handling:**
    - Use test-automator and language-specific subagents for failing tests
    - **DO NOT** proceed to next task/group until all tests pass
-   - Update task status in beads if blocked: `bd update <issue-id> --status blocked`
+
+## Blocked Task Handling
+
+When a task cannot proceed (test failures, missing dependencies, blockers):
+
+1. **Update beads status:**
+   ```bash
+   bd update <issue-id> --status blocked
+   bd update <issue-id> --notes "Blocked: [reason]"
+   ```
+
+2. **Notify user:**
+   - Explain what is blocked and why
+   - List specific failing tests or missing dependencies
+   - Suggest next steps to resolve
+
+3. **Do NOT proceed** to dependent tasks until resolved
+
+4. **Resume workflow:**
+   - Fix the blocker
+   - Run tests again to verify
+   - Update status: `bd update <issue-id> --status in_progress`
+   - Continue execution from where it left off
 
 ## Permission Logic Examples & Decision Tree
 

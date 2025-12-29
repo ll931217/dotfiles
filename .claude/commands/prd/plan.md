@@ -9,26 +9,66 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
 
 ## Process
 
-1.  **Verify Git Worktree:** Before proceeding, check if the current directory is a Git worktree. If it is not a worktree, warn the user and ask if they want to continue.
+1.  **Check Prerequisites:** Verify that required tools are installed. Check for: `git`, `gwq`, `bd`.
+
+    For each missing tool, offer to install:
+
+    | Tool | Check | Installation |
+    |------|-------|--------------|
+    | `git` | `which git` | Use system package manager (e.g., `sudo apt install git`, `brew install git`) |
+    | `bd` | `which bd` | `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh \| bash` |
+    | `gwq` | `which gwq` | Download from latest release, extract, and add to PATH |
+
+    **gwq installation steps:**
+    ```bash
+    # Download latest release (Linux x86_64)
+    curl -fsSL https://github.com/d-kuro/gwq/releases/download/v0.0.5/gwq_Linux_x86_64.tar.gz -o /tmp/gwq.tar.gz
+    # Extract
+    tar -xzf /tmp/gwq.tar.gz -C /tmp
+    # Move to PATH
+    sudo mv /tmp/gwq /usr/local/bin/gwq
+    # Cleanup
+    rm /tmp/gwq.tar.gz
+    ```
+
+    - If any tool is missing, show the installation command and ask user to confirm before running.
+    - If user declines installation, warn that some features may not work and ask if they want to continue anyway.
+    - Only proceed to step 2 when all tools are available or user explicitly chooses to continue.
+
+2.  **Verify Git Worktree:** Before proceeding, check if the current directory is a Git worktree. If it is not a worktree, warn the user and offer options.
     - **Warning message should include:**
       - An explanation that PRDs are best created in isolated worktrees for better branch/feature management.
-      - A simple example of using the `gwq` command to create a worktree:
-        ```bash
-        # Create a new worktree for your feature
-        gwq add -b feature/auth
-        # Create a new Claude task with priority
-        gwq task add claude -b feature/auth "Authentication system implementation" -p 75
-        ```
-    - If the user chooses not to continue, gracefully exit the process.
-    - If the user confirms they want to proceed anyway, continue with the next step.
+    - **Offer 3 choices:**
+      1. **Create worktree now** - Ask for a feature name, then show and confirm the command:
+         ```bash
+         gwq add -b feature/<user-provided-name>
+         ```
+         Only run if user confirms. After creation, continue with the PRD process.
+      2. **Continue without worktree** - Proceed with the current directory.
+      3. **Exit** - Gracefully exit the process.
+    - Example interaction:
+      ```
+      ⚠️  Not in a git worktree. PRDs work best in isolated worktrees.
 
-2.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
-2.  **Ask Clarifying Questions:** Before writing the PRD, the AI *must* ask clarifying questions to gather sufficient detail. The goal is to understand the "what" and "why" of the feature, not necessarily the "how" (which the developer will figure out). Make sure to provide options in letter/number lists so I can respond easily with my selections.
+      Options:
+      a) Create worktree now (recommended)
+      b) Continue without worktree
+      c) Exit
+
+      > a
+      Enter feature name: auth
+
+      Will run: gwq add -b feature/auth
+      Proceed? (y/n)
+      ```
+
+3.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
+4.  **Ask Clarifying Questions:** Before writing the PRD, the AI *must* ask clarifying questions to gather sufficient detail. The goal is to understand the "what" and "why" of the feature, not necessarily the "how" (which the developer will figure out). Make sure to provide options in letter/number lists so I can respond easily with my selections.
     - Ask **3-5 clarifying questions at a time** to avoid overwhelming the user. Prioritize the most critical unknowns first.
-3.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
-4.  **Save PRD:** Save the generated document as `prd-[feature-name].md` inside the `/tasks` directory.
-5.  **Track Tasks with Beads:** Use the **beads tool** (`read_todos` and `write_todos`) to track implementation tasks derived from the PRD. Do NOT create a separate tasks markdown file.
-6.  **Review & Refine:** Present the draft PRD to the user for feedback. Iterate on the document until the user approves it.
+5.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
+6.  **Save PRD:** Save the generated document as `prd-[feature-name].md` inside the `/tasks` directory.
+7.  **Track Tasks with Beads:** Use the **beads tool** (`read_todos` and `write_todos`) to track implementation tasks derived from the PRD. Do NOT create a separate tasks markdown file.
+8.  **Review & Refine:** Present the draft PRD to the user for feedback. Iterate on the document until the user approves it.
 
 ## Clarifying Questions
 
@@ -100,11 +140,22 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 ## Task Tracking
 
 After the PRD is approved, use the **beads tool** to create and track implementation tasks:
-- Use `write_todos` to create tasks derived from the functional requirements
-- Use `read_todos` to check task status
-- Mark tasks as `doing`, `done`, or `cancelled` as work progresses
 
-**Do NOT create a separate tasks markdown file.** The beads tool provides built-in task management.
+1. **Create epics with PRD reference:**
+   ```bash
+   bd create "Epic: [Feature Name]" -p 1 -t epic --external-ref "prd-[feature-name].md"
+   ```
+
+2. **Use beads commands for task management:**
+   - `bd list` - View all tasks
+   - `bd ready` - Show unblocked tasks ready for work
+   - `bd update <id> --status in_progress` - Mark task as in progress
+   - `bd close <id>` - Complete a task
+
+3. **Update PRD with beads reference:**
+   After creating epics, add a "Beads Reference" section to the PRD noting the epic ID(s).
+
+**Do NOT create a separate tasks markdown file.** The beads tool provides built-in task management with dependency tracking.
 
 ## Final instructions
 
