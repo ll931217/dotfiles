@@ -34,22 +34,14 @@ bd list --status open
 
 ## Task Implementation
 
-- **Smart Task Execution Strategy with 3-Condition Permission Logic:**
-
-  **Condition 1 - Sequential Tasks (no parallel flags):**
-  - Ask user for permission before starting: "Ready to start task [TaskID]? (yes/y to proceed)"
-  - Wait for user confirmation ("yes" or "y") before proceeding
-  - Execute one task at a time
-
-  **Condition 2 - Parallel Group Start ([P:Group-X] flags):**
-  - When encountering the **first task** in a new parallel group, ask for permission: "Ready to start parallel group [Group-X] with [N] tasks? (yes/y to proceed)"
-  - Wait for user confirmation ("yes" or "y") before starting the entire group
-  - Once confirmed, execute ALL tasks in the group concurrently using specialized sub-agents
-
-  **Condition 3 - Within Active Parallel Group:**
-  - **NO permission needed** for subsequent tasks within the same group
-  - All tasks in the group execute automatically once group permission is granted
-  - Continue until all tasks in the group are completed
+- **Autonomous Execution Strategy:**
+  - Execute tasks continuously without asking for permission
+  - Only stop to ask the user when you discover something that needs clarification:
+    - Ambiguous requirements not covered by the PRD
+    - Multiple valid implementation approaches where user preference matters
+    - Missing information or dependencies
+    - Conflicting requirements discovered during implementation
+  - When stopping for clarification, clearly explain the issue and provide options
 
 - **Parallel Group Execution ([P:Group-X] flags):**
   - **Phase 1 - Pre-execution Analysis:** Before starting any parallel group:
@@ -89,11 +81,6 @@ bd list --status open
 
   - Once all the subtasks are closed in beads and changes have been committed, close the **parent task** in beads.
 
-- **Permission Control Summary:**
-  - **Sequential tasks**: Stop and ask for user permission before each task
-  - **Parallel group start**: Stop and ask for user permission before starting the group
-  - **Within parallel group**: NO stopping, execute all group tasks automatically
-
 ## Group State Tracking with Beads
 
 Use beads labels to persist parallel group membership in the database (not in-memory variables).
@@ -118,9 +105,8 @@ bd list --label "parallel:Group-A" --status open
 
 | Task Pattern | Detection | Action |
 |--------------|-----------|--------|
-| No `[P:Group-X]` | Sequential | Ask permission before each task |
-| `[P:Group-X]` with new group | New group start | Ask permission to start entire group |
-| `[P:Group-X]` with active group | Group continue | No permission needed, execute automatically |
+| No `[P:Group-X]` | Sequential | Execute immediately |
+| `[P:Group-X]` | Parallel group | Execute all group tasks concurrently via subagents |
 
 **After group completion:**
 - All tasks in group closed → Group is complete
@@ -142,14 +128,12 @@ bd list --label "parallel:Group-A" --status open
 
 When working with task lists, the AI must:
 
-1. **3-Condition Permission System:**
-   - **Condition 1 (Sequential)**: Ask "Ready to start task [TaskID]? (yes/y to proceed)" and wait for confirmation
-   - **Condition 2 (New Group)**: Ask "Ready to start parallel group [Group-X] with [N] tasks? (yes/y to proceed)" and wait for confirmation
-   - **Condition 3 (Within Group)**: NO permission needed - execute automatically
-   - Always run `bd ready` to check task status before starting any task
+1. **Autonomous Execution (no permission needed):**
+   - Execute tasks continuously without stopping for permission
+   - Only pause when clarification is needed (ambiguous requirements, missing info, conflicting specs)
+   - Run `bd ready` to check task status before starting any task
 
-2. **Pre-execution Checks (apply task type detection first):**
-   - Use `detect_task_type()` function to determine which permission condition applies
+2. **Pre-execution Checks:**
    - Run `bd ready` to see which tasks are unblocked
    - Use `bd dep tree <issue-id>` to verify no blocking dependencies
    - Run `bd show <issue-id>` to check task details and blockers
@@ -162,7 +146,6 @@ When working with task lists, the AI must:
 4. **Completion Protocol:**
    - Mark each finished **sub‑task** `[x]` immediately
    - Close task in beads: `bd close <issue-id> --reason "Completed"`
-   - Use `update_group_state()` to track group completion
    - Mark **parent task** `[x]` once **ALL** subtasks are `[x]`
    - Run full test suite before committing group changes
 
@@ -198,77 +181,38 @@ When a task cannot proceed (test failures, missing dependencies, blockers):
    - Update status: `bd update <issue-id> --status in_progress`
    - Continue execution from where it left off
 
-## Permission Logic Examples & Decision Tree
+## When to Stop for Clarification
 
-### Task Type Detection Examples
-```bash
-# Example task list entries:
-# - [ ] 1.1 Setup database schema                    # Sequential - ask permission
-# - [ ] 1.2 [P:Group-A] Create User model           # New group - ask permission  
-# - [ ] 1.3 [P:Group-A] Create Auth service         # Same group - no permission
-# - [ ] 1.4 [P:Group-A] Create API endpoints        # Same group - no permission
-# - [ ] 1.5 Integration testing                     # Sequential - ask permission
+Only pause execution and ask the user when you encounter:
 
-# Detection logic in action:
-TASK_1_1="Setup database schema"                    # detect_task_type() → "SEQUENTIAL"
-TASK_1_2="[P:Group-A] Create User model"           # detect_task_type() → "NEW_GROUP_START"  
-TASK_1_3="[P:Group-A] Create Auth service"         # detect_task_type() → "GROUP_CONTINUE"
-TASK_1_4="[P:Group-A] Create API endpoints"        # detect_task_type() → "GROUP_CONTINUE"
-TASK_1_5="Integration testing"                     # detect_task_type() → "SEQUENTIAL"
+1. **Ambiguous Requirements:**
+   - PRD doesn't specify behavior for an edge case
+   - Multiple interpretations of a requirement are valid
+
+2. **Implementation Choices:**
+   - Multiple valid architectural approaches exist
+   - Trade-offs that depend on user preferences (performance vs. simplicity, etc.)
+
+3. **Missing Information:**
+   - Required API endpoints or schemas not defined
+   - Dependencies on external systems not documented
+
+4. **Conflicts Discovered:**
+   - Requirements contradict each other
+   - Existing code conflicts with PRD specifications
+
+**Example clarification request:**
 ```
+⚠️ Clarification needed for task BD-123:
 
-### Permission Decision Tree
-```
-┌─ Next Task Available
-│
-├─ detect_task_type(next_task)
-│  │
-│  ├─ "SEQUENTIAL"
-│  │  └─ Ask: "Ready to start task [TaskID]? (yes/y to proceed)"
-│  │     └─ Wait for user input → Execute single task
-│  │
-│  ├─ "NEW_GROUP_START"  
-│  │  └─ Count tasks in group → Ask: "Ready to start parallel group [Group-X] with [N] tasks? (yes/y to proceed)"
-│  │     └─ Wait for user input → Set CURRENT_GROUP_ID → Execute all group tasks concurrently
-│  │
-│  └─ "GROUP_CONTINUE"
-│     └─ NO permission needed → Execute task automatically (part of approved group)
-│
-└─ After task completion
-   └─ update_group_state() → Reset group if all tasks complete → Continue to next task
-```
+The PRD specifies "users can upload files" but doesn't define:
+- Maximum file size
+- Allowed file types
 
-### Practical Implementation Flow
-```bash
-# Before each task execution:
-next_task=$(get_next_pending_task)
-task_type=$(detect_task_type "$next_task")
+Options:
+a) 10MB limit, images only (jpg, png, gif)
+b) 50MB limit, common documents (pdf, doc, images)
+c) No limit, any file type
 
-case $task_type in
-  "SEQUENTIAL")
-    echo "Ready to start task $next_task? (yes/y to proceed)"
-    read user_input
-    if [[ "$user_input" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-      execute_single_task "$next_task"
-    fi
-    ;;
-  "NEW_GROUP_START")
-    group_id=$(extract_group_id "$next_task")
-    task_count=$(count_group_tasks "$group_id")
-    echo "Ready to start parallel group $group_id with $task_count tasks? (yes/y to proceed)"
-    read user_input
-    if [[ "$user_input" =~ ^[Yy]([Ee][Ss])?$ ]]; then
-      CURRENT_GROUP_ID="$group_id"
-      GROUP_TASK_COUNT="$task_count"
-      execute_parallel_group "$group_id"
-    fi
-    ;;
-  "GROUP_CONTINUE")
-    # No permission needed - execute automatically
-    execute_group_task "$next_task"
-    ;;
-esac
-
-# After completion:
-update_group_state "$completed_task"
+Which approach should I use?
 ```
