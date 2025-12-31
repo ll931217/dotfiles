@@ -28,7 +28,7 @@ bd init
 
    **Create parent issues with PRD reference:**
    ```bash
-   bd create "Epic: [Parent Task Title]" -p 1 -t epic --external-ref "prd-[feature-name].md" -d "PRD: /tasks/prd-[feature-name].md
+   bd create "Epic: [Parent Task Title]" -p 1 -t epic --external-ref "prd-[feature-name].md" -d "PRD: /.prd/prd-[feature-name].md
 
    [Epic description here]"
    ```
@@ -129,7 +129,7 @@ Epic: User Authentication System (proj-abc123)
 - The first epic should always be the core system architecture, functional enough for a minimal viable system.
 - **Always include a "Testing Strategy" epic** as one of the parent issues:
   ```bash
-  bd create "Epic: Testing Strategy" -p 1 -t epic --external-ref "prd-[feature-name].md" -d "PRD: /tasks/prd-[feature-name].md
+  bd create "Epic: Testing Strategy" -p 1 -t epic --external-ref "prd-[feature-name].md" -d "PRD: /.prd/prd-[feature-name].md
 
   Comprehensive test coverage for the feature:
   - Unit tests for core logic
