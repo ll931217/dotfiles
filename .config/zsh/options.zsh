@@ -75,16 +75,8 @@ CORRECT
 EQUALS
 EOF
 
-eval "$(direnv hook zsh)"
-
-# eval "$(pyenv init -)"
-# eval "$(pyenv virtualenv-init -)"
-
-eval "$(minikube completion zsh)"
-eval "$(pulumi gen-completion zsh)"
-command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
-
+bindkey ' ' magic-space
 # Set editor default keymap to emacs (`-e`) or vi (`-v`)
-bindkey -e
+bindkey -v
 
 # vim:filetype=zsh:nowrap

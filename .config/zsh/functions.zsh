@@ -99,3 +99,50 @@ function timezsh() {
   shell=${1-$SHELL}
   for i in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
 }
+
+function spf() {
+    os=$(uname -s)
+
+    # Linux
+    if [[ "$os" == "Linux" ]]; then
+        export SPF_LAST_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/superfile/lastdir"
+    fi
+
+    # macOS
+    if [[ "$os" == "Darwin" ]]; then
+        export SPF_LAST_DIR="$HOME/Library/Application Support/superfile/lastdir"
+    fi
+
+    command spf "$@"
+
+    [ ! -f "$SPF_LAST_DIR" ] || {
+        . "$SPF_LAST_DIR"
+        rm -f -- "$SPF_LAST_DIR" > /dev/null
+    }
+}
+
+function reset_nvim() {
+  rm -rf ~/.local/share/nvim
+  rm -rf ~/.local/state/nvim
+  rm -rf ~/.cache/nvim
+}
+
+function cheat(){ curl cheat.sh/"$@";  }
+
+function mkmv() {
+  if [ -z "$1" ]; then
+    echo "Usage: $0 <directory_name>"
+    exit 1
+  fi
+
+  mkdir -p "$1" && cd "$1"
+}
+
+
+function pwcp() {
+  if [ -z "$1" ]; then
+    echo "Usage: $0 <entry name>"
+    exit 1
+  fi
+  rbw get "$(rbw list | rg -i $1 | fzf)" | wl-copy -n
+}

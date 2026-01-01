@@ -2,165 +2,151 @@
 ## ░▄▀░░▀▀█░█▀█░█▀▄░█░░
 ## ░▀▀▀░▀▀▀░▀░▀░▀░▀░▀▀▀
 ##
-## rxyhn's Z-Shell configuration
-## https://github.com/rxyhn
+## liang's Z-Shell configuration
+## https://github.com/ll931217
 
 # The git prompt's git commands are read-only and should not interfere with
 # other processes. This environment variable is equivalent to running with `git
 # --no-optional-locks`, but falls back gracefully for older versions of git.
-# See git(1) for and git-status(1) for a description of that flag.
+# See git(1) for git-status(1) for a description of that flag.
 #
 # We wrap in a local function instead of exporting the variable directly in
 # order to avoid interfering with manually-run git commands by the user.
 
-autoload -Uz compinit
-compinit
+export ZDOTDIR="$HOME/.config/zsh"
 
-function cheat(){ curl cheat.sh/"$@";  }
+# --------------------------------------------
+# Znap: the fast-as-hell plugin manager
+# --------------------------------------------
+if [[ ! -f ~/.znap/znap.zsh ]]; then
+  git clone https://github.com/marlonrichert/zsh-snap.git ~/.znap
+fi
+source ~/.znap/znap.zsh
 
-mkmv() {
-  if [ -z "$1" ]; then
-    echo "Usage: $0 <directory_name>"
-    exit 1
-  fi
+# --------------------------------------------
+# Proper ZSH history configuration
+# --------------------------------------------
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=50000
+SAVEHIST=50000
 
-  mkdir -p "$1" && cd "$1"
-}
+setopt appendhistory              # Append, don't overwrite
+setopt sharehistory               # Share history between sessions
+setopt inc_append_history         # Write commands immediately
+setopt hist_ignore_dups           # Ignore duplicates
+setopt hist_ignore_all_dups
+setopt hist_reduce_blanks         # Clean up whitespace
+setopt hist_verify                # Don't run expanded history immediately
+setopt extended_history           # Save timestamps
+setopt hist_save_no_dups          # Don't save duplicates
 
+# --------------------------------------------
+# Plugins (Znap auto-clones, caches & compiles)
+# --------------------------------------------
 
-pwcp() {
-  if [ -z "$1" ]; then
-    echo "Usage: $0 <entry name>"
-    exit 1
-  fi
-  rbw get "$(rbw list | rg -i $1 | fzf)" | wl-copy -n
-}
+# Change plugin home directory
+zstyle ':znap:*' repos-dir ~/.config/zsh/plugins
 
-function __git_prompt_git() {
-  GIT_OPTIONAL_LOCKS=0 command git "$@"
-}
+# Git aliases from Oh-My-Zsh without Oh-My-Zsh
+znap source ohmyzsh/ohmyzsh plugins/git/git.plugin.zsh
 
-# Outputs the name of the current branch
-# Usage example: git pull origin $(git_current_branch)
-# Using '--quiet' with 'symbolic-ref' will not cause a fatal error (128) if
-# it's not a symbolic ref, but in a Git repo.
-function git_current_branch() {
-  local ref
-  ref=$(__git_prompt_git symbolic-ref --quiet HEAD 2> /dev/null)
-  local ret=$?
-  if [[ $ret != 0 ]]; then
-    [[ $ret == 128 ]] && return  # no git repo.
-    ref=$(__git_prompt_git rev-parse --short HEAD 2> /dev/null) || return
-  fi
-  echo ${ref#refs/heads/}
-}
+# Common Zsh plugins
+znap source zsh-users/zsh-completions
+znap source zsh-users/zsh-autosuggestions
+znap source zsh-users/zsh-syntax-highlighting
+znap source zsh-users/zsh-history-substring-search
+znap source zdharma-continuum/history-search-multi-word
 
-function convert2gif() {
-  if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: convert2gif <input> <output>"
-    echo ""
-    echo "Example: ffmpeg -i video.mp4 -f yuv4mpegpipe - | gifski -o anim.gif -"
-    return 1
-  fi
-  ffmpeg -i $1 -f yuv4mpegpipe - | gifski -o $2 -
-}
+# Extra utilities
+znap source thewtex/tmux-mem-cpu-load
+znap source Aloxaf/fzf-tab
+znap source hlissner/zsh-autopair
+znap source chrissicool/zsh-256color
+znap source MichaelAquilina/zsh-you-should-use
 
-function y() {
-	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
-	yazi "$@" --cwd-file="$tmp"
-	if cwd="$(/usr/bin/cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-		builtin cd -- "$cwd"
-	fi
-	rm -f -- "$tmp"
-}
+# Oh-My-Zsh plugins from Zinit migration
+znap source ohmyzsh/ohmyzsh plugins/colored-man-pages/colored-man-pages.plugin.zsh
+znap source ohmyzsh/ohmyzsh plugins/command-not-found/command-not-found.plugin.zsh
 
-function convert2gif() {
-  if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: convert2gif <input> <output>"
-    echo ""
-    echo "Example: convert2gif video.mp4 ~/Videos/anim.gif"
-    return 1
-  fi
+# External binaries (exa and bat are now available system-wide)
+# These are managed via system package manager instead of Zinit
 
-  ffmpeg -i $1 -f yuv4mpegpipe - | gifski -o $2 -
-}
+# --------------------------------------------
+# External tools (moved before completion for better startup)
+# --------------------------------------------
+eval "$(zoxide init zsh)"
+eval "$(direnv hook zsh)"
+eval "$(starship init zsh)"
+eval "$(goose term init zsh)"
+eval "$(atuin init zsh)"
 
-function watchservice() {
-  if [ -z "$1" ]; then
-    echo "Usage: watchservice <servicename>"
-    echo ""
-    echo "Example: watchservice nginx"
-    return 1
-  fi
+# --------------------------------------------
+# Source private config files
+# --------------------------------------------
+if [ -d "$ZDOTDIR/private" ]; then
+  for file in "$ZDOTDIR/private"/*.zsh; do
+    [ -f "$file" ] && source "$file"
+  done
+fi
 
-  sudo journalctl -f -b -n 500 -o cat -u $1
-}
+# --------------------------------------------
+# Your extra config files (conditional loading)
+# --------------------------------------------
 
-checkport() {
-  if [ -z "$1" ]; then
-    echo "Usage: $0 <port>"
-    exit 1
-  fi
+# Fast startup configs
+[ -f /opt/miniconda3/etc/profile.d/conda.sh ] && source /opt/miniconda3/etc/profile.d/conda.sh
 
-  lsof -i -P | grep LISTEN | grep :$1
-}
+# --------------------------------------------
+# Completion System
+# --------------------------------------------
+# Skip security checks for faster startup (run compinit -C)
+autoload -Uz compinit && compinit -C
 
-# function checkport() {
-#   if [ -z "$1" ]; then
-#     echo "Usage: checkport <port>"
-#     echo ""
-#     echo "Example: checkport 3000"
-#     return 1
-#   fi
-#
-#   sudo lsof -nP -iTCP -sTCP:LISTEN | rg $1
+# --------------------------------------------
+# External tools - remaining
+# --------------------------------------------
+# Bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /usr/bin/terraform terraform
+
+# Lazy load heavy configurations only when needed
+# _lazy_load_heavy_configs() {
+#   files=("functions" "aliases" "keys" "env", "fzf")
+#   for file in "${files[@]}"; do
+#     [ -f "$HOME/.config/zsh/$file.zsh" ] && source "$HOME/.config/zsh/$file.zsh"
+#   done
 # }
 
-function killport() {
-  if [ -z "$1" ]; then
-    echo "Usage: killport <port>"
-    return 1
-  fi
-  
-  pid=$(sudo lsof -nP -iTCP -sTCP:LISTEN | grep $1 | awk '{print $2}')
-  
-  if [ -z "$pid" ]; then
-    echo "No process found using port $1"
-    return 1
-  fi
-  
-  sudo kill -9 $pid
-}
-
-function mcd() {
-  if [ -z "$1" ]; then
-    echo "Usage: mcd <folder_name>"
-    return 1
-  fi
-
-  mkdir $1 && cd $1
-}
-
-function timezsh() {
-  shell=${1-$SHELL}
-  for i in $(seq 1 10); do /usr/bin/time $shell -i -c exit; done
-}
+# Defer heavy configurations - trigger after first command
+# autoload -Uz add-zsh-hook
+# add-zsh-hook precmd _lazy_load_heavy_configs
 
 while read file
-do 
-  source "$ZDOTDIR/$file.zsh"
+do
+  [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"
 done <<-EOF
-theme
-env
-aliases
-utility
-options
-plugins
-keybinds
-prompt
-plumbr
-sunnyvale
-leap
+  env
+  keys
+  fzf
+  theme
+  aliases
+  functions
+  utility
+  options
+  plugins
+  keybinds
+  prompt
 EOF
+
+# Enable grc
+[[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh
+
+# Auto activate python venv
+[ -f /usr/share/zsh/plugins/zsh-auto-venv/auto-venv.zsh ] && source /usr/share/zsh/plugins/zsh-auto-venv/auto-venv.zsh
+
+# Command not found with suggestions on how to install
+[ -f /usr/share/doc/pkgfile/command-not-found.zsh ] && source /usr/share/doc/pkgfile/command-not-found.zsh
 
 # vim:ft=zsh:nowrap
