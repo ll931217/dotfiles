@@ -8,6 +8,59 @@ description: Generate tasks in beads (`bd`)
 
 To guide an AI assistant in creating a detailed, step-by-step issue hierarchy using the `bd` (beads) tool based on an existing Product Requirements Document (PRD). The issues should guide a developer through implementation with proper dependency tracking.
 
+## PRD Update Detection
+
+This command intelligently detects whether a PRD has been previously processed and avoids duplicate task generation.
+
+**Key Behaviors:**
+
+1. **First-Time PRD:** Generates complete task hierarchy (epics + sub-issues)
+2. **Updated PRD:** Detects existing tasks and offers update options:
+   - Review and update existing tasks (keep completed, update pending)
+   - Regenerate all tasks from scratch
+   - Show PRD diff to understand changes
+   - Cancel operation
+
+3. **Context Awareness:**
+   - Checks PRD frontmatter for `beads.related_issues` and `beads.related_epics`
+   - Compares `updated_at_commit` to detect PRD modifications
+   - Matches tasks to current git branch/worktree context
+
+**Detection Flow:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Auto-discover PRD (match branch/worktree context)        │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Check PRD frontmatter for existing task references       │
+│    - beads.related_issues: []?                              │
+│    - beads.related_epics: []?                               │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+              ┌──────┴──────┐
+              │ Empty/null? │
+              └──────┬──────┘
+           ┌──────────┴──────────┐
+           │ YES                 │ NO
+           ▼                     ▼
+    ┌──────────────┐    ┌────────────────────────┐
+    │ Fresh PRD    │    │ Existing tasks found   │
+    │ Full gen     │    │ Compare PRD version    │
+    └──────────────┘    └──────────┬─────────────┘
+                                   │
+                                   ▼
+                        ┌────────────────────────┐
+                        │ Show user options      │
+                        │ a) Update existing     │
+                        │ b) Regenerate all      │
+                        │ c) Show diff           │
+                        │ d) Cancel              │
+                        └────────────────────────┘
+```
+
 ## Output
 
 - **Format:** Beads issues in `.beads/` database
@@ -93,11 +146,155 @@ Ensure beads is initialized in the project. If not, initialize beads.
     - Proceed with step 2 (Analyze PRD)
 
 2. **Analyze PRD:** The AI reads and analyzes the functional requirements, user stories, and other sections of the specified PRD.
-3. **Assess Current State:** Review the existing codebase to understand existing infrastructure, architectural patterns and conventions. Also, identify any existing components or features that already exist and could be relevant to the PRD requirements. Then, identify existing related files, components, and utilities that can be leveraged or need modification.
-4. **Phase 1: Generate Parent Issues (Epics):** Based on the PRD analysis and current state assessment, create the main, high-level issues required to implement the feature. Use your judgement on how many high-level issues to use. It's likely to be about 5. These parent issues should each be full features that can be tested where the user will only proceed to next parent issue until satisfied. Present these issues to the user. Inform the user (Using AskUserQuestion tool): "I have generated the high-level issues based on the PRD. Ready to generate the sub-issues? Respond with 'Go' to proceed."
-5. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
-6. **Phase 2: Generate Sub-Issues:** Once the user confirms, break down each parent issue into smaller, actionable sub-issues necessary to complete the parent issue. Ensure sub-issues logically follow from the parent issue, cover the implementation details implied by the PRD, and consider existing codebase patterns where relevant without being constrained by them.
-7. **Phase 3: Intelligent Parallel Issue Analysis and Dependencies**
+
+3. **Check Existing Beads Tasks (Update Detection):**
+   Before generating new tasks, check if tasks already exist for this PRD context.
+
+   - **Step 3a - Query Beads for Existing Tasks:**
+     ```bash
+     # Get all issues in beads database
+     bd list --format json
+
+     # Filter issues by current git context (branch/worktree)
+     # Issues may have PRD reference in description or tags
+     ```
+
+   - **Step 3b - Identify Related Issues:**
+     - Look for issues that reference this PRD by:
+       * Checking PRD filename in issue descriptions
+       * Checking PRD version in issue descriptions
+       * Checking `beads.related_issues` or `beads.related_epics` in PRD frontmatter
+     - Extract issue IDs and their status from PRD frontmatter:
+       ```yaml
+       beads:
+         related_issues: [proj-123, proj-456, proj-789]
+         related_epics: [proj-001, proj-002]
+       ```
+
+   - **Step 3c - Compare PRD Version:**
+     - Compare current PRD `updated_at_commit` with existing task creation time
+     - Determine if PRD has been significantly updated:
+       ```bash
+       # Get commit when tasks were last generated
+       PRD_UPDATED_COMMIT=$(grep "^  updated_at_commit:" "$PRD_FILE" | awk '{print $2}')
+
+       # Get current HEAD commit
+       CURRENT_COMMIT=$(git rev-parse HEAD)
+
+       # Check if there are new commits since last task generation
+       if [ "$PRD_UPDATED_COMMIT" != "$CURRENT_COMMIT" ]; then
+         # Check if PRD file itself was modified
+         git log "$PRD_UPDATED_COMMIT..HEAD" --oneline "$PRD_FILE" | grep -q .
+         if [ $? -eq 0 ]; then
+           echo "PRD has been updated since last task generation"
+         fi
+       fi
+       ```
+
+   - **Step 3d - Update Strategy Decision:**
+     Present options to user based on existing tasks:
+     ```
+     ℹ️  Found existing tasks for this PRD:
+     - PRD: prd-authentication.md (version: 2)
+     - Last updated: commit abc123d (2025-01-02)
+     - Existing epics: 3
+     - Existing tasks: 15
+
+     Options:
+     a) Review and update existing tasks (keep completed tasks, update pending ones)
+     b) Regenerate all tasks (archive existing, create new from scratch)
+     c) Show diff of PRD changes to understand what needs updating
+     d) Cancel
+     ```
+
+   - **Step 3e - Intelligent Task Update:**
+     If user chooses option (a) "Review and update":
+     - Parse existing issues from beads using `bd show <issue-id>`
+     - Compare existing issue descriptions with PRD requirements
+     - Identify:
+       * Completed tasks - mark as done, don't regenerate
+       * Obsolete tasks - mark for archival or deletion
+       * New requirements - generate new tasks
+       * Modified requirements - update existing task descriptions
+
+     **Update Logic:**
+     ```bash
+     # For each existing epic
+     for epic_id in "${existing_epics[@]}"; do
+       epic_status=$(bd show "$epic_id" | grep "Status:" | awk '{print $2}')
+
+       if [ "$epic_status" = "done" ]; then
+         # Skip - epic already completed
+         continue
+       fi
+
+       # Check if epic still relevant to updated PRD
+       # If yes: keep and potentially update description
+       # If no: mark as obsolete
+     done
+     ```
+
+   - **Step 3f - No Existing Tasks:**
+     If `beads.related_issues` and `beads.related_epics` are empty or null:
+     - Proceed to full task generation (skip to step 4)
+     - This is a fresh PRD or first-time task generation
+
+4. **Assess Current State:** Review the existing codebase to understand existing infrastructure, architectural patterns and conventions. Also, identify any existing components or features that already exist and could be relevant to the PRD requirements. Then, identify existing related files, components, and utilities that can be leveraged or need modification.
+
+5. **Phase 1: Generate Parent Issues (Epics) - For New or Updated Requirements Only:**
+   - If this is a fresh PRD (no existing tasks): Generate all parent epics as before
+   - If this is an updated PRD: Only generate NEW or MODIFIED epics
+   - Skip generation of completed/unchanged epics
+
+   **Generation Strategy for Updates:**
+   - Compare PRD requirements with existing epic descriptions
+   - For each requirement area:
+     * If matching epic exists and is incomplete: Update description
+     * If matching epic exists and is done: Skip
+     * If no matching epic exists: Create new epic
+   - Present both existing (kept) and new epics to user for review
+
+   Based on the PRD analysis and current state assessment, create the main, high-level issues required to implement the feature. Use your judgement on how many high-level issues to use. It's likely to be about 5. These parent issues should each be full features that can be tested where the user will only proceed to next parent issue until satisfied. Present these issues to the user. Inform the user (Using AskUserQuestion tool): "I have generated the high-level issues based on the PRD. Ready to generate the sub-issues? Respond with 'Go' to proceed."
+
+6. **Phase 1.5: Assign Priorities to Epics:**
+   - Read priorities from PRD frontmatter `priorities.requirements` array
+   - Map each epic to its associated requirements
+   - **Epic Priority Rule:** Use the **highest** requirement priority in epic (P0 > P1 > P2 > P3 > P4)
+   - Present epic priorities to user for confirmation
+   - User can adjust epic priorities if needed
+
+   **Example Mapping:**
+   ```
+   PRD Requirements with Priorities:
+   - FR-1: User login (P1)
+   - FR-2: Password reset (P2)
+   - FR-3: Email notifications (P3)
+   - FR-4: Admin dashboard (P4)
+
+   Generated Epics with Mapped Priorities:
+   ┌────────────────────────────┬─────────────┬──────────────────────┐
+   │ Epic                       │ Requirements │ Priority (Highest)   │
+   ├────────────────────────────┼─────────────┼──────────────────────┤
+   │ User Authentication        │ FR-1, FR-2  │ P1 (from FR-1)       │
+   │ Email Notifications        │ FR-3        │ P3 (from FR-3)       │
+   │ Admin Dashboard            │ FR-4        │ P4 (from FR-4)       │
+   └────────────────────────────┴─────────────┴──────────────────────┘
+   ```
+
+   **Priority Assignment Command:**
+   ```bash
+   # When creating epics, include --priority flag
+   bd create "Epic: User Authentication" -t epic --priority P1 -d "..."
+   bd create "Epic: Email Notifications" -t epic --priority P3 -d "..."
+   ```
+
+7. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
+
+8. **Phase 2: Generate Sub-Issues - For New or Updated Epics Only:** Once the user confirms, break down each parent issue into smaller, actionable sub-issues necessary to complete the parent issue. Ensure sub-issues logically follow from the parent issue, cover the implementation details implied by the PRD, and consider existing codebase patterns where relevant without being constrained by them.
+
+   **For updated PRDs:** Only generate sub-issues for epics that are new or modified. Skip sub-issue generation for completed/unchanged epics.
+
+9. **Phase 3: Intelligent Parallel Issue Analysis and Dependencies**
    - **Phase 3a - File Dependency Analysis:** For each sub-issue, identify all files that will be created, modified, or read. Include this in the issue description.
    - **Phase 3b - Conflict Detection:** Analyze the file dependency map to identify sub-issues that modify the same files (these cannot run in parallel and need blocking dependencies).
    - **Phase 3c - Dependency Assignment:**
@@ -111,9 +308,32 @@ Ensure beads is initialized in the project. If not, initialize beads.
    - Test files and source files are considered separate for conflict purposes
    - Configuration files (package.json, etc.) should have blocking dependencies if multiple issues modify them
 
-8. **Add Relevant Files to Issue Descriptions:** When creating issues, include the relevant files in the issue description.
-9. **Verify Issue Structure:** After creating all issues, verify the structure using beads to view issues, dependency trees, and ready tasks.
-10. **Update PRD Metadata:** After creating beads issues, update the PRD frontmatter.
+10. **Task Priority Inheritance:** When creating sub-issues, assign priorities based on inheritance rules:
+    - **Default Rule:** Sub-tasks inherit parent epic priority
+    - **Exception 1:** Documentation tasks default to P3 unless epic is P0
+    - **Exception 2:** Refactoring tasks default to P3 unless epic is P0
+    - **User Override:** User can specify different priority if needed
+
+    **Example:**
+    ```bash
+    # Epic with P1 priority
+    # Sub-tasks inherit P1 by default
+    bd create "Implement login endpoint" -t task -p epic-123 --priority P1 -d "..."
+    bd create "Write auth docs" -t task -p epic-123 --priority P3 -d "..."  # Exception: docs
+    bd create "Refactor auth module" -t task -p epic-123 --priority P3 -d "..."  # Exception: refactor
+    ```
+
+11. **Add Relevant Files to Issue Descriptions:** When creating issues, include the relevant files in the issue description.
+
+12. **Merge Updated Issues with Existing Issues:**
+    - For updated PRDs: Merge newly created issues with existing kept issues
+    - Update PRD frontmatter with combined issue list (kept + new)
+    - Ensure dependencies are correctly set between old and new issues
+    - Archive obsolete issues if user chose option (b) "Regenerate all"
+
+13. **Verify Issue Structure:** After creating all issues, verify the structure using beads to view issues, dependency trees, and ready tasks.
+
+14. **Update PRD Metadata:** After creating beads issues, update the PRD frontmatter.
     - Update `updated_at` timestamp
     - Update `updated_at_commit` with current commit SHA
     - Add newly created issue IDs to `beads.related_issues`
@@ -167,7 +387,7 @@ Ensure beads is initialized in the project. If not, initialize beads.
     ---
     ```
 
-11. Once all tasks are completed, suggest to the user to use the `/prd:implement` slash command
+13. Once all tasks are completed, suggest to the user to use the `/prd:implement` slash command
 
 ## Issue Structure
 

@@ -108,6 +108,33 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
 4.  **Ask Clarifying Questions:** Before writing the PRD, the AI _must_ ask clarifying questions to gather sufficient detail. The goal is to understand the "what" and "why" of the feature, not necessarily the "how" (which the developer will figure out). Make sure to provide options in letter/number lists so I can respond easily with my selections.
     - Ask **3-5 clarifying questions at a time** to avoid overwhelming the user. Prioritize the most critical unknowns first.
     - Use the AskUserQuestions tool, this provides a better user experience. (NOTE: Only available with Claude Code)
+
+4.5 **Priority Inference & Collection:** After gathering clarifying answers, infer and collect priorities for each functional requirement.
+
+    **Inference Process:**
+    1. AI analyzes each requirement/user story from the clarifying responses
+    2. Detects priority level (P0-P4) based on keyword triggers and context
+    3. Assigns confidence level (high/medium/low) to each inference
+    4. Records rationale for the priority assignment
+
+    **User Confirmation:**
+    1. Present inferred priorities in a structured format:
+       ```
+       Inferred Priorities:
+       ┌─────────┬────────────────────────────────┬───────────┬────────────┐
+       │ ID      │ Requirement                    │ Priority  │ Confidence │
+       ├─────────┼────────────────────────────────┼───────────┼────────────┤
+       │ FR-1    │ User authentication            │ P1 (High) │ High       │
+       │ FR-2    │ Password reset                │ P2 (Norm) │ Medium     │
+       └─────────┴────────────────────────────────┴───────────┴────────────┘
+       ```
+    2. Ask user to confirm or adjust each priority
+    3. Store user-confirmed priorities in frontmatter `priorities.requirements` array
+
+    **Default Handling:**
+    - If user doesn't specify, use `default: P2` from frontmatter
+    - Mark with `confidence: low` and `user_confirmed: false`
+
 5.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
 6.  **Save PRD Draft:**
     - Generate YAML frontmatter with detected git context
@@ -139,6 +166,17 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
     beads:
       related_issues: []
       related_epics: []
+    priorities:
+      enabled: true
+      default: P2
+      inference_method: ai_inference_with_review
+      requirements:
+        - id: FR-1
+          text: "Users can authenticate with email/password"
+          priority: P1
+          confidence: high
+          inferred_from: "core authentication feature"
+          user_confirmed: true
     ---
     ```
 
@@ -167,8 +205,50 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
     beads:
       related_issues: []
       related_epics: []
+    priorities:
+      enabled: true
+      default: P2
+      inference_method: ai_inference_with_review
+      requirements:
+        - id: FR-1
+          text: "Users can authenticate with email/password"
+          priority: P1
+          confidence: high
+          inferred_from: "core authentication feature"
+          user_confirmed: true
+        - id: FR-2
+          text: "Users can reset password via email link"
+          priority: P2
+          confidence: medium
+          inferred_from: "standard authentication feature"
+          user_confirmed: true
     ---
     ```
+
+    **Priority Data Structure:**
+
+    The `priorities` section stores requirement-level priority information:
+
+    ```yaml
+    priorities:
+      enabled: true              # Enable/disable priority system
+      default: P2                # Default priority for unspecified requirements
+      inference_method: ai_inference_with_review  # How priorities are assigned
+      requirements:              # Array of prioritized requirements
+        - id: FR-1               # Requirement identifier
+          text: "..."            # Full requirement text
+          priority: P1           # Priority level (P0-P4)
+          confidence: high       # AI confidence: high/medium/low
+          inferred_from: "..."   # Rationale for priority assignment
+          user_confirmed: true   # Whether user confirmed this priority
+    ```
+
+    **Priority Levels:**
+    - **P0** - Critical: Blocking issues, security vulnerabilities, must-have features
+    - **P1** - High: Important features, urgent bugfixes, key functionality
+    - **P2** - Normal: Standard features, expected functionality (default)
+    - **P3** - Low: Nice-to-have features, enhancements, optimizations
+    - **P4** - Lowest: Backlog items, stretch goals, future considerations
 
     **Important:** The variables collected in step 2.5 should be used to populate the frontmatter. The feature_name should be derived from the filename (e.g., `prd-authentication.md` → `authentication`).
 7.  **PRD Review & Approval Cycle:**
@@ -359,6 +439,81 @@ The AI should adapt its questions based on the prompt. Group questions into cate
 - **Security/Privacy:** "Are there security or privacy considerations?"
 - **Internationalization:** "Does this need to support multiple languages?"
 
+## Priority Inference Rules
+
+The AI infers priority levels (P0-P4) from requirement language using keyword detection:
+
+| Priority | Level    | Keyword Triggers                              | Examples                              |
+|----------|----------|----------------------------------------------|---------------------------------------|
+| P0       | Critical | critical, blocking, security, must-have, core | "User authentication is critical"     |
+| P1       | High     | urgent, important, primary, main, key         | "Main feature for Q1 release"         |
+| P2       | Normal   | should, standard, typical, expected (default) | "Users should be able to upload files" |
+| P3       | Low      | nice-to-have, optional, could, enhancement    | "Could add dark mode later"           |
+| P4       | Lowest   | eventually, backlog, maybe, stretch          | "Maybe add advanced search"           |
+
+**Inference Guidelines:**
+1. Analyze requirement text for keyword presence
+2. Consider context and emphasis (e.g., "CRITICAL" vs "critical")
+3. Check for negation patterns (e.g., "not critical")
+4. Assign confidence based on keyword strength and context
+5. When multiple keywords exist, use highest priority match
+
+**Confidence Levels:**
+- **High**: Explicit keyword (e.g., "critical", "urgent") with clear context
+- **Medium**: Implicit priority from domain context or user emphasis
+- **Low**: No clear indicators, using default P2
+
+## Priority Confirmation Workflow
+
+After AI inference, the user must confirm all assigned priorities:
+
+**Confirmation Process:**
+1. **Present Inferred Priorities**: Display each requirement with its inferred priority
+2. **User Review Options**:
+   - Accept: Keep inferred priority
+   - Adjust: Change priority level (P0-P4)
+   - Skip: Mark as `user_confirmed: false` and use default
+3. **Store Results**: Update frontmatter with confirmed priorities
+
+**Example Interaction:**
+```
+AI: Based on your responses, I've inferred the following priorities:
+
+┌─────┬───────────────────────────────┬───────────┬────────────┐
+│ ID  │ Requirement                   │ Priority  │ Confidence │
+├─────┼───────────────────────────────┼───────────┼────────────┤
+│ FR-1│ User authentication           │ P1 (High) │ High       │
+│ FR-2│ Password reset                │ P2 (Norm) │ Medium     │
+│ FR-3│ Social login (OAuth)          │ P3 (Low)  │ Medium     │
+└─────┴───────────────────────────────┴───────────┴────────────┘
+
+Please confirm:
+- Enter 'Y' to accept all
+- Enter 'FR-X:P#' to adjust (e.g., 'FR-3:P2' to upgrade social login)
+- Enter 'N' to redo priority inference
+
+> Y
+✓ All priorities confirmed
+```
+
+**Update Frontmatter:**
+```yaml
+priorities:
+  requirements:
+    - id: FR-1
+      priority: P1
+      confidence: high
+      user_confirmed: true
+    - id: FR-2
+      priority: P2
+      confidence: medium
+      user_confirmed: true
+    - id: FR-3
+      priority: P3
+      confidence: medium
+      user_confirmed: true
+```
+
 ## PRD Review Checklist
 
 When presenting a PRD for review, verify all items are complete:
@@ -414,7 +569,15 @@ The generated PRD should include the following sections:
 1.  **Introduction/Overview:** Briefly describe the feature and the problem it solves. State the goal.
 2.  **Goals:** List the specific, measurable objectives for this feature.
 3.  **User Stories:** Detail the user narratives describing feature usage and benefits.
-4.  **Functional Requirements:** List the specific functionalities the feature must have. Use clear, concise language (e.g., "The system must allow users to upload a profile picture."). Number these requirements.
+4.  **Functional Requirements:** List the specific functionalities the feature must have. Use clear, concise language (e.g., "The system must allow users to upload a profile picture."). Number these requirements. **Include priority for each requirement in table format:**
+
+    | ID   | Requirement                              | Priority | Notes                |
+    |------|------------------------------------------|----------|----------------------|
+    | FR-1 | Users can authenticate with email/pass   | P1       | Core feature         |
+    | FR-2 | Users can reset password via email       | P2       | Standard feature     |
+    | FR-3 | Users can enable 2FA                     | P3       | Nice-to-have         |
+
+    Requirements are derived from the `priorities.requirements` array in frontmatter.
 5.  **Non-Goals (Out of Scope):** Clearly state what this feature will _not_ include to manage scope.
 6.  **Assumptions:** Document what you're taking for granted (e.g., "User is already authenticated").
 7.  **Dependencies:** List any features, systems, or APIs this feature relies on.

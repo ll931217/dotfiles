@@ -72,6 +72,37 @@ fi
 - `approved` = ✅ approved (ready for implementation)
 - `implemented` = ✨ implemented (complete)
 
+## Priority Display Format
+
+Tasks are displayed with priority indicators and sorted by priority level (P0 → P4).
+
+**Priority Indicators:**
+| Color | Priority | Level    | Description                    |
+|-------|----------|----------|--------------------------------|
+| 🔴    | P0       | Critical | Urgent, blocking, security     |
+| 🟠    | P1       | High     | Important, urgent functionality |
+| 🟢    | P2       | Normal   | Standard feature (default)      |
+| 🔵    | P3       | Low      | Nice-to-have, enhancement       |
+| ⚪    | P4       | Lowest   | Backlog, future consideration    |
+
+**Display Format:**
+```
+Available Ready Tasks (sorted by priority):
+
+🔴 P0 | proj-abc: Critical Security Fix (epic)
+  ├─ proj-abc.1: Patch authentication bypass
+🟠 P1 | proj-def: User Authentication (epic)
+  ├─ proj-def.1: Implement login endpoint
+  ├─ proj-def.2: Add password reset flow
+🟢 P2 | proj-ghi: Email Notifications (epic)
+  ├─ proj-ghi.1: Create email service
+```
+
+**View Sorted Tasks:**
+```bash
+bd ready --sort priority  # Sort by priority (P0 → P4)
+```
+
 **PRD Updates During Implementation:**
 - When PRD changes are made (see "PRD Change Management"), update frontmatter:
   - Increment version in `prd.version`
@@ -593,8 +624,15 @@ Functional Requirements: 5. The system shall support user roles: User and Admin 
 
 10. **Resume implementation:**
     ```bash
-    bd ready  # Show which new tasks are ready to work on
+    bd ready --sort priority  # Show tasks sorted by priority (P0 → P4)
     ```
+
+    **Priority Indicators:**
+    - 🔴 P0 = Critical (urgent)
+    - 🟠 P1 = High
+    - 🟢 P2 = Normal (default)
+    - 🔵 P3 = Low
+    - ⚪ P4 = Lowest
 
 **Concrete Example:**
 
@@ -710,7 +748,7 @@ PRD change request during implementation?
 ├─ Migrate completed work:
 │ ├─ Can reuse: Mark new task as complete
 │ └─ Cannot reuse: Start fresh, reference backup
-└─ Resume from new task structure: bd ready
+└─ Resume from new task structure: bd ready --sort priority
 
 ```
 
