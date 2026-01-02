@@ -21,6 +21,11 @@ Provide a concise summary of the current feature implementation, showing:
 
 The main logic is extracted into reusable scripts in `$HOME/.claude/scripts/summary/`. The executable command is in `summary.sh`.
 
+```bash
+# Execute the summary script
+exec ~/.claude/scripts/summary/summary.sh
+```
+
 ## Script Organization
 
 The `/prd:summary` command uses modular scripts:
