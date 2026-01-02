@@ -136,7 +136,7 @@ display_worktree_block() {
   if [ -z "$wt_related_issues" ] || [ "$wt_related_issues" = " " ]; then
     echo "$wt_display_name ─────────────────────────────────────────"
     echo "  Feature: $feature_name"
-    echo "  PRD: $(basename "$prd_file") (v$wt_version)"
+    echo "  PRD: $(basename "$prd_file") ($wt_version)"
     echo "  Status: $(get_status_display "$wt_status")"
     echo ""
     echo "  ℹ️  No tasks generated yet for this PRD"
