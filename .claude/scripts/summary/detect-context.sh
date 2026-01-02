@@ -24,28 +24,25 @@ detect_worktree_context() {
 
     # Build associative array of worktrees for this branch
     declare -gA BRANCH_WORKTREES
-    local wt_key path branch_key branch wt_branch wt_name
+    local wt_key path branch_key branch wt_name
 
     while read -r wt_key path branch_key branch; do
       # Validate porcelain format: "worktree /path branch refs/heads/name"
       [ "$wt_key" != "worktree" ] && continue
       [ "$branch_key" != "branch" ] && continue
 
-      # Extract branch name from worktree
-      wt_branch=$(basename "$branch" | sed 's/refs\/heads\///')
-      if [ "$wt_branch" = "$CURRENT_BRANCH" ]; then
-        # Main directory also counts as a "worktree"
-        if [ "$path" = "$(git rev-parse --show-toplevel)" ]; then
-          BRANCH_WORKTREES["[main]"]="$path"
-        else
-          # Get worktree name from path
-          wt_name=$(basename "$path" | sed 's/.*\.git\/worktrees\///')
-          BRANCH_WORKTREES["$wt_name"]="$path"
-        fi
+      # Include all worktrees regardless of branch
+      if [ "$path" = "$(git rev-parse --show-toplevel)" ]; then
+        # Main directory
+        BRANCH_WORKTREES["[main]"]="$path"
+      else
+        # Get worktree name from path (basename is sufficient)
+        wt_name=$(basename "$path")
+        BRANCH_WORKTREES["$wt_name"]="$path"
       fi
     done < <(git worktree list --porcelain 2>/dev/null | grep -E "^(worktree|branch)" | paste - -)
 
-    # If no worktrees found for current branch, show only main directory
+    # Fallback: ensure main directory is always included
     if [ ${#BRANCH_WORKTREES[@]} -eq 0 ]; then
       BRANCH_WORKTREES["[main]"]=$(git rev-parse --show-toplevel)
     fi
