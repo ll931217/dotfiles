@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env zsh
 
 # Configuration
 WALLPAPER_CACHE_DIR="$HOME/.wallpapers_cache/" # Directory to cache downloaded wallpapers

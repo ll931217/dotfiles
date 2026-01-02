@@ -13,10 +13,10 @@ reveal = [
 ]
 # extract = [{ run = 'unar "$1"', desc = "Extract here", for = "unix" }]
 play = [
-  { run = 'mpv "$@"', orphan = true, for = "unix" },
+  { run = 'mpv "$@"', block = true, for = "unix" },
   { run = '''mediainfo "$1"; echo "Press enter to exit"; read''', block = true, desc = "Show media info", for = "unix" },
 ]
 image = [
-  { run = 'feh --scale-down --image-bg black "$@"', block = false, for = "unix" },
+  { run = 'feh --scale-down --image-bg black "$@"', block = true, for = "unix" },
 ]
-pdf = [{ run = 'brave "$@"', block = false, for = "unix" }]
+pdf = [{ run = 'brave "$@"', block = true, for = "unix" }]

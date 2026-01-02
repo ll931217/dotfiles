@@ -22,7 +22,8 @@ set $w5 "5 "
 set $w10 "10 "
 
 # bindsym $mod+Return exec kitty
-bindsym $mod+Return exec alacritty
+# bindsym $mod+Return exec alacritty
+bindsym $mod+Return exec wezterm
 # bindsym $mod+Return exec ghostty
 
 bindsym $mod+q kill
