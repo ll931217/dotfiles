@@ -17,10 +17,8 @@ if ! command -v bd &>/dev/null; then
   exit 1
 fi
 
-echo "Detect worktree context"
 # Detect worktree context (sets WORKTREE_MODE, CURRENT_BRANCH, BRANCH_WORKTREES)
 detect_worktree_context
-echo "Finished: Detect worktree context"
 
 # Get current worktree path for context matching
 CURRENT_WORKTREE=$(get_current_worktree_path)
