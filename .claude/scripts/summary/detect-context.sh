@@ -3,10 +3,19 @@
 # Outputs: WORKTREE_MODE, CURRENT_BRANCH, BRANCH_WORKTREES (associative array)
 
 detect_worktree_context() {
-  local git_dir git_common_dir is_worktree
+  # Check if we're in a worktree using git's built-in detection
+  # In a worktree, .git is a file containing "gitdir: <path>"
+  # In main repo, .git is a directory
+  local is_worktree="false"
+  local git_dir
+
   git_dir=$(git rev-parse --git-dir 2>/dev/null)
-  git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null)
-  is_worktree=$([ "$git_dir" != "$git_common_dir" ] && echo "true" || echo "false")
+
+  # Check if .git is a file (worktree) or directory (main repo)
+  if [[ -f "$git_dir/commondir" ]]; then
+    # This is a worktree - commondir file only exists in worktrees
+    is_worktree="true"
+  fi
 
   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
@@ -15,9 +24,13 @@ detect_worktree_context() {
 
     # Build associative array of worktrees for this branch
     declare -gA BRANCH_WORKTREES
-    local path branch wt_branch wt_name
+    local wt_key path branch_key branch wt_branch wt_name
 
-    while read -r path branch; do
+    while read -r wt_key path branch_key branch; do
+      # Validate porcelain format: "worktree /path branch refs/heads/name"
+      [ "$wt_key" != "worktree" ] && continue
+      [ "$branch_key" != "branch" ] && continue
+
       # Extract branch name from worktree
       wt_branch=$(basename "$branch" | sed 's/refs\/heads\///')
       if [ "$wt_branch" = "$CURRENT_BRANCH" ]; then

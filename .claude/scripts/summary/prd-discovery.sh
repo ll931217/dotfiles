@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/source-script.sh"
 
 # Source lib.sh with fallback
-source "lib.sh"
+source_summary_script "lib.sh"
 
 # Discover PRD for single worktree mode using multi-stage algorithm
 # Args: flow_dir current_branch current_worktree
@@ -29,7 +29,7 @@ discover_prd_single() {
   # Stage 2: Context Validation
   local prd_branch prd_wt_path
   prd_branch=$(grep -A5 "^git:" "$latest_prd" | grep "branch:" | awk '{print $2}' | tr -d '"')
-  prd_wt_path=$(grep -A5 "^worktree:" "$latest_prd" | grep "path:" | awk '{print $2}' | tr -d '"')
+  prd_wt_path=$(grep -A5 "^worktree:" "$latest_prd" | head -6 | grep -E "^  path:" | awk '{print $2}' | tr -d '"')
 
   if [ "$prd_branch" = "$current_branch" ] && [ "$prd_wt_path" = "$current_worktree" ]; then
     echo "$latest_prd"
@@ -40,7 +40,7 @@ discover_prd_single() {
   local prd
   for prd in "$flow_dir"/prd-*.md; do
     prd_branch=$(grep -A5 "^git:" "$prd" | grep "branch:" | awk '{print $2}' | tr -d '"')
-    prd_wt_path=$(grep -A5 "^worktree:" "$prd" | grep "path:" | awk '{print $2}' | tr -d '"')
+    prd_wt_path=$(grep -A5 "^worktree:" "$prd" | head -6 | grep -E "^  path:" | awk '{print $2}' | tr -d '"')
     if [ "$prd_branch" = "$current_branch" ] && [ "$prd_wt_path" = "$current_worktree" ]; then
       echo "$prd"
       return 0
@@ -70,7 +70,7 @@ discover_prd_multi() {
       for prd in "$wt_flow_dir"/prd-*.md; do
         [ -f "$prd" ] || continue
         if [ -f "$prd" ]; then
-          prd_wt_path=$(grep -A5 "^worktree:" "$prd" | grep "path:" | awk '{print $2}' | tr -d '"')
+          prd_wt_path=$(grep -A5 "^worktree:" "$prd" | head -6 | grep -E "^  path:" | awk '{print $2}' | tr -d '"')
 
           # Match based on worktree path or empty (for main)
           if [ "$wt_name" = "[main]" ] && [ -z "$prd_wt_path" ]; then

@@ -12,6 +12,15 @@ get_status_display() {
   esac
 }
 
+# Format epic key for display (converts internal key to user-friendly label)
+format_epic_label() {
+  local epic="$1"
+  case "$epic" in
+    "__no_epic__") echo "[no epic]" ;;
+    *) echo "$epic" ;;
+  esac
+}
+
 # Query beads for issue status (open/closed)
 get_issue_status() {
   local issue_id="$1"
@@ -73,9 +82,9 @@ group_issues_by_epic() {
   for issue in "${issues_array[@]}"; do
     epic=$(get_epic_for_issue "$issue")
     if [ -n "$epic" ]; then
-      eval "${epic_groups}[\"$epic\"]+=\"\$issue \""
+      epic_groups["$epic"]+="$issue "
     else
-      eval "${epic_groups}['[no epic]']+=\"\$issue \""
+      epic_groups["__no_epic__"]+="$issue "
     fi
   done
 }

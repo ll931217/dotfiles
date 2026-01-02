@@ -96,7 +96,7 @@ display_single_summary() {
     EPIC_GROUPS_KEYS=($(printf '%s\n' "${!EPIC_GROUPS[@]}" | sort))
 
     for epic in "${EPIC_GROUPS_KEYS[@]}"; do
-      echo "   📦 $epic"
+      echo "   📦 $(format_epic_label "$epic")"
       for issue in ${EPIC_GROUPS[$epic]}; do
         # Get issue title
         local title
@@ -184,7 +184,7 @@ display_worktree_block() {
     epic_keys=($(printf '%s\n' "${!wt_epic_groups[@]}" | sort))
     for epic in "${epic_keys[@]}"; do
       count=$(echo "${wt_epic_groups[$epic]}" | wc -w)
-      echo "     • $epic: $count tasks"
+      echo "     • $(format_epic_label "$epic"): $count tasks"
     done
     echo ""
   else
