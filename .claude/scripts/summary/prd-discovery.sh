@@ -101,7 +101,19 @@ extract_prd_metadata() {
   PRD_VERSION=$(grep -A3 "^prd:" "$prd_file" | grep "version:" | awk '{print $2}' | tr -d '"')
   PRD_STATUS=$(grep -A3 "^prd:" "$prd_file" | grep "status:" | awk '{print $2}' | tr -d '"')
   PRD_FEATURE_NAME=$(grep -A3 "^prd:" "$prd_file" | grep "feature_name:" | awk '{print $2}' | tr -d '"')
-  PRD_RELATED_ISSUES=$(grep -A2 "^beads:" "$prd_file" | grep "related_issues:" | sed 's/related_issues: //' | tr -d '[]')
+  # Extract related_issues from multiline YAML array format
+  # Pattern: captures everything from "related_issues:" to closing "]" on its own line
+  PRD_RELATED_ISSUES=$(awk '
+    BEGIN { found = 0 }
+    /^beads:/ {
+      if (found == 0) in_beads = 1
+    }
+    in_beads && /related_issues:/ { in_issues = 1; next }
+    in_issues && /^\s*\]/ { found = 1; exit }
+    in_issues && /flow-/ { gsub(/[\s,]/, " ", $0); gsub(/"/, "", $0); printf "%s ", $0 }
+  ' "$prd_file" | sed 's/[[:space:]]*$//')
+
+  # related_epics is typically on one line, use original grep approach
   PRD_RELATED_EPICS=$(grep -A2 "^beads:" "$prd_file" | grep "related_epics:" | sed 's/related_epics: //' | tr -d '[]')
   PRD_BRANCH=$(grep -A5 "^git:" "$prd_file" | grep "branch:" | awk '{print $2}' | tr -d '"')
   export PRD_VERSION PRD_STATUS PRD_FEATURE_NAME PRD_RELATED_ISSUES PRD_RELATED_EPICS PRD_BRANCH

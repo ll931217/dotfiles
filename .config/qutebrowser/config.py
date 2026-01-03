@@ -350,5 +350,6 @@ c.aliases = {
     "darkmode": "config-cycle colors.webpage.darkmode.enabled",
 }
 
-config.set("qt.force_software_rendering", "chromium")
-config.set("qt.workarounds.remove_service_workers", True)
+# config.set("qt.force_software_rendering", "chromium")
+# config.set("qt.workarounds.remove_service_workers", True)
+config.set("content.pdfjs", True)
