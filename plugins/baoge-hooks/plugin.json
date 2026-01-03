@@ -49,7 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.scripts/opencode/enhanced-notify.sh",
+            "command": "bash ~/.claude/scripts/baoge-hooks/enhanced-notify.sh",
             "id": "enhanced_notify"
           }
         ]
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.scripts/opencode/danger-alert.sh",
+            "command": "bash ~/.claude/scripts/baoge-hooks/danger-alert.sh",
             "id": "danger_alert"
           }
         ]
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.scripts/opencode/tool-tracker.sh",
+            "command": "bash ~/.claude/scripts/baoge-hooks/tool-tracker.sh",
             "id": "tool_tracker"
           }
         ]
@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.scripts/opencode/session-start-notify.sh",
+            "command": "bash ~/.claude/scripts/baoge-hooks/session-start-notify.sh",
             "id": "session_start_notify"
           }
         ]
@@ -109,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.scripts/opencode/session-end-notify.sh",
+            "command": "bash ~/.claude/scripts/baoge-hooks/session-end-notify.sh",
             "id": "session_end_notify"
           }
         ]
@@ -121,7 +121,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.scripts/opencode/stop-notify.sh",
+            "command": "bash ~/.claude/scripts/baoge-hooks/stop-notify.sh",
             "id": "stop_notify"
           }
         ]
@@ -131,7 +131,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.scripts/opencode/context-monitor.sh",
+            "command": "bash ~/.claude/scripts/baoge-hooks/context-monitor.sh",
             "id": "context_monitor"
           }
         ]

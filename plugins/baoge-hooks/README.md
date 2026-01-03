@@ -24,7 +24,7 @@ The Baoge Hooks Plugin provides a suite of Git-style hooks for Claude Code that 
 2. Select `baoge-hooks` from the menu when prompted
 
 3. The installer will:
-   - Create `~/.scripts/opencode/` directory
+   - Create `~/.claude/scripts/baoge-hooks/` directory
    - Copy all hook scripts to the directory
    - Set executable permissions
    - Register the plugin in Claude Code settings
@@ -33,13 +33,13 @@ The Baoge Hooks Plugin provides a suite of Git-style hooks for Claude Code that 
 
 1. Create the scripts directory:
    ```bash
-   mkdir -p ~/.scripts/opencode
+   mkdir -p ~/.claude/scripts/baoge-hooks
    ```
 
 2. Copy the plugin scripts:
    ```bash
-   cp plugins/baoge-hooks/scripts/*.sh ~/.scripts/opencode/
-   chmod +x ~/.scripts/opencode/*.sh
+   cp plugins/baoge-hooks/scripts/*.sh ~/.claude/scripts/baoge-hooks/
+   chmod +x ~/.claude/scripts/baoge-hooks/*.sh
    ```
 
 3. Register the plugin in your Claude Code settings (`~/.claude/settings.json`):
@@ -74,7 +74,7 @@ The Baoge Hooks Plugin provides a suite of Git-style hooks for Claude Code that 
 
 2. Delete the scripts directory:
    ```bash
-   rm -rf ~/.scripts/opencode
+   rm -rf ~/.claude/scripts/baoge-hooks
    ```
 
 3. Restart Claude Code to deactivate the hooks
@@ -98,7 +98,7 @@ The plugin includes the following hooks:
 
 ### Hook Customization
 
-Each hook script can be customized by editing the files in `~/.scripts/opencode/`:
+Each hook script can be customized by editing the files in `~/.claude/scripts/baoge-hooks/`:
 
 #### Enhanced Notifications (`enhanced-notify.sh`)
 
@@ -109,7 +109,7 @@ Customize notification behavior:
 
 ```bash
 # Edit the notification settings
-vim ~/.scripts/opencode/enhanced-notify.sh
+vim ~/.claude/scripts/baoge-hooks/enhanced-notify.sh
 ```
 
 #### Danger Alerts (`danger-alert.sh`)
@@ -121,7 +121,7 @@ Customize which commands trigger warnings:
 
 ```bash
 # Edit the danger command list
-vim ~/.scripts/opencode/danger-alert.sh
+vim ~/.claude/scripts/baoge-hooks/danger-alert.sh
 ```
 
 #### Context Monitor (`context-monitor.sh`)
@@ -133,7 +133,7 @@ Customize context monitoring:
 
 ```bash
 # Edit the threshold settings
-vim ~/.scripts/opencode/context-monitor.sh
+vim ~/.claude/scripts/baoge-hooks/context-monitor.sh
 ```
 
 ### Script Override Mechanism
@@ -141,7 +141,7 @@ vim ~/.scripts/opencode/context-monitor.sh
 The plugin supports overriding default hook scripts with custom versions:
 
 **How it works:**
-1. Create a custom script in `~/.scripts/opencode/override/` with the same name as the default
+1. Create a custom script in `~/.claude/scripts/baoge-hooks/override/` with the same name as the default
 2. The hook system will check the override directory first before using the default script
 3. This allows customization without modifying the plugin's default scripts
 
@@ -149,16 +149,16 @@ The plugin supports overriding default hook scripts with custom versions:
 
 ```bash
 # Create the override directory
-mkdir -p ~/.scripts/opencode/override
+mkdir -p ~/.claude/scripts/baoge-hooks/override
 
 # Copy the default script as a template
-cp ~/.scripts/opencode/context-monitor.sh ~/.scripts/opencode/override/
+cp ~/.claude/scripts/baoge-hooks/context-monitor.sh ~/.claude/scripts/baoge-hooks/override/
 
 # Edit the override with your customizations
-vim ~/.scripts/opencode/override/context-monitor.sh
+vim ~/.claude/scripts/baoge-hooks/override/context-monitor.sh
 ```
 
-**Note:** The override mechanism requires hook scripts to be updated to check for overrides first. This is planned for a future release. Currently, you can directly edit the scripts in `~/.scripts/opencode/`.
+**Note:** The override mechanism requires hook scripts to be updated to check for overrides first. This is planned for a future release. Currently, you can directly edit the scripts in `~/.claude/scripts/baoge-hooks/`.
 
 ### Plugin Settings
 
@@ -244,7 +244,7 @@ bash plugins/baoge-hooks/install.sh
 
 **Solutions**:
 1. Check that the plugin is registered in `~/.claude/settings.json`
-2. Verify scripts have executable permissions: `ls -la ~/.scripts/opencode/`
+2. Verify scripts have executable permissions: `ls -la ~/.claude/scripts/baoge-hooks/`
 3. Check Claude Code logs for errors
 4. Restart Claude Code
 
@@ -253,8 +253,8 @@ bash plugins/baoge-hooks/install.sh
 **Problem**: Getting "Permission denied" when hooks run.
 
 **Solutions**:
-1. Make scripts executable: `chmod +x ~/.scripts/opencode/*.sh`
-2. Check file ownership: `ls -la ~/.scripts/opencode/`
+1. Make scripts executable: `chmod +x ~/.claude/scripts/baoge-hooks/*.sh`
+2. Check file ownership: `ls -la ~/.claude/scripts/baoge-hooks/`
 3. Ensure scripts are in the correct location
 
 ### Notifications Not Appearing
@@ -264,7 +264,7 @@ bash plugins/baoge-hooks/install.sh
 **Solutions**:
 1. Check your desktop notification settings
 2. Verify the notification daemon is running
-3. Test notification manually: `bash ~/.scripts/opencode/enhanced-notify.sh`
+3. Test notification manually: `bash ~/.claude/scripts/baoge-hooks/enhanced-notify.sh`
 
 ### Context Monitor Warnings
 
@@ -308,7 +308,7 @@ After installation, test the hooks:
 
 1. **Test Notifications**:
    ```bash
-   bash ~/.scripts/opencode/enhanced-notify.sh
+   bash ~/.claude/scripts/baoge-hooks/enhanced-notify.sh
    ```
 
 2. **Test Danger Alert**:
@@ -317,7 +317,7 @@ After installation, test the hooks:
 
 3. **Test Context Monitor**:
    ```bash
-   bash ~/.scripts/opencode/context-monitor.sh
+   bash ~/.claude/scripts/baoge-hooks/context-monitor.sh
    ```
 
 4. **Test Session Hooks**:

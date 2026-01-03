@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Install script for baoge-hooks plugin
-# Copies scripts to ~/.scripts/opencode/ and registers the plugin in Claude Code settings
+# Copies scripts to ~/.claude/scripts/baoge-hooks/ and registers the plugin in Claude Code settings
 #
 
 set -e
@@ -13,7 +13,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_NAME="baoge-hooks"
 SCRIPTS_SOURCE="$SCRIPT_DIR/scripts"
-SCRIPTS_TARGET="$HOME/.scripts/opencode"
+SCRIPTS_TARGET="$HOME/.claude/scripts/baoge-hooks"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
 # Color codes (import from install-lib if available)
@@ -115,7 +115,7 @@ install_scripts() {
             script_name=$(basename "$script")
             cp "$script" "$SCRIPTS_TARGET/$script_name"
             chmod +x "$SCRIPTS_TARGET/$script_name"
-            ((copied++))
+            ((copied++)) || true  # Ignore arithmetic exit code
 
             if [[ $VERBOSE == true ]]; then
                 log "Copied: $script_name"
@@ -185,46 +185,36 @@ register_hooks() {
         return 1
     fi
 
-    # Filter hooks based on enabled flags in config
+    # Extract hooks from plugin.json
     local temp_hooks
     temp_hooks=$(mktemp)
 
-    # Build jq filter to include only enabled hooks
-    jq '
-        .hooks as $all_hooks |
-        .config.hooks as $hook_config |
-        $all_hooks |
-        map_values([
-            .[] |
-            map_values({
-                matcher: .matcher,
-                hooks: [
-                    .hooks[] |
-                    select(
-                        ($hook_config[.id // ""].enabled // true) == true
-                    )
-                ]
-            }) |
-            map(select(.hooks | length > 0))
-        ]) |
-        map_values(select(. | length > 0))
-    ' "$plugin_json" > "$temp_hooks"
+    # Simply extract the hooks object with error handling
+    if ! jq '{hooks: .hooks}' "$plugin_json" > "$temp_hooks" 2>/dev/null; then
+        error "Failed to extract hooks from plugin.json"
+        rm -f "$temp_hooks"
+        return 1
+    fi
 
-    # Check if any hooks are enabled
-    local enabled_count
-    enabled_count=$(jq '
-        [.hooks[][][].hooks[]] | length
-    ' "$temp_hooks")
+    # Verify the output is valid JSON
+    if ! jq empty "$temp_hooks" 2>/dev/null; then
+        error "Invalid JSON generated from plugin.json"
+        rm -f "$temp_hooks"
+        return 1
+    fi
 
-    if [[ "$enabled_count" -eq 0 ]]; then
-        warn "All hooks are disabled in configuration"
-        warn "No hooks will be registered"
+    # Check if any hooks exist
+    local hook_count
+    hook_count=$(jq '.hooks | to_entries | map(.value | map(.hooks) | add) | map(length) | add' "$temp_hooks" 2>/dev/null || echo "0")
+
+    if [[ "$hook_count" -eq 0 ]]; then
+        warn "No hooks found in plugin.json"
         rm -f "$temp_hooks"
         return 0
     fi
 
     if [[ $VERBOSE == true ]]; then
-        log "Registering $enabled_count enabled hook(s)"
+        log "Found $hook_count hook(s) to register"
     fi
 
     # Merge filtered hooks into settings.json
@@ -232,7 +222,7 @@ register_hooks() {
     temp_file=$(mktemp)
 
     # Extract filtered hooks from temp_hooks and merge with existing settings
-    jq -s '
+    if ! jq -s '
         .[0] as $settings |
         .[1].hooks as $plugin_hooks |
         ($settings.hooks // {}) as $existing_hooks |
@@ -245,7 +235,11 @@ register_hooks() {
                 value: (map(.value) | add | unique_by(.matcher // ""))
             }) |
             from_entries)
-    ' "$SETTINGS_FILE" "$temp_hooks" > "$temp_file"
+    ' "$SETTINGS_FILE" "$temp_hooks" > "$temp_file" 2>/dev/null; then
+        error "Failed to merge hooks into settings.json"
+        rm -f "$temp_file" "$temp_hooks"
+        return 1
+    fi
 
     # Verify the merge was successful
     if ! jq empty "$temp_file" 2>/dev/null; then
@@ -270,7 +264,7 @@ verify_installation() {
     # Check scripts directory
     if [[ ! -d "$SCRIPTS_TARGET" ]]; then
         error "Scripts directory not found: $SCRIPTS_TARGET"
-        ((errors++))
+        ((errors++)) || true
     else
         # Check for each script
         local expected_scripts=(
@@ -286,10 +280,10 @@ verify_installation() {
         for script in "${expected_scripts[@]}"; do
             if [[ ! -f "$SCRIPTS_TARGET/$script" ]]; then
                 error "Missing script: $script"
-                ((errors++))
+                ((errors++)) || true
             elif [[ ! -x "$SCRIPTS_TARGET/$script" ]]; then
                 error "Script not executable: $script"
-                ((errors++))
+                ((errors++)) || true
             fi
         done
     fi

@@ -5,7 +5,6 @@
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
     "CLAUDE_CODE_ENABLE_TELEMETRY": "0",
-    "ANTHROPIC_AUTH_TOKEN": "39414d52fc1444b0a0eff04ece39ede8.EURV5t9mup1ft3PQ",
     "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
     "API_TIMEOUT_MS": "3000000",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
@@ -18,18 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/enhanced-notify.sh"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/scripts/danger-alert.sh"
+            "command": "bash ~/.claude/scripts/baoge-hooks/enhanced-notify.sh",
+            "id": "enhanced_notify"
           }
         ]
       }
@@ -40,7 +29,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/tool-tracker.sh"
+            "command": "bash ~/.claude/scripts/baoge-hooks/tool-tracker.sh",
+            "id": "tool_tracker"
           }
         ]
       }
@@ -51,18 +41,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bd prime"
+            "command": "bd prime",
+            "id": "bd_prime"
           }
         ]
       }
     ],
-    "SessionStart": [
+    "PreToolUse": [
       {
-        "matcher": "",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/session-start-notify.sh"
+            "command": "bash ~/.claude/scripts/baoge-hooks/danger-alert.sh",
+            "id": "danger_alert"
           }
         ]
       }
@@ -73,7 +65,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/session-end-notify.sh"
+            "command": "bash ~/.claude/scripts/baoge-hooks/session-end-notify.sh",
+            "id": "session_end_notify"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/baoge-hooks/session-start-notify.sh",
+            "id": "session_start_notify"
           }
         ]
       }
@@ -84,16 +89,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/stop-notify.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/scripts/context-monitor.sh"
+            "command": "bash ~/.claude/scripts/baoge-hooks/stop-notify.sh",
+            "id": "stop_notify"
           }
         ]
       }

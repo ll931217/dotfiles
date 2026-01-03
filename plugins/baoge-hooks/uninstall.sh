@@ -12,7 +12,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_NAME="baoge-hooks"
-SCRIPTS_TARGET="$HOME/.scripts/opencode"
+SCRIPTS_TARGET="$HOME/.claude/scripts/baoge-hooks"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
 # Color codes (import from install-lib if available)
