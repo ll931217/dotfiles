@@ -136,21 +136,104 @@ Customize context monitoring:
 vim ~/.scripts/opencode/context-monitor.sh
 ```
 
+### Script Override Mechanism
+
+The plugin supports overriding default hook scripts with custom versions:
+
+**How it works:**
+1. Create a custom script in `~/.scripts/opencode/override/` with the same name as the default
+2. The hook system will check the override directory first before using the default script
+3. This allows customization without modifying the plugin's default scripts
+
+**Example: Override the context monitor**
+
+```bash
+# Create the override directory
+mkdir -p ~/.scripts/opencode/override
+
+# Copy the default script as a template
+cp ~/.scripts/opencode/context-monitor.sh ~/.scripts/opencode/override/
+
+# Edit the override with your customizations
+vim ~/.scripts/opencode/override/context-monitor.sh
+```
+
+**Note:** The override mechanism requires hook scripts to be updated to check for overrides first. This is planned for a future release. Currently, you can directly edit the scripts in `~/.scripts/opencode/`.
+
 ### Plugin Settings
 
-Configure plugin behavior in `~/.claude/settings.json`:
+Configure plugin behavior and enable/disable individual hooks in `plugins/baoge-hooks/plugin.json`:
 
 ```json
 {
-  "hooks": {
-    "baoge-hooks": {
-      "enabled": true,
-      "notification_style": "rich",
-      "danger_confirm": true,
-      "context_threshold": 80
+  "config": {
+    "enabled": true,
+    "hooks": {
+      "enhanced_notify": {
+        "enabled": true,
+        "description": "Rich notifications with context and formatting"
+      },
+      "danger_alert": {
+        "enabled": true,
+        "description": "Warns before running dangerous commands"
+      },
+      "context_monitor": {
+        "enabled": true,
+        "description": "Monitors token usage and context window capacity"
+      },
+      "tool_tracker": {
+        "enabled": true,
+        "description": "Tracks tool usage and failures"
+      },
+      "bd_prime": {
+        "enabled": true,
+        "description": "Optimizes beads database before compaction"
+      },
+      "session_start_notify": {
+        "enabled": true,
+        "description": "Notifies when session starts"
+      },
+      "session_end_notify": {
+        "enabled": true,
+        "description": "Notifies when session ends"
+      },
+      "stop_notify": {
+        "enabled": true,
+        "description": "Notifies on task completion"
+      }
     }
   }
 }
+```
+
+**To disable a specific hook**, set `"enabled": false` for that hook in the config:
+
+```json
+{
+  "config": {
+    "hooks": {
+      "context_monitor": {
+        "enabled": false
+      }
+    }
+  }
+}
+```
+
+**To disable the entire plugin**, set `"enabled": false` at the top level:
+
+```json
+{
+  "config": {
+    "enabled": false
+  }
+}
+```
+
+**After changing configuration**, reinstall the plugin:
+
+```bash
+bash plugins/baoge-hooks/install.sh
 ```
 
 ## Troubleshooting

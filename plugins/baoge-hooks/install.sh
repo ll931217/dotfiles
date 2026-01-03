@@ -123,6 +123,12 @@ install_scripts() {
         fi
     done
 
+    # Create override directory for user customizations
+    if [[ $DRY_RUN == false ]]; then
+        mkdir -p "$SCRIPTS_TARGET/override"
+        log "Created override directory: $SCRIPTS_TARGET/override"
+    fi
+
     success "Installed $copied script(s) to $SCRIPTS_TARGET"
 }
 
@@ -153,13 +159,23 @@ register_hooks() {
     cp "$SETTINGS_FILE" "$backup_file"
     log "Backed up settings to: $backup_file"
 
-    # Read plugin.json to get hooks
+    # Read plugin.json to get hooks and configuration
     local plugin_json
     plugin_json="$SCRIPT_DIR/plugin.json"
 
     if [[ ! -f "$plugin_json" ]]; then
         error "plugin.json not found: $plugin_json"
         return 1
+    fi
+
+    # Check if plugin is enabled
+    local plugin_enabled
+    plugin_enabled=$(jq -r '.config.enabled // true' "$plugin_json")
+
+    if [[ "$plugin_enabled" != "true" ]]; then
+        warn "Plugin is disabled in configuration (config.enabled = false)"
+        warn "No hooks will be registered"
+        return 0
     fi
 
     # Check if jq is available
@@ -169,11 +185,53 @@ register_hooks() {
         return 1
     fi
 
-    # Merge hooks into settings.json
+    # Filter hooks based on enabled flags in config
+    local temp_hooks
+    temp_hooks=$(mktemp)
+
+    # Build jq filter to include only enabled hooks
+    jq '
+        .hooks as $all_hooks |
+        .config.hooks as $hook_config |
+        $all_hooks |
+        map_values([
+            .[] |
+            map_values({
+                matcher: .matcher,
+                hooks: [
+                    .hooks[] |
+                    select(
+                        ($hook_config[.id // ""].enabled // true) == true
+                    )
+                ]
+            }) |
+            map(select(.hooks | length > 0))
+        ]) |
+        map_values(select(. | length > 0))
+    ' "$plugin_json" > "$temp_hooks"
+
+    # Check if any hooks are enabled
+    local enabled_count
+    enabled_count=$(jq '
+        [.hooks[][][].hooks[]] | length
+    ' "$temp_hooks")
+
+    if [[ "$enabled_count" -eq 0 ]]; then
+        warn "All hooks are disabled in configuration"
+        warn "No hooks will be registered"
+        rm -f "$temp_hooks"
+        return 0
+    fi
+
+    if [[ $VERBOSE == true ]]; then
+        log "Registering $enabled_count enabled hook(s)"
+    fi
+
+    # Merge filtered hooks into settings.json
     local temp_file
     temp_file=$(mktemp)
 
-    # Extract hooks from plugin.json and merge with existing settings
+    # Extract filtered hooks from temp_hooks and merge with existing settings
     jq -s '
         .[0] as $settings |
         .[1].hooks as $plugin_hooks |
@@ -187,17 +245,18 @@ register_hooks() {
                 value: (map(.value) | add | unique_by(.matcher // ""))
             }) |
             from_entries)
-    ' "$SETTINGS_FILE" "$plugin_json" > "$temp_file"
+    ' "$SETTINGS_FILE" "$temp_hooks" > "$temp_file"
 
     # Verify the merge was successful
     if ! jq empty "$temp_file" 2>/dev/null; then
         error "Failed to merge hooks - invalid JSON generated"
-        rm -f "$temp_file"
+        rm -f "$temp_file" "$temp_hooks"
         return 1
     fi
 
     # Replace original settings file
     mv "$temp_file" "$SETTINGS_FILE"
+    rm -f "$temp_hooks"
 
     success "Registered hooks in $SETTINGS_FILE"
 }

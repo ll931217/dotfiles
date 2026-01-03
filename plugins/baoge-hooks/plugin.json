@@ -5,6 +5,43 @@
   "author": {
     "name": "baoge"
   },
+  "config": {
+    "enabled": true,
+    "hooks": {
+      "enhanced_notify": {
+        "enabled": true,
+        "description": "Rich notifications with context and formatting"
+      },
+      "danger_alert": {
+        "enabled": true,
+        "description": "Warns before running dangerous commands (rm, git push --force, etc.)"
+      },
+      "context_monitor": {
+        "enabled": true,
+        "description": "Monitors token usage and context window capacity"
+      },
+      "tool_tracker": {
+        "enabled": true,
+        "description": "Tracks tool usage and failures for debugging"
+      },
+      "bd_prime": {
+        "enabled": true,
+        "description": "Optimizes beads database before compaction"
+      },
+      "session_start_notify": {
+        "enabled": true,
+        "description": "Notifies when a Claude Code session starts"
+      },
+      "session_end_notify": {
+        "enabled": true,
+        "description": "Notifies when a Claude Code session ends"
+      },
+      "stop_notify": {
+        "enabled": true,
+        "description": "Notifies on task completion"
+      }
+    }
+  },
   "hooks": {
     "Notification": [
       {
@@ -12,7 +49,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/enhanced-notify.sh"
+            "command": "bash ~/.scripts/opencode/enhanced-notify.sh",
+            "id": "enhanced_notify"
           }
         ]
       }
@@ -23,7 +61,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/danger-alert.sh"
+            "command": "bash ~/.scripts/opencode/danger-alert.sh",
+            "id": "danger_alert"
           }
         ]
       }
@@ -34,7 +73,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/tool-tracker.sh"
+            "command": "bash ~/.scripts/opencode/tool-tracker.sh",
+            "id": "tool_tracker"
           }
         ]
       }
@@ -45,7 +85,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bd prime"
+            "command": "bd prime",
+            "id": "bd_prime"
           }
         ]
       }
@@ -56,7 +97,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/session-start-notify.sh"
+            "command": "bash ~/.scripts/opencode/session-start-notify.sh",
+            "id": "session_start_notify"
           }
         ]
       }
@@ -67,7 +109,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/session-end-notify.sh"
+            "command": "bash ~/.scripts/opencode/session-end-notify.sh",
+            "id": "session_end_notify"
           }
         ]
       }
@@ -78,7 +121,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/stop-notify.sh"
+            "command": "bash ~/.scripts/opencode/stop-notify.sh",
+            "id": "stop_notify"
           }
         ]
       },
@@ -87,7 +131,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/scripts/context-monitor.sh"
+            "command": "bash ~/.scripts/opencode/context-monitor.sh",
+            "id": "context_monitor"
           }
         ]
       }
