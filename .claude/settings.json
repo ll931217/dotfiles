@@ -32,15 +32,6 @@
             "command": "bash ~/.claude/scripts/danger-alert.sh"
           }
         ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/scripts/context-monitor.sh"
-          }
-        ]
       }
     ],
     "PostToolUse": [
@@ -142,6 +133,20 @@
     "greptile@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
     "lua-lsp@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)"
+    ],
+    "ask": [
+      "Bash(gh pr create:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [
+      "Read(*.env)",
+      "Bash(rm:*)"
+    ],
+    "defaultMode": "bypassPermissions"
   },
   "alwaysThinkingEnabled": true
 }

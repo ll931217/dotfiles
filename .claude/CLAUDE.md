@@ -1,8 +1,15 @@
 # CLAUDE.md
 
-**Note**: This project uses [bd (beads)](https://github.com/steveyegge/beads) for issue tracking. Use `bd` commands instead of markdown TODOs. See AGENTS.md for workflow details.
+**Note**: This project uses [bd (beads)](https://github.com/steveyegge/beads) for issue tracking and [worktrunk](https://worktrunk.dev/) for git worktree management.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code.
+## Documentation Index
+
+- **[WORKFLOW.md](WORKFLOW.md)** - Complete workflow guide for beads, worktrunk, and PRD development
+- **[AGENTS.md](AGENTS.md)** - Reference for all custom AI agents
+- **[COMMANDS.md](COMMANDS.md)** - Documentation for custom slash commands
+- **[HOOKS_SETUP.md](HOOKS_SETUP.md)** - Hook system documentation
+
+This file provides general guidance to Claude Code (claude.ai/code) when working with code.
 
 - Code should be easy to read and understand.
 - Keep the code as simple as possible. Avoid unnecessary complexity.
@@ -58,7 +65,8 @@ Use the following Claude Code Agent skills when you see fit:
 
 You MUST follow these user specified guidelines where necessary:
 
-- Use beads tool to keep track of issues instead of markdown todos list, the `bd` command can provide much more context. Use `bd quickstart` to get a quick rundown of what subcommands and features are available.
+- Use beads tool to keep track of issues instead of markdown todos list, the `bd` command can provide much more context. See WORKFLOW.md for comprehensive beads documentation, or use `bd quickstart` for a quick rundown.
+- Use worktrunk (`wt`) for git worktree management when working with parallel agents or isolated features. See WORKFLOW.md for worktrunk commands and patterns.
 - Always use beads to keep track of context.
 - Web frontend:
   - You can test changes with Chrome DevTools MCP
