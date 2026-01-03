@@ -47,12 +47,32 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    - Return first matching PRD
 
    **Stage 4 - No Match Found:**
-   - If no PRD matches current context, inform user
-   - List available PRDs with their metadata
-   - Offer options:
-     a) Create new PRD (run `/prd:plan`)
-     b) Select existing PRD manually
-     c) Exit
+   - If no PRD matches current context, use AskUserQuestion to inform user and offer options:
+     ```
+     AskUserQuestion({
+       questions: [
+         {
+           question: "No PRD matches the current context. Available PRDs: [list]. What would you like to do?",
+           header: "PRD Action",
+           options: [
+             {
+               label: "Create new PRD",
+               description: "Run /prd:plan to create a new PRD"
+             },
+             {
+               label: "Select existing PRD",
+               description: "Manually select one of the available PRDs"
+             },
+             {
+               label: "Exit",
+               description: "Exit the cleanup process"
+             }
+           ],
+           multiSelect: false
+         }
+       ]
+     })
+     ```
 
 2. **Verify Implementation Complete:** Check that all PRD tasks are completed before cleanup.
 
@@ -63,20 +83,30 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 
    - **Step 2b - Completion Check:**
      - Verify ALL related issues have status `closed`
-     - If any issues are NOT closed:
+     - If any issues are NOT closed, use AskUserQuestion to present options:
        ```
-       ⚠️  Not all tasks are complete yet
-
-       Open/In-Progress Issues:
-       - proj-123: Implement login endpoint (in_progress)
-       - proj-456: Add password hashing (open)
-
-       Options:
-       a) Continue anyway (cleanup only completed tasks)
-       b) Exit (complete remaining tasks first)
+       AskUserQuestion({
+         questions: [
+           {
+             question: "Not all tasks are complete yet. Open/In-Progress Issues: [list]. What would you like to do?",
+             header: "Cleanup",
+             options: [
+               {
+                 label: "Continue anyway",
+                 description: "Cleanup only completed tasks"
+               },
+               {
+                 label: "Exit",
+                 description: "Complete remaining tasks first"
+               }
+             ],
+             multiSelect: false
+           }
+         ]
+       })
        ```
-     - If user chooses (b), exit cleanup and suggest running `/prd:implement`
-     - If user chooses (a), proceed with partial cleanup
+     - If user selects "Exit", exit cleanup and suggest running `/prd:implement`
+     - If user selects "Continue anyway", proceed with partial cleanup
 
    - **Step 2c - Task Summary:**
      - Display completion summary:

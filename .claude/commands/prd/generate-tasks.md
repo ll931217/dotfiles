@@ -9,6 +9,7 @@ description: Generate tasks from a PRD (using beads if available, otherwise Todo
 To guide an AI assistant in creating a detailed, step-by-step task hierarchy based on an existing Product Requirements Document (PRD). The tasks should guide a developer through implementation with proper dependency tracking.
 
 **Task Storage Options:**
+
 - **With beads (`bd`) installed:** Tasks are stored in the `.beads/` database with full dependency tracking
 - **Without beads:** Tasks are tracked using the internal TodoWrite tool with basic hierarchical organization
 
@@ -118,7 +119,6 @@ This command intelligently detects whether a PRD has been previously processed a
    **Discovery Process:**
 
    The AI performs the following discovery process internally:
-
    1. Find the most recently modified PRD in the `/.flow/` directory
    2. Extract metadata from the PRD frontmatter (branch, worktree path)
    3. Detect current git context (branch, worktree)
@@ -127,21 +127,32 @@ This command intelligently detects whether a PRD has been previously processed a
 
    **User Interaction Example:**
 
+   **Use AskUserQuestion to prompt the user:**
+
    ```
-   ⚠️  No PRD found matching current context
-
-   Current Context:
-   - Branch: feature/user-auth
-   - Worktree: /home/user/project/.git/worktrees/feature-user-auth
-
-   Available PRDs:
-   - prd-authentication-v1.md (branch: main, worktree: none)
-   - prd-user-profile-v2.md (branch: feature/profile, worktree: /home/user/project/.git/worktrees/feature-profile)
-
-   Options:
-   a) Create new PRD with /prd:plan
-   b) Use existing PRD (specify which)
-   c) Exit
+   AskUserQuestion({
+     questions: [
+       {
+         question: "No PRD found matching current context (branch: feature/user-auth). What would you like to do?",
+         header: "PRD Action",
+         options: [
+           {
+             label: "Create new PRD",
+             description: "Run /prd:plan to create a new PRD for this context"
+           },
+           {
+             label: "Use existing PRD",
+             description: "Select and use one of the existing PRDs"
+           },
+           {
+             label: "Exit",
+             description: "Exit the task generation process"
+           }
+         ],
+         multiSelect: false
+       }
+     ]
+   })
    ```
 
    **After PRD Discovery:**
@@ -172,6 +183,7 @@ This command intelligently detects whether a PRD has been previously processed a
 
    - **Step 3d - Update Strategy Decision:**
      Present options to user based on existing tasks:
+
      ```
      ℹ️  Found existing tasks for this PRD:
      Options:
@@ -392,6 +404,8 @@ Next steps:
 
 This guides the user to either review the tasks first or dive straight into implementation.
 
+DO NOT suggest the user to use the `bd` command, this command is mainly reserved for AI Agents to use.
+
 ## Issue Structure
 
 ### With beads (`bd`) installed:
@@ -399,13 +413,17 @@ This guides the user to either review the tasks first or dive straight into impl
 Issues are stored in the `.beads/` database with the following hierarchy:
 
 #### Epic (Parent Issue)
+
 High-level issue grouping multiple related tasks. Should include:
+
 - Epic description with clear purpose
 - Files to be created/modified
 - Reference to PRD version
 
 #### Task (Sub-Issue)
+
 Individual actionable tasks that complete epic requirements. Should include:
+
 - Task description with specific deliverable
 - Files to be created/modified
 - Link to parent epic (parent-child relationship)
@@ -415,13 +433,17 @@ Individual actionable tasks that complete epic requirements. Should include:
 Tasks are tracked internally using the TodoWrite tool:
 
 #### Epic (Parent Todo Item)
+
 High-level task grouping multiple related sub-tasks. Should include:
+
 - Epic description with clear purpose
 - Status: "pending", "in_progress", or "completed"
 - Active form: "[Verb]-ing [epic title]"
 
 #### Task (Sub-Todo Item)
+
 Individual actionable tasks that complete epic requirements. Should include:
+
 - Task description with specific deliverable
 - Status: "pending", "in_progress", or "completed"
 - Parent epic name in the task title for hierarchy: "[Epic Title] Sub-task: specific task"

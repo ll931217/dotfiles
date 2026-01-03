@@ -14,17 +14,18 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
 
     For each missing optional tool, offer to install:
 
-    | Tool  | Check       | Installation                                                                                    |
-    | ----- | ----------- | ----------------------------------------------------------------------------------------------- |
-    | `git` | `which git` | Use system package manager (e.g., `sudo apt install git`, `brew install git`)                   |
+    | Tool  | Check       | Installation                                                                                                                              |
+    | ----- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+    | `git` | `which git` | Use system package manager (e.g., `sudo apt install git`, `brew install git`)                                                             |
     | `bd`  | `which bd`  | `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh \| bash` (optional - TodoWrite fallback available) |
-    | `wt`   | `which wt`  | `brew install max-sixty/worktrunk/wt` OR `cargo install worktrunk` (optional - git fallback available) |
+    | `wt`  | `which wt`  | `brew install max-sixty/worktrunk/wt` OR `cargo install worktrunk` (optional - git fallback available)                                    |
     - Only `git` is required.
     - If `wt` is missing, the AI will use native git worktree commands.
     - If `bd` is missing, the AI will use the internal TodoWrite tool for task tracking.
 
-⚠️  **Warning about beads (bd):**
+⚠️ **Warning about beads (bd):**
 Without beads installed, task context may be lost between sessions. Beads provides:
+
 - Persistent task storage across sessions
 - Dependency tracking between tasks
 - Better visibility into progress and blockers
@@ -35,100 +36,78 @@ Consider installing beads for the best experience, especially for larger feature
 2.  **Verify Git Worktree:** Before proceeding, check if the current directory is a Git worktree. If it is not a worktree, warn the user and offer options.
     - **Warning message should include:**
       - An explanation that PRDs are best created in isolated worktrees for better branch/feature management.
-    - **Offer 3 choices:**
-      1. **Create worktree now** - Ask for a feature name, create the worktree, then instruct user to start a new session:
+    - **Use AskUserQuestion to offer 3 choices:**
 
-         The AI will:
-         - Check if `wt` (worktrunk) is installed
-         - If `wt` is available: Use `wt switch -c -x claude feature/<name>` to create and start Claude
-         - If `wt` is NOT available: Use `git worktree add -b feature/<name> ../repo.<name>` and save the prompt to a file
-
-         **With worktrunk (wt) installed:**
-         The AI will create the worktree and launch Claude automatically:
-         ```bash
-         wt switch -c -x claude feature/<name>
-         ```
-
-         **Without worktrunk (git fallback):**
-         The AI will:
-         1. Create the worktree: `git worktree add -b feature/<name> ../repo.<name>`
-         2. Save the current prompt to: `/tmp/prd-prompt-<timestamp>.txt`
-         3. Instruct user to:
-            - Exit this Claude Code session
-            - Navigate to the new worktree: `cd ../repo.<name>` (or the actual path)
-            - Open Claude Code in the new directory
-            - Read the prompt file: `/tmp/prd-prompt-<timestamp>.txt`
-            - Continue with the prompt
-
-         Example prompt file:
-         ```
-         # PRD Planning Prompt Saved from Previous Session
-
-         Your feature name: auth
-
-         To continue planning your PRD:
-         1. Re-run the /prd:plan command in this new worktree
-         2. Answer the clarifying questions again
-
-         [Original prompt context preserved]
-         ```
-      2. **Continue without worktree** - Proceed with the current directory.
-      3. **Exit** - Gracefully exit the process.
-    - Example interaction:
-
-      **With worktrunk (wt) installed:**
       ```
-      ⚠️  Not in a git worktree. PRDs work best in isolated worktrees.
-
-      Options:
-      a) Create worktree now (recommended)
-      b) Continue without worktree
-      c) Exit
-
-      > a
-      Enter feature name: auth
-
-      ✓ Checking for worktrunk (wt)...
-      ✓ worktrunk found! Creating worktree with Claude integration...
-      ✓ Created worktree: feature/auth
-
-      Claude Code will now open in the new worktree. Continue with /prd:plan there.
+      AskUserQuestion({
+        questions: [
+          {
+            question: "PRDs work best in isolated worktrees for better branch/feature management. What would you like to do?",
+            header: "Worktree",
+            options: [
+              {
+                label: "Create worktree",
+                description: "Create a new git worktree and continue PRD planning there (recommended)"
+              },
+              {
+                label: "Continue without worktree",
+                description: "Proceed with PRD planning in the current directory"
+              },
+              {
+                label: "Exit",
+                description: "Exit the PRD planning process"
+              }
+            ],
+            multiSelect: false
+          }
+        ]
+      })
       ```
 
-      **Without worktrunk (git fallback):**
-      ```
-      ⚠️  Not in a git worktree. PRDs work best in isolated worktrees.
-      ℹ️  worktrunk (wt) not found - using git worktree commands
+      - **If user selects "Create worktree":**
+        The AI will:
+        - Ask for a feature name using AskUserQuestion (or allow free text input for custom names)
+        - Check if `wt` (worktrunk) is installed
+        - If `wt` is available: Use `wt switch -c -x claude feature/<name>` to create and start Claude
+        - If `wt` is NOT available: Use `git worktree add -b feature/<name> ../repo.<name>` and save the prompt to a file
 
-      Options:
-      a) Create worktree now (recommended)
-      b) Continue without worktree
-      c) Exit
+        **With worktrunk (wt) installed:**
+        The AI will create the worktree and launch Claude automatically:
 
-      > a
-      Enter feature name: auth
+        ```bash
+        wt switch -c -x claude feature/<name>
+        ```
 
-      ✓ Creating worktree using git...
-      ✓ Created worktree: feature/auth at /path/to/repo.auth
+        **Without worktrunk (git fallback):**
+        The AI will:
+        1. Create the worktree: `git worktree add -b feature/<name> ../repo.<name>`
+        2. Save the current prompt to: `/tmp/prd-prompt-<timestamp>.txt`
+        3. Instruct user to:
+           - Exit this Claude Code session
+           - Navigate to the new worktree: `cd ../repo.<name>` (or the actual path)
+           - Open Claude Code in the new directory
+           - Read the prompt file: `/tmp/prd-prompt-<timestamp>.txt`
+           - Continue with the prompt
 
-      📝 Your prompt has been saved to: /tmp/prd-prompt-20250103-143022.txt
+        Example prompt file:
 
-      To continue in the new worktree:
-      1. Exit this Claude Code session (Ctrl+C or type 'exit')
-      2. Navigate to worktree: cd /path/to/repo.auth
-      3. Start Claude Code
-      4. Read the saved prompt file for context: cat /tmp/prd-prompt-20250103-143022.txt
-      5. Re-run: /prd:plan
+        ```
+        # PRD Planning Prompt Saved from Previous Session
 
-      Goodbye!
-      ```
+        Your feature name: auth
 
-2.5 **Detect Git Context:** Gather git metadata for the PRD frontmatter.
-    - Detect current branch name using `git rev-parse --abbrev-ref HEAD`
-    - Determine if in a worktree by comparing `--git-dir` vs `--git-common-dir`
-    - Get worktree name from branch or directory
-    - Capture commit SHA, author, and timestamp
-    - Store all context for frontmatter generation
+        To continue planning your PRD:
+        1. Re-run the /prd:plan command in this new worktree
+        2. Answer the clarifying questions again
+
+        [Original prompt context preserved]
+        ```
+
+      - **If user selects "Continue without worktree":** Proceed with the current directory.
+
+      - **If user selects "Exit":** Gracefully exit the process.
+
+2.5 **Detect Git Context:** Gather git metadata for the PRD frontmatter. - Detect current branch name using `git rev-parse --abbrev-ref HEAD` - Determine if in a worktree by comparing `--git-dir` vs `--git-common-dir` - Get worktree name from branch or directory - Capture commit SHA, author, and timestamp - Store all context for frontmatter generation
 
     **Detection Commands:**
     ```bash
@@ -167,10 +146,24 @@ Consider installing beads for the best experience, especially for larger feature
     REPO_ROOT=$(git rev-parse --show-toplevel)
     ```
 
+2.75 **Check for Existing PRD (Iteration Detection):**
+After detecting git context, check if a PRD already exists for this context: - Search `/.flow/` directory for PRD files (`prd-*.md`) - For each PRD found, read its frontmatter - Compare `git.branch`, `worktree.name`, and `worktree.path` with current context - **Match criteria:** ALL of the following must match - Branch name matches exactly (or both are main/master) - Worktree name matches (if both in worktrees) - Worktree path matches (if both in worktrees)
+
+    **If existing PRD is found (iteration mode):**
+    - Display message: `Found existing PRD: [filename] (version: N, status: [status])`
+    - Explain: "I'll iterate on this existing PRD. When you provide your updates, I'll increment the version and update the content."
+    - Store the existing PRD path and version for later use in step 6
+
+    **If no existing PRD is found (new PRD mode):**
+    - Display message: "No existing PRD found for this context. Creating a new PRD."
+    - Proceed to create a new PRD file
+
 3.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
-4.  **Ask Clarifying Questions:** Before writing the PRD, the AI _must_ ask clarifying questions to gather sufficient detail. The goal is to understand the "what" and "why" of the feature, not necessarily the "how" (which the developer will figure out). Make sure to provide options in letter/number lists so I can respond easily with my selections.
+4.  **Ask Clarifying Questions:** Before writing the PRD, the AI _must_ ask clarifying questions using the AskUserQuestion tool. This provides an interactive UI where users can select options with keyboard navigation (arrow keys or number keys).
     - Ask **3-5 clarifying questions at a time** to avoid overwhelming the user. Prioritize the most critical unknowns first.
-    - Use the AskUserQuestions tool, this provides a better user experience. (NOTE: Only available with Claude Code)
+    - **Always use the AskUserQuestion tool** - do NOT use letter/number lists
+    - Each question should have 2-4 options with clear descriptions
+    - Use multiSelect=true for questions where multiple options can be selected
 
 4.5 **Priority Inference & Collection:** After gathering clarifying answers, infer and collect priorities for each functional requirement.
 
@@ -200,11 +193,28 @@ Consider installing beads for the best experience, especially for larger feature
 
 5.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
 6.  **Save PRD Draft:**
-    - Generate YAML frontmatter with detected git context
-    - Append generated PRD content after frontmatter
-    - Save as `prd-[feature-name]-v1.md` inside the `/.flow` directory
+    - **First, check for existing PRD in current context:**
+      - Search `/.flow/` directory for PRDs matching current git context (branch, worktree)
+      - Check PRD frontmatter for matching `git.branch`, `worktree.path`, etc.
+    - **If existing PRD is found (iteration mode):**
+      - Read the existing PRD file
+      - Increment version: `version: N` → `version: N+1`
+      - Update status: If currently `approved` or `implemented`, reset to `draft`
+      - Update `updated_at` timestamp and `updated_at_commit`
+      - Add changelog entry documenting the iteration
+      - **Replace the PRD content** with newly generated content
+      - Keep the same filename (e.g., `prd-[feature]-v1.md` stays as `prd-[feature]-v1.md`)
+    - **If no existing PRD found (new PRD mode):**
+      - Generate YAML frontmatter with detected git context
+      - Set initial `version: v1` and `status: draft`
+      - Append generated PRD content after frontmatter
+      - Save as `prd-[feature-name]-v1.md` inside the `/.flow` directory
+    - **Display confirmation message:**
+      - For new PRD: `Created PRD: prd-[feature]-v1.md`
+      - For iteration: `Updated PRD: prd-[feature]-vN.md (version N → N+1)`
 
     **Frontmatter Format:**
+
     ```yaml
     ---
     prd:
@@ -244,6 +254,7 @@ Consider installing beads for the best experience, especially for larger feature
     ```
 
     **Example Frontmatter:**
+
     ```yaml
     ---
     prd:
@@ -294,16 +305,16 @@ Consider installing beads for the best experience, especially for larger feature
 
     ```yaml
     priorities:
-      enabled: true              # Enable/disable priority system
-      default: P2                # Default priority for unspecified requirements
-      inference_method: ai_inference_with_review  # How priorities are assigned
-      requirements:              # Array of prioritized requirements
-        - id: FR-1               # Requirement identifier
-          text: "..."            # Full requirement text
-          priority: P1           # Priority level (P0-P4)
-          confidence: high       # AI confidence: high/medium/low
-          inferred_from: "..."   # Rationale for priority assignment
-          user_confirmed: true   # Whether user confirmed this priority
+      enabled: true # Enable/disable priority system
+      default: P2 # Default priority for unspecified requirements
+      inference_method: ai_inference_with_review # How priorities are assigned
+      requirements: # Array of prioritized requirements
+        - id: FR-1 # Requirement identifier
+          text: "..." # Full requirement text
+          priority: P1 # Priority level (P0-P4)
+          confidence: high # AI confidence: high/medium/low
+          inferred_from: "..." # Rationale for priority assignment
+          user_confirmed: true # Whether user confirmed this priority
     ```
 
     **Priority Levels:**
@@ -314,15 +325,38 @@ Consider installing beads for the best experience, especially for larger feature
     - **P4** - Lowest: Backlog items, stretch goals, future considerations
 
     **Important:** The variables collected in step 2.5 should be used to populate the frontmatter. The feature_name should be derived from the filename (e.g., `prd-authentication.md` → `authentication`).
+
 7.  **PRD Review & Approval Cycle:**
 
 - Present the draft PRD to the user with the PRD Review Checklist (see section below)
 - **Use AskUserQuestion to request approval:**
-  - Question: "Does this PRD meet your requirements?"
-  - Options:
-    - "Yes" (Approve PRD and proceed to task generation)
-    - "No" (Restart from clarifying questions)
-    - "Changes" (Collect feedback and revise)
+
+```
+AskUserQuestion({
+  questions: [
+    {
+      question: "Does this PRD meet your requirements?",
+      header: "Approval",
+      options: [
+        {
+          label: "Yes",
+          description: "Approve PRD and proceed to task generation"
+        },
+        {
+          label: "No",
+          description: "Restart from clarifying questions"
+        },
+        {
+          label: "Changes",
+          description: "Collect feedback and revise"
+        }
+      ],
+      multiSelect: false
+    }
+  ]
+})
+```
+
 - **If "Yes":**
   - Update PRD status in frontmatter from `draft` to `approved`
   - Add initial changelog entry (version 1)
@@ -340,6 +374,7 @@ Consider installing beads for the best experience, especially for larger feature
 
 **PRD Update Process (when changes are requested):**
 The AI performs the following steps internally to update the PRD:
+
 1. Read the current version from the frontmatter
 2. Increment the version number
 3. Update the version, timestamp, and commit SHA in the frontmatter
@@ -356,6 +391,7 @@ When the user edits an existing PRD that has status `approved` or `implemented`:
 5. **Prompt to regenerate**: Offer to run `/prd:generate-tasks`
 
 The AI performs the following steps:
+
 - Check current PRD status
 - If approved or implemented:
   - Reset status to draft
@@ -368,6 +404,7 @@ The AI performs the following steps:
 **Archive function for old tasks:**
 
 The AI archives all tasks related to a PRD by:
+
 1. Getting the list of related issues from the PRD frontmatter
 2. For each related issue that exists:
    - Adding a "superseded" label
@@ -392,26 +429,51 @@ Next Steps:
 2. Run /prd:generate-tasks to create new tasks from updated requirements
 3. Approve the PRD to begin implementation
 
-Would you like to run /prd:generate-tasks now? [Y/n]
+**Use AskUserQuestion to prompt the user:**
+
 ```
 
-If user confirms, automatically invoke the generate-tasks workflow.
+AskUserQuestion({
+questions: [
+{
+question: "Would you like to run /prd:generate-tasks now to create new tasks from the updated PRD?",
+header: "Next Step",
+options: [
+{
+label: "Yes",
+description: "Generate tasks from the updated PRD"
+},
+{
+label: "No",
+description: "Skip task generation for now"
+}
+],
+multiSelect: false
+}
+]
+})
+
+```
+
+If user selects "Yes", automatically invoke the generate-tasks workflow.
 
 **Next Step After Approval:**
 
 After the user approves the PRD (option "Yes"), display the following message:
 
 ```
+
 ✅ PRD Approved!
 
 📋 PRD: prd-[feature]-vN.md
-   Status: draft → approved
-   Version: N
-   Branch: [branch-name]
+Status: draft → approved
+Version: N
+Branch: [branch-name]
 
 Next steps:
 → Run /prd:generate-tasks to create implementation tasks
-```
+
+````
 
 8.  **Changelog:**
 
@@ -425,14 +487,52 @@ Each PRD includes a changelog section at the bottom tracking all versions:
   | 3       | 2025-01-03 09:15 | Clarified file upload limits           |
   | 2       | 2025-01-02 14:30 | Added Admin role permissions          |
   | 1       | 2025-01-02 10:30 | Initial PRD approved                  |
-  ```
+````
 
 9.  **Task Tracking Reference:** After PRD approval, the user will invoke `/prd:generate-tasks` to create implementation tasks using beads. The PRD file will be referenced in all task descriptions.
 10. **Review & Refine (Deprecated):** The approval workflow in step 7 now handles PRD review. Proceed to task generation after approval.
 
 ## Clarifying Questions
 
-The AI should adapt its questions based on the prompt. Group questions into categories to systematically cover all areas:
+The AI should use the AskUserQuestion tool for all clarifying questions. Group questions into categories to systematically cover all areas.
+
+### Tool Usage
+
+**Use the AskUserQuestion tool with this structure:**
+
+```
+AskUserQuestion({
+  questions: [
+    {
+      question: "What is the primary goal of this feature?",
+      header: "Goal",
+      options: [
+        {
+          label: "Solve a specific problem",
+          description: "Address an existing pain point"
+        },
+        {
+          label: "Add new capability",
+          description: "Enable something not currently possible"
+        },
+        {
+          label: "Improve experience",
+          description: "Enhance existing functionality"
+        }
+      ],
+      multiSelect: false
+    }
+  ]
+})
+```
+
+**Key Guidelines:**
+
+- **header**: Short label (max 12 chars) displayed as a chip/tag
+- **question**: Clear question text ending with a question mark
+- **options**: 2-4 options with concise labels and helpful descriptions
+- **multiSelect**: Set to `true` when multiple options can apply (e.g., user roles)
+- The tool automatically provides an "Other" option for custom input
 
 ### Business Context
 
@@ -471,15 +571,16 @@ The AI should adapt its questions based on the prompt. Group questions into cate
 
 The AI infers priority levels (P0-P4) from requirement language using keyword detection:
 
-| Priority | Level    | Keyword Triggers                              | Examples                              |
-|----------|----------|----------------------------------------------|---------------------------------------|
-| P0       | Critical | critical, blocking, security, must-have, core | "User authentication is critical"     |
-| P1       | High     | urgent, important, primary, main, key         | "Main feature for Q1 release"         |
+| Priority | Level    | Keyword Triggers                              | Examples                               |
+| -------- | -------- | --------------------------------------------- | -------------------------------------- |
+| P0       | Critical | critical, blocking, security, must-have, core | "User authentication is critical"      |
+| P1       | High     | urgent, important, primary, main, key         | "Main feature for Q1 release"          |
 | P2       | Normal   | should, standard, typical, expected (default) | "Users should be able to upload files" |
-| P3       | Low      | nice-to-have, optional, could, enhancement    | "Could add dark mode later"           |
-| P4       | Lowest   | eventually, backlog, maybe, stretch          | "Maybe add advanced search"           |
+| P3       | Low      | nice-to-have, optional, could, enhancement    | "Could add dark mode later"            |
+| P4       | Lowest   | eventually, backlog, maybe, stretch           | "Maybe add advanced search"            |
 
 **Inference Guidelines:**
+
 1. Analyze requirement text for keyword presence
 2. Consider context and emphasis (e.g., "CRITICAL" vs "critical")
 3. Check for negation patterns (e.g., "not critical")
@@ -487,23 +588,25 @@ The AI infers priority levels (P0-P4) from requirement language using keyword de
 5. When multiple keywords exist, use highest priority match
 
 **Confidence Levels:**
+
 - **High**: Explicit keyword (e.g., "critical", "urgent") with clear context
 - **Medium**: Implicit priority from domain context or user emphasis
 - **Low**: No clear indicators, using default P2
 
 ## Priority Confirmation Workflow
 
-After AI inference, the user must confirm all assigned priorities:
+After AI inference, the user must confirm all assigned priorities using the AskUserQuestion tool.
 
 **Confirmation Process:**
-1. **Present Inferred Priorities**: Display each requirement with its inferred priority
-2. **User Review Options**:
-   - Accept: Keep inferred priority
-   - Adjust: Change priority level (P0-P4)
-   - Skip: Mark as `user_confirmed: false` and use default
+
+1. **Present Inferred Priorities**: Display each requirement with its inferred priority in table format
+2. **Use AskUserQuestion for Confirmation**:
+   - Ask if user wants to accept all, adjust individually, or redo inference
+   - If adjusting, iterate through each requirement offering priority selection
 3. **Store Results**: Update frontmatter with confirmed priorities
 
 **Example Interaction:**
+
 ```
 AI: Based on your responses, I've inferred the following priorities:
 
@@ -515,16 +618,19 @@ AI: Based on your responses, I've inferred the following priorities:
 │ FR-3│ Social login (OAuth)          │ P3 (Low)  │ Medium     │
 └─────┴───────────────────────────────┴───────────┴────────────┘
 
-Please confirm:
-- Enter 'Y' to accept all
-- Enter 'FR-X:P#' to adjust (e.g., 'FR-3:P2' to upgrade social login)
-- Enter 'N' to redo priority inference
+[AskUserQuestion invoked]
+Question: How would you like to proceed?
+Options:
+- Accept all (Accept all inferred priorities)
+- Adjust individually (Review and modify each priority)
+- Redo inference (Restart priority inference)
 
-> Y
+> User selects: Accept all
 ✓ All priorities confirmed
 ```
 
 **Update Frontmatter:**
+
 ```yaml
 priorities:
   requirements:
@@ -599,13 +705,14 @@ The generated PRD should include the following sections:
 3.  **User Stories:** Detail the user narratives describing feature usage and benefits.
 4.  **Functional Requirements:** List the specific functionalities the feature must have. Use clear, concise language (e.g., "The system must allow users to upload a profile picture."). Number these requirements. **Include priority for each requirement in table format:**
 
-    | ID   | Requirement                              | Priority | Notes                |
-    |------|------------------------------------------|----------|----------------------|
-    | FR-1 | Users can authenticate with email/pass   | P1       | Core feature         |
-    | FR-2 | Users can reset password via email       | P2       | Standard feature     |
-    | FR-3 | Users can enable 2FA                     | P3       | Nice-to-have         |
+    | ID   | Requirement                            | Priority | Notes            |
+    | ---- | -------------------------------------- | -------- | ---------------- |
+    | FR-1 | Users can authenticate with email/pass | P1       | Core feature     |
+    | FR-2 | Users can reset password via email     | P2       | Standard feature |
+    | FR-3 | Users can enable 2FA                   | P3       | Nice-to-have     |
 
     Requirements are derived from the `priorities.requirements` array in frontmatter.
+
 5.  **Non-Goals (Out of Scope):** Clearly state what this feature will _not_ include to manage scope.
 6.  **Assumptions:** Document what you're taking for granted (e.g., "User is already authenticated").
 7.  **Dependencies:** List any features, systems, or APIs this feature relies on.
@@ -648,4 +755,5 @@ All task management is handled through beads integration - no separate task file
 3. Take the user's answers to the clarifying questions and improve the PRD
 4. Use the beads tool (`read_todos`/`write_todos`) for task tracking
 5. If the user is satisfied with the PRD, suggest the user to use `/prd:generate-tasks` command
-6. ULTRATHINK
+6. DO NOT suggest the user to use the `bd` command, this command is mainly reserved for AI Agents to use.
+7. ULTRATHINK

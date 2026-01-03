@@ -3,6 +3,7 @@
 Guidelines for managing task lists to track progress on completing a PRD.
 
 **Task Management Options:**
+
 - **With beads (`bd`) installed:** Full-featured task tracking with dependencies, ready task detection, and persistent storage
 - **Without beads:** Basic task tracking using the internal TodoWrite tool (limited features, no persistent storage)
 
@@ -14,6 +15,7 @@ Guidelines for managing task lists to track progress on completing a PRD.
 
 **Instructions for AI Agent:**
 If you are reading this workflow and ANY of the following are true:
+
 1. The "Last Refresh" timestamp is more than 30 minutes old
 2. You suspect the conversation has been auto-compacted by Claude Code
 3. You feel unsure about the current task state or progress
@@ -26,6 +28,7 @@ After executing `/prd:summary`, replace the content between the `==== LATEST SUM
 **Current Status Summary:**
 
 ==== LATEST SUMMARY ====
+
 <!--
 [Paste /prd:summary output here]
 
@@ -57,6 +60,7 @@ Implement secure user authentication with email/password...
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -->
+
 ==== END LATEST SUMMARY ====
 
 <!-- END AUTO-COMPACTION DETECTION ZONE -->
@@ -122,11 +126,13 @@ Before beginning implementation, check for task tracking availability:
 **Automated Check:** The AI should verify whether beads (`bd`) is available:
 
 **With beads (`bd`) installed:**
+
 - The `bd` command is available in the system PATH
 - The `.beads` directory exists (initialize with `bd init` if not present)
 - Beads database is functional
 
 **Without beads (TodoWrite fallback):**
+
 - The AI will use the internal TodoWrite tool for task tracking
 - Note: Task context may be lost between sessions
 - Note: No persistent dependency tracking or ready task detection
@@ -138,12 +144,14 @@ Before beginning implementation, check for task tracking availability:
 Before beginning implementation, discover and validate the PRD:
 
 **Auto-Discovery:** Use the same discovery algorithm as `/prd:generate-tasks`:
+
 1. Check latest modified PRD for metadata match
 2. Validate branch and worktree context
 3. Fallback search if no match
 4. Prompt user if no matching PRD found
 
 **Discovery Commands:**
+
 ```bash
 # Find latest PRD
 LATEST_PRD=$(find /.flow -name "prd-*.md" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
@@ -168,13 +176,36 @@ fi
 ```
 
 **Status Validation:** After discovering the PRD:
+
 - Check `prd.status` field in frontmatter
-- If status is `draft`, warn user:
+- If status is `draft`, use AskUserQuestion to warn the user:
+
   ```
-  ⚠️  PRD status is "draft"
-  This PRD has not been approved yet.
-  Consider running /prd:generate-tasks first, or continue anyway?
+  AskUserQuestion({
+    questions: [
+      {
+        question: "PRD status is \"draft\" - this PRD has not been approved yet. What would you like to do?",
+        header: "PRD Status",
+        options: [
+          {
+            label: "Continue anyway",
+            description: "Proceed with implementation despite draft status"
+          },
+          {
+            label: "Run /prd:generate-tasks",
+            description: "Generate tasks and approve the PRD first"
+          },
+          {
+            label: "Exit",
+            description: "Exit the implementation process"
+          }
+        ],
+        multiSelect: false
+      }
+    ]
+  })
   ```
+
 - If status is `approved`, proceed with implementation
 - Display PRD metadata summary with status indicator:
   ```
@@ -187,6 +218,7 @@ fi
   ```
 
 **Status Indicators:**
+
 - `draft` = 📝 draft (not yet approved)
 - `approved` = ✅ approved (ready for implementation)
 - `implemented` = ✨ implemented (complete)
@@ -199,15 +231,16 @@ Once you've discovered and validated the PRD, run `/prd:summary` to capture the 
 Tasks are displayed with priority indicators and sorted by priority level (P0 → P4).
 
 **Priority Indicators:**
-| Color | Priority | Level    | Description                    |
+| Color | Priority | Level | Description |
 |-------|----------|----------|--------------------------------|
-| 🔴    | P0       | Critical | Urgent, blocking, security     |
-| 🟠    | P1       | High     | Important, urgent functionality |
-| 🟢    | P2       | Normal   | Standard feature (default)      |
-| 🔵    | P3       | Low      | Nice-to-have, enhancement       |
-| ⚪    | P4       | Lowest   | Backlog, future consideration    |
+| 🔴 | P0 | Critical | Urgent, blocking, security |
+| 🟠 | P1 | High | Important, urgent functionality |
+| 🟢 | P2 | Normal | Standard feature (default) |
+| 🔵 | P3 | Low | Nice-to-have, enhancement |
+| ⚪ | P4 | Lowest | Backlog, future consideration |
 
 **Display Format (with beads):**
+
 ```
 Available Ready Tasks (sorted by priority):
 
@@ -223,6 +256,7 @@ Available Ready Tasks (sorted by priority):
 The AI views tasks sorted by priority level (P0 → P4) using internal beads integration.
 
 **Display Format (without beads - TodoWrite):**
+
 ```
 Available Tasks (sorted by priority):
 
@@ -238,6 +272,7 @@ Available Tasks (sorted by priority):
 The AI views tasks from the internal TodoWrite state, organized by epic hierarchy.
 
 **PRD Updates During Implementation:**
+
 - When PRD changes are made (see "PRD Change Management"), update frontmatter:
   - Increment version in `prd.version`
   - Update `metadata.updated_at`
@@ -250,10 +285,12 @@ The AI views tasks from the internal TodoWrite state, organized by epic hierarch
 After completing each task, check if all PRD tasks are complete and update the PRD status to `implemented`.
 
 **With beads (`bd`) installed:**
+
 - After closing each task with `bd close`, check if all PRD tasks are complete
 - Use the helper function below to verify completion and update status
 
 **Without beads (TodoWrite fallback):**
+
 - After marking each task as completed in TodoWrite, check if all tasks are complete
 - Check the internal TodoWrite state for completion
 - Note: Manual verification may be needed if context is lost
@@ -711,9 +748,10 @@ Functional Requirements:
 ````
 
 **History Update:**
+
 ```markdown
 | v4 | 2025-01-16 14:30 | Yes | Major architectural change: REST → GraphQL API |
-````
+```
 
 **Backup Created:**
 
@@ -986,6 +1024,7 @@ When a task cannot proceed (test failures, missing dependencies, blockers):
     - Explain what is blocked and why
     - List specific failing tests or missing dependencies
     - Suggest next steps to resolve
+    - DO NOT suggest the user to use the `bd` command, this command is mainly reserved for AI Agents to use.
 
 3. **Do NOT proceed** to dependent tasks until resolved
 
@@ -1016,21 +1055,32 @@ Only pause execution and ask the user when you encounter:
    - Existing code conflicts with PRD specifications
 
 **Example clarification request:**
+
 ```
 
-⚠️ Clarification needed for task BD-123:
-
-The PRD specifies "users can upload files" but doesn't define:
-
-- Maximum file size
-- Allowed file types
-
-Options:
-a) 10MB limit, images only (jpg, png, gif)
-b) 50MB limit, common documents (pdf, doc, images)
-c) No limit, any file type
-
-Which approach should I use?
+AskUserQuestion({
+questions: [
+{
+question: "Clarification needed for task BD-123: The PRD specifies \"users can upload files\" but doesn't define the maximum file size or allowed file types. Which approach should I use?",
+header: "File Upload",
+options: [
+{
+label: "10MB limit, images only",
+description: "Restrict to jpg, png, gif formats with 10MB size limit"
+},
+{
+label: "50MB limit, documents",
+description: "Allow common documents (pdf, doc, images) with 50MB limit"
+},
+{
+label: "No limit, any type",
+description: "Allow any file type with no size restrictions"
+}
+],
+multiSelect: false
+}
+]
+})
 
 ```
 

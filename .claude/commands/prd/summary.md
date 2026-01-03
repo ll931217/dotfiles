@@ -18,6 +18,7 @@ Provide a concise summary of the current feature implementation, showing:
 **Multi-Worktree Support**: When run in the main directory (not a worktree), the command shows summaries for ALL worktrees related to the current branch in a distinguishable format.
 
 **Task Source:**
+
 - **With beads (`bd`) installed:** Displays issues from the `.beads/` database with full status tracking
 - **Without beads:** Displays tasks from the internal TodoWrite state with basic status tracking
 
@@ -48,5 +49,8 @@ This organization makes the code:
 
 **Beads Integration:**
 The scripts detect whether beads (`bd`) is installed and adapt accordingly:
+
 - With beads: Uses `bd` commands to query task status and display detailed progress
 - Without beads: Falls back to basic summary display without detailed task status
+
+DO NOT suggest the user to use the `bd` command, this command is mainly reserved for AI Agents to use.
