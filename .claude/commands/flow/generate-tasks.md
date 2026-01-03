@@ -81,7 +81,7 @@ This command intelligently detects whether a PRD has been previously processed a
 
 ## Prerequisites
 
-- **Required:** A PRD file created via `/prd:plan` in the current branch/worktree context
+- **Required:** A PRD file created via `/flow:plan` in the current branch/worktree context
 - **Optional:** beads (`bd`) - If installed, tasks will be stored persistently in the `.beads/` database
   - Check with: `which bd`
   - Initialize if needed: `bd init` (only if using beads)
@@ -112,7 +112,7 @@ This command intelligently detects whether a PRD has been previously processed a
      - If no PRD matches current context, inform user
      - List available PRDs with their metadata
      - Offer options:
-       a) Create new PRD (run `/prd:plan`)
+       a) Create new PRD (run `/flow:plan`)
        b) Select existing PRD manually
        c) Exit
 
@@ -138,7 +138,7 @@ This command intelligently detects whether a PRD has been previously processed a
          options: [
            {
              label: "Create new PRD",
-             description: "Run /prd:plan to create a new PRD for this context"
+             description: "Run /flow:plan to create a new PRD for this context"
            },
            {
              label: "Use existing PRD",
@@ -398,8 +398,8 @@ After successfully creating all tasks, display the following message to guide th
    Total: Z
 
 Next steps:
-→ Run /prd:summary to view all tasks and their status
-→ Run /prd:implement to start implementation
+→ Run /flow:summary to view all tasks and their status
+→ Run /flow:implement to start implementation
 ```
 
 This guides the user to either review the tasks first or dive straight into implementation.

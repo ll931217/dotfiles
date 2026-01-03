@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared utilities for /prd:summary command
+# Shared utilities for /flow:summary command
 
 # Convert PRD status to human-readable display with emoji
 get_status_display() {

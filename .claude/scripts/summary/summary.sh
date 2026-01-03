@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Feature Summary (/prd:summary)
+# Feature Summary (/flow:summary)
 # Show current feature implementation summary
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
@@ -40,7 +40,7 @@ if [ "$WORKTREE_MODE" = "multi" ]; then
       echo "  - ${wt_name}: ${BRANCH_WORKTREES[$wt_name]}"
     done
     echo ""
-    echo "Run /prd:plan in a worktree to create a PRD"
+    echo "Run /flow:plan in a worktree to create a PRD"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     exit 0
   fi

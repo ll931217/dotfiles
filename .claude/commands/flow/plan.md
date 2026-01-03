@@ -81,24 +81,36 @@ Consider installing beads for the best experience, especially for larger feature
         **Without worktrunk (git fallback):**
         The AI will:
         1. Create the worktree: `git worktree add -b feature/<name> ../repo.<name>`
-        2. Save the current prompt to: `/tmp/prd-prompt-<timestamp>.txt`
-        3. Instruct user to:
+        2. Capture the worktree path: `WORKTREE_PATH=$(git worktree list --porcelain | grep "worktree" | tail -1 | cut -d' ' -f2)`
+        3. Save the current prompt to: `/tmp/prd-prompt-<timestamp>.txt`
+        4. Include worktree context in the prompt file:
+           ```
+           # Worktree Context
+           WORKTREE_PATH="<path-to-new-worktree>"
+           FEATURE_NAME="<name>"
+           ```
+        5. Instruct user to:
            - Exit this Claude Code session
-           - Navigate to the new worktree: `cd ../repo.<name>` (or the actual path)
+           - Navigate to the new worktree: `cd <WORKTREE_PATH>`
            - Open Claude Code in the new directory
-           - Read the prompt file: `/tmp/prd-prompt-<timestamp>.txt`
-           - Continue with the prompt
+           - Read the prompt file to restore context
+           - Continue with `/flow:plan` (which will detect existing worktree and skip creation)
 
         Example prompt file:
 
         ```
         # PRD Planning Prompt Saved from Previous Session
 
+        # Worktree Context
+        WORKTREE_PATH="/home/user/worktrees/github.com/user/repo/feature-auth"
+        FEATURE_NAME="auth"
+
         Your feature name: auth
 
         To continue planning your PRD:
-        1. Re-run the /prd:plan command in this new worktree
-        2. Answer the clarifying questions again
+        1. You're now in the new worktree created for this feature
+        2. Re-run the /flow:plan command to continue (it will skip worktree creation)
+        3. Answer the clarifying questions again
 
         [Original prompt context preserved]
         ```
@@ -106,6 +118,29 @@ Consider installing beads for the best experience, especially for larger feature
       - **If user selects "Continue without worktree":** Proceed with the current directory.
 
       - **If user selects "Exit":** Gracefully exit the process.
+
+**Worktree Context Tracking:**
+
+When a new worktree is created, the AI must track the worktree path for subsequent PRD saving:
+
+- **Variable to track:** `NEW_WORKTREE_PATH`
+- **Set when:** User selects "Create worktree" and worktree is successfully created
+- **Used by:** Step 6 (Save PRD Draft) to determine save location
+
+**With worktrunk:**
+```bash
+# After worktree creation, NEW_WORKTREE_PATH is already the current directory
+# No additional tracking needed - git rev-parse --show-toplevel returns new worktree
+```
+
+**Without worktrunk:**
+```bash
+# Store the new worktree path for later use
+NEW_WORKTREE_PATH="../repo.<name>"  # or actual path from git worktree add output
+
+# Also save to prompt file for user's new session
+echo "NEW_WORKTREE_PATH=\"$NEW_WORKTREE_PATH\"" >> /tmp/prd-prompt-<timestamp>.txt
+```
 
 2.5 **Detect Git Context:** Gather git metadata for the PRD frontmatter. - Detect current branch name using `git rev-parse --abbrev-ref HEAD` - Determine if in a worktree by comparing `--git-dir` vs `--git-common-dir` - Get worktree name from branch or directory - Capture commit SHA, author, and timestamp - Store all context for frontmatter generation
 
@@ -158,6 +193,23 @@ After detecting git context, check if a PRD already exists for this context: - S
     - Display message: "No existing PRD found for this context. Creating a new PRD."
     - Proceed to create a new PRD file
 
+2.76 **Session State Management:**
+
+When creating a new worktree, the AI must maintain state across the session:
+
+**State Variables:**
+- `WORKTREE_CREATED`: Boolean flag indicating if worktree was created this session
+- `NEW_WORKTREE_PATH`: Path to the newly created worktree (if applicable)
+- `ORIGINAL_DIRECTORY`: Original directory before worktree creation (for fallback)
+
+**State Preservation:**
+- With worktrunk: State is implicit - new Claude session in new worktree
+- Without worktrunk: State is written to prompt file for user's new session
+
+**Usage:**
+- Step 6 (Save PRD Draft) checks these variables to determine save location
+- Ensures PRD is saved in the correct worktree regardless of creation method
+
 3.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
 4.  **Ask Clarifying Questions:** Before writing the PRD, the AI _must_ ask clarifying questions using the AskUserQuestion tool. This provides an interactive UI where users can select options with keyboard navigation (arrow keys or number keys).
     - Ask **3-5 clarifying questions at a time** to avoid overwhelming the user. Prioritize the most critical unknowns first.
@@ -193,8 +245,33 @@ After detecting git context, check if a PRD already exists for this context: - S
 
 5.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
 6.  **Save PRD Draft:**
-    - **First, check for existing PRD in current context:**
-      - Search `/.flow/` directory for PRDs matching current git context (branch, worktree)
+
+   **Determine Save Location:**
+   - Check if `NEW_WORKTREE_PATH` is set (worktree was created this session)
+   - If set:
+     - If using worktrunk: Current directory is already the new worktree, use `$(pwd)`
+     - If using git fallback: Use stored `NEW_WORKTREE_PATH` and create the `.flow` directory there
+   - If not set: Use current repository root (`git rev-parse --show-toplevel`)
+
+   **Ensure .flow Directory Exists:**
+   ```bash
+   # Determine target directory
+   if [ -n "$NEW_WORKTREE_PATH" ]; then
+     TARGET_DIR="$NEW_WORKTREE_PATH/.flow"
+   else
+     TARGET_DIR="$(git rev-parse --show-toplevel)/.flow"
+   fi
+
+   # Create directory if it doesn't exist
+   mkdir -p "$TARGET_DIR"
+   ```
+
+   **Save PRD to Target Location:**
+   - Save as `prd-[feature-name]-v1.md` inside the `TARGET_DIR`
+   - Update frontmatter `worktree.repo_root` to point to the worktree's root (if in worktree)
+
+   - **First, check for existing PRD in current context:**
+      - Search `TARGET_DIR` for PRDs matching current git context (branch, worktree)
       - Check PRD frontmatter for matching `git.branch`, `worktree.path`, etc.
     - **If existing PRD is found (iteration mode):**
       - Read the existing PRD file
@@ -360,7 +437,7 @@ AskUserQuestion({
 - **If "Yes":**
   - Update PRD status in frontmatter from `draft` to `approved`
   - Add initial changelog entry (version 1)
-  - Proceed to task generation (user will invoke `/prd:generate-tasks`)
+  - Proceed to task generation (user will invoke `/flow:generate-tasks`)
 - **If "No":**
   - Restart from clarifying questions (step 4)
 - **If "Changes":**
@@ -388,7 +465,7 @@ When the user edits an existing PRD that has status `approved` or `implemented`:
 2. **Increment version**: Add new version number
 3. **Add changelog entry**: Document the changes
 4. **Archive existing tasks**: Mark old tasks as superseded
-5. **Prompt to regenerate**: Offer to run `/prd:generate-tasks`
+5. **Prompt to regenerate**: Offer to run `/flow:generate-tasks`
 
 The AI performs the following steps:
 
@@ -426,7 +503,7 @@ Changes:
 
 Next Steps:
 1. Review your updated PRD content
-2. Run /prd:generate-tasks to create new tasks from updated requirements
+2. Run /flow:generate-tasks to create new tasks from updated requirements
 3. Approve the PRD to begin implementation
 
 **Use AskUserQuestion to prompt the user:**
@@ -436,7 +513,7 @@ Next Steps:
 AskUserQuestion({
 questions: [
 {
-question: "Would you like to run /prd:generate-tasks now to create new tasks from the updated PRD?",
+question: "Would you like to run /flow:generate-tasks now to create new tasks from the updated PRD?",
 header: "Next Step",
 options: [
 {
@@ -471,7 +548,7 @@ Version: N
 Branch: [branch-name]
 
 Next steps:
-→ Run /prd:generate-tasks to create implementation tasks
+→ Run /flow:generate-tasks to create implementation tasks
 
 ````
 
@@ -489,7 +566,7 @@ Each PRD includes a changelog section at the bottom tracking all versions:
   | 1       | 2025-01-02 10:30 | Initial PRD approved                  |
 ````
 
-9.  **Task Tracking Reference:** After PRD approval, the user will invoke `/prd:generate-tasks` to create implementation tasks using beads. The PRD file will be referenced in all task descriptions.
+9.  **Task Tracking Reference:** After PRD approval, the user will invoke `/flow:generate-tasks` to create implementation tasks using beads. The PRD file will be referenced in all task descriptions.
 10. **Review & Refine (Deprecated):** The approval workflow in step 7 now handles PRD review. Proceed to task generation after approval.
 
 ## Clarifying Questions
@@ -694,7 +771,7 @@ Present for Review + Checklist
            └─ (loop until Yes)
 ```
 
-**Important:** Do not proceed to `/prd:generate-tasks` until explicit approval is received.
+**Important:** Do not proceed to `/flow:generate-tasks` until explicit approval is received.
 
 ## PRD Structure
 
@@ -744,7 +821,7 @@ Assume the primary reader of the PRD is a **junior developer**. Therefore, requi
 
 ## Task Tracking
 
-After the PRD is approved, invoke `/prd:generate-tasks` to create and track implementation tasks using the beads tool.
+After the PRD is approved, invoke `/flow:generate-tasks` to create and track implementation tasks using the beads tool.
 
 All task management is handled through beads integration - no separate task files needed.
 
@@ -754,6 +831,6 @@ All task management is handled through beads integration - no separate task file
 2. Make sure to ask the user clarifying questions (3-5 at a time)
 3. Take the user's answers to the clarifying questions and improve the PRD
 4. Use the beads tool (`read_todos`/`write_todos`) for task tracking
-5. If the user is satisfied with the PRD, suggest the user to use `/prd:generate-tasks` command
+5. If the user is satisfied with the PRD, suggest the user to use `/flow:generate-tasks` command
 6. DO NOT suggest the user to use the `bd` command, this command is mainly reserved for AI Agents to use.
 7. ULTRATHINK

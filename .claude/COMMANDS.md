@@ -16,7 +16,7 @@ This directory contains custom slash commands for Claude Code, extending its fun
 
 The PRD (Product Requirements Document) system provides a structured approach to requirements-driven development.
 
-### `/prd:plan`
+### `/flow:plan`
 
 **Create a Product Requirements Document with auto-generated tasks**
 
@@ -45,7 +45,7 @@ related_issues: []
 
 **Usage Example**:
 ```
-/prd:plan
+/flow:plan
 > I need to add user authentication with JWT tokens
 ```
 
@@ -64,7 +64,7 @@ related_issues: []
 - **P3** (Low): Keywords like "nice-to-have", "optional"
 - **P4** (Backlog): Keywords like "maybe", "someday", "consider"
 
-### `/prd:implement`
+### `/flow:implement`
 
 **Implement an approved PRD**
 
@@ -76,7 +76,7 @@ related_issues: []
 
 **Usage Example**:
 ```
-/prd:implement PRD-001
+/flow:implement PRD-001
 ```
 
 **Process**:
@@ -86,7 +86,7 @@ related_issues: []
 4. Sets up task dependencies
 5. Begins implementation workflow
 
-### `/prd:generate-tasks`
+### `/flow:generate-tasks`
 
 **Generate implementation tasks from an approved PRD**
 
@@ -98,7 +98,7 @@ related_issues: []
 
 **Usage Example**:
 ```
-/prd:generate-tasks PRD-001
+/flow:generate-tasks PRD-001
 ```
 
 **Generated Task Types**:
@@ -107,7 +107,7 @@ related_issues: []
 - **Testing tasks**: Unit tests, integration tests
 - **Documentation tasks**: Code comments, API docs
 
-### `/prd:summary`
+### `/flow:summary`
 
 **Show PRD status and history**
 
@@ -119,7 +119,7 @@ related_issues: []
 
 **Usage Example**:
 ```
-/prd:summary
+/flow:summary
 ```
 
 **Output Example**:
@@ -379,10 +379,10 @@ Commands can trigger git hooks:
 
 | Command | Purpose |
 |---------|---------|
-| `/prd:plan` | Create PRD with tasks |
-| `/prd:implement` | Implement approved PRD |
-| `/prd:generate-tasks` | Generate tasks from PRD |
-| `/prd:summary` | Show PRD status |
+| `/flow:plan` | Create PRD with tasks |
+| `/flow:implement` | Implement approved PRD |
+| `/flow:generate-tasks` | Generate tasks from PRD |
+| `/flow:summary` | Show PRD status |
 | `/gh:create-commit` | Create git commit |
 | `/tools:debug` | Debugging assistance |
 | `/tools:parallel-analyze` | Multi-agent analysis |

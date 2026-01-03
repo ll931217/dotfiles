@@ -21,16 +21,16 @@ If you are reading this workflow and ANY of the following are true:
 3. You feel unsure about the current task state or progress
 4. You are about to start a [P:Group-X] parallel task group
 
-**Then execute:** `/prd:summary`
+**Then execute:** `/flow:summary`
 
-After executing `/prd:summary`, replace the content between the `==== LATEST SUMMARY ====` markers below with the new output and update the "Last Refresh" timestamp.
+After executing `/flow:summary`, replace the content between the `==== LATEST SUMMARY ====` markers below with the new output and update the "Last Refresh" timestamp.
 
 **Current Status Summary:**
 
 ==== LATEST SUMMARY ====
 
 <!--
-[Paste /prd:summary output here]
+[Paste /flow:summary output here]
 
 Example format:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -84,7 +84,7 @@ Claude Code automatically compacts long conversations to manage token limits. Th
 
 If ANY checkbox above is checked:
 
-1. **Execute summary command:** Type `/prd:summary` in your response
+1. **Execute summary command:** Type `/flow:summary` in your response
 2. **Wait for output:** The command will execute and return current status
 3. **Update this section:**
    - Replace content between `==== LATEST SUMMARY ====` markers
@@ -98,7 +98,7 @@ If ANY checkbox above is checked:
 ```
 I notice the "Last Refresh" timestamp is 45 minutes old. Let me refresh the context to ensure I have the current state.
 
-/prd:summary
+/flow:summary
 
 [summary output appears]
 
@@ -143,7 +143,7 @@ Before beginning implementation, check for task tracking availability:
 
 Before beginning implementation, discover and validate the PRD:
 
-**Auto-Discovery:** Use the same discovery algorithm as `/prd:generate-tasks`:
+**Auto-Discovery:** Use the same discovery algorithm as `/flow:generate-tasks`:
 
 1. Check latest modified PRD for metadata match
 2. Validate branch and worktree context
@@ -192,7 +192,7 @@ fi
             description: "Proceed with implementation despite draft status"
           },
           {
-            label: "Run /prd:generate-tasks",
+            label: "Run /flow:generate-tasks",
             description: "Generate tasks and approve the PRD first"
           },
           {
@@ -224,7 +224,7 @@ fi
 - `implemented` = ✨ implemented (complete)
 
 **After PRD Validation:**
-Once you've discovered and validated the PRD, run `/prd:summary` to capture the initial state in the "Current Status" section above. This establishes your baseline context.
+Once you've discovered and validated the PRD, run `/flow:summary` to capture the initial state in the "Current Status" section above. This establishes your baseline context.
 
 ## Priority Display Format
 
@@ -352,12 +352,12 @@ check_prd_completion() {
     echo "Recommended next steps:"
     echo "1. 🧪 Manually test the implementation to verify everything works"
     echo "2. 📝 If issues found, iterate on fixes (tasks can be reopened)"
-    echo "3. 🧹 If satisfied, run /prd:cleanup to finalize:"
+    echo "3. 🧹 If satisfied, run /flow:cleanup to finalize:"
     echo "   - Create summary commit"
     echo "   - Update PRD status to 'implemented'"
     echo "   - Add changelog entry"
     echo ""
-    echo "Run /prd:cleanup when ready to finalize."
+    echo "Run /flow:cleanup when ready to finalize."
     echo ""
   else
     # Show progress
@@ -423,7 +423,7 @@ All task context is stored in beads' SQLite database. Task management is handled
   - When stopping for clarification, clearly explain the issue and provide options
 
 **Periodic Context Refresh:**
-Every 5 completed tasks or 30 minutes of work, execute `/prd:summary` to refresh your context. Update the "Current Status" section with the latest output.
+Every 5 completed tasks or 30 minutes of work, execute `/flow:summary` to refresh your context. Update the "Current Status" section with the latest output.
 
 - **Parallel Group Execution ([P:Group-X] flags):**
 - **Phase 1 - Pre-execution Analysis:** Before starting any parallel group:
@@ -432,7 +432,7 @@ Every 5 completed tasks or 30 minutes of work, execute `/prd:summary` to refresh
   - Review task details and any blockers
 
 **Pre-Group Refresh (REQUIRED):**
-Before starting ANY [P:Group-X] parallel task group, you MUST execute `/prd:summary` to ensure you have the current task state. Parallel groups require accurate context about dependencies and blocking issues.
+Before starting ANY [P:Group-X] parallel task group, you MUST execute `/flow:summary` to ensure you have the current task state. Parallel groups require accurate context about dependencies and blocking issues.
 
 - **Phase 2 - Concurrent Execution:** Launch all tasks in the group simultaneously:
   - Use multiple specialized subagents via Task tool with parallel invocations
@@ -468,7 +468,7 @@ Before starting ANY [P:Group-X] parallel task group, you MUST execute `/prd:summ
 This section handles what happens when PRD needs updates mid-implementation.
 
 **Context Refresh After Changes:**
-After ANY PRD version change (minor/moderate/major), execute `/prd:summary` immediately to update your understanding of the changed requirements and task structure.
+After ANY PRD version change (minor/moderate/major), execute `/flow:summary` immediately to update your understanding of the changed requirements and task structure.
 
 ### Change Triage
 
@@ -648,7 +648,7 @@ Functional Requirements: 5. The system shall support user roles: User and Admin 
    - Use migration map to identify reusable work
 
 7. **Regenerate from updated PRD:**
-   - Follow full `/prd:generate-tasks` workflow from Phase1
+   - Follow full `/flow:generate-tasks` workflow from Phase1
    - Generate new parent epics
    - Generate new sub-issues
    - Create new dependencies
@@ -693,7 +693,7 @@ Functional Requirements: 5. The system shall support user roles: User and Admin 
    - Use migration map to identify reusable work
 
 7. **Regenerate from updated PRD:**
-   - Follow full `/prd:generate-tasks` workflow from Phase 1
+   - Follow full `/flow:generate-tasks` workflow from Phase 1
    - Generate new parent epics
    - Generate new sub-issues
    - Create new dependencies
@@ -829,7 +829,7 @@ PRD change request during implementation?
 ├─ Update PRD (vN → vN+1)
 ├─ Update history file
 ├─ Regenerate ALL tasks from updated PRD
-│ └─ Follow full /prd:generate-tasks workflow
+│ └─ Follow full /flow:generate-tasks workflow
 ├─ Migrate completed work:
 │ ├─ Can reuse: Mark new task as complete
 │ └─ Cannot reuse: Start fresh, reference backup

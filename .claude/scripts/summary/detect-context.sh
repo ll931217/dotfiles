@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Detect git worktree context for /prd:summary command
+# Detect git worktree context for /flow:summary command
 # Outputs: WORKTREE_MODE, CURRENT_BRANCH, BRANCH_WORKTREES (associative array)
 
 detect_worktree_context() {

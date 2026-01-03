@@ -45,8 +45,8 @@ This dotfiles repository includes a sophisticated [Claude Code](https://claude.a
 
 ### Key Commands
 
-- `/prd:plan` - Create Product Requirements Documents with auto-generated tasks
-- `/prd:implement` - Implement approved PRDs with task tracking
+- `/flow:plan` - Create Product Requirements Documents with auto-generated tasks
+- `/flow:implement` - Implement approved PRDs with task tracking
 - `/tools:parallel-analyze` - Spawn multiple agents for collaborative analysis
 - `/tools:debug` - AI-assisted debugging workflows
 - `/gh:create-commit` - Standardized git commit creation

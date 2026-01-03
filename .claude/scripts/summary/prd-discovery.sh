@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PRD auto-discovery for /prd:summary command
+# PRD auto-discovery for /flow:summary command
 
 # Get the absolute directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

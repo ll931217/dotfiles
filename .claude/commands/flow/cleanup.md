@@ -2,7 +2,7 @@
 description: Clean up after implementation - close issues, commit changes, update PRD status
 ---
 
-# Rule: Implementation Cleanup (/prd:cleanup)
+# Rule: Implementation Cleanup (/flow:cleanup)
 
 ## Goal
 
@@ -15,6 +15,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 - Adding changelog entry to PRD
 
 **Task Management Options:**
+
 - **With beads (`bd`) installed:** Issues are managed in the `.beads/` database with full cleanup support
 - **Without beads:** Basic verification of TodoWrite task completion
 
@@ -23,6 +24,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 - **Required:** All PRD tasks must be completed (all issues closed in beads, or all TodoWrite items marked completed)
 - **Required:** An approved PRD in `/.flow/` directory with `status: approved`
 - **Optional:** beads (`bd`) - If installed, issues will be verified and committed
+- **Optional:** Clean working directory (no uncommitted changes) - required for worktree merge operation
 
 ## Process
 
@@ -57,7 +59,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
            options: [
              {
                label: "Create new PRD",
-               description: "Run /prd:plan to create a new PRD"
+               description: "Run /flow:plan to create a new PRD"
              },
              {
                label: "Select existing PRD",
@@ -105,7 +107,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
          ]
        })
        ```
-     - If user selects "Exit", exit cleanup and suggest running `/prd:implement`
+     - If user selects "Exit", exit cleanup and suggest running `/flow:implement`
      - If user selects "Continue anyway", proceed with partial cleanup
 
    - **Step 2c - Task Summary:**
@@ -124,7 +126,124 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    - If any tasks are incomplete, show warning and offer options
    - Note: Manual verification may be needed if context is incomplete
 
-3. **Create Summary Commit:** Group all implementation changes into a single summary commit.
+3. **Check for Worktree Cleanup:** Determine if current directory is a worktree and offer merge/cleanup.
+
+   **Step 3a - Worktree Detection:**
+   - Read `worktree.is_worktree` from PRD frontmatter
+   - If `false`, skip to step 4 (summary commit)
+
+   **Step 3b - Pre-Merge Validation:**
+   - Verify clean working directory: `git status --porcelain` returns empty
+   - Verify we're not in main repo: `worktree.name != "main"`
+
+   **Step 3c - Determine Merge Target:**
+   - Read PRD frontmatter for target branch info:
+     - Check if `git.parent_branch` exists in PRD frontmatter
+     - If not found, try to infer from branch naming patterns:
+       - `feature/*` → merge to `main` or `master` (whichever exists)
+       - `bugfix/*`, `hotfix/*` → merge to `main` or `master`
+       - Other branches → ask user
+   - If target cannot be determined, prompt user via AskUserQuestion
+
+   **Step 3d - User Confirmation:**
+   - Use AskUserQuestion to present options:
+     ```
+     AskUserQuestion({
+       questions: [
+         {
+           question: "Worktree detected: [worktree-name]. Merge to [target-branch] and cleanup? This will merge the branch, remove the worktree, and delete the feature branch.",
+           header: "Worktree Cleanup",
+           options: [
+             {
+               label: "Merge and cleanup worktree",
+               description: "Merge branch to target, remove worktree, and delete feature branch"
+             },
+             {
+               label: "Skip worktree cleanup",
+               description: "Only create summary commit, leave worktree intact for manual cleanup"
+             },
+             {
+               label: "Exit",
+               description: "Abort cleanup to handle worktree merge manually"
+             }
+           ],
+           multiSelect: false
+         }
+       ]
+     })
+     ```
+
+   **Step 3e - Execute Merge (if approved):**
+
+   **With worktrunk (`wt`) installed:**
+
+   ```bash
+   # Switch to target branch and merge current worktree branch
+   wt switch "$target_branch"
+   git merge --no-ff -m "feat([scope]): merge [feature] - complete
+
+   Implements all requirements from PRD:
+   - prd-[feature]-vN.md
+
+   Closes: [issue IDs]
+   PRD: prd-[feature]-vN.md" "$current_branch"
+
+   # Remove worktree and delete branch
+   wt remove
+   ```
+
+   **Without worktrunk (fallback):**
+
+   ```bash
+   # Store current worktree info
+   current_branch=$(git rev-parse --abbrev-ref HEAD)
+   worktree_path=$(git rev-parse --show-toplevel)
+
+   # Switch to main repository and target branch
+   repo_root=$(sed 's|/worktrees/[^/]*||' <<< "$worktree_path")
+   cd "$repo_root"
+   git checkout "$target_branch"
+
+   # Merge feature branch with conventional commit message
+   git merge --no-ff -m "feat([scope]): merge [feature] - complete
+
+   Implements all requirements from PRD:
+   - prd-[feature]-vN.md
+
+   Changes:
+   - [Epic 1 summary]
+   - [Epic 2 summary]
+
+   Closes: [issue IDs]
+   PRD: prd-[feature]-vN.md" "$current_branch"
+
+   # Remove worktree
+   git worktree remove "$worktree_path"
+
+   # Delete merged branch
+   git branch -d "$current_branch"
+   ```
+
+   **Step 3f - Verify Success:**
+   - Check merge exit code (0 = success)
+   - Verify worktree no longer exists: `git worktree list`
+   - Display merge commit SHA for reference
+
+   **Step 3g - Handle Merge Failure:**
+   - If merge failed due to conflicts:
+     - Inform user of merge conflicts
+     - Keep worktree intact for manual resolution
+     - Suggest running `git status` to see conflicts
+     - Offer to keep worktree for manual cleanup
+   - If worktree removal failed:
+     - Provide manual cleanup instructions
+     - Show commands to remove worktree and branch
+
+4. **Create Summary Commit (if not already merged):** Group all implementation changes into a single summary commit.
+
+   **Skip if:** Worktree merge was performed in step 3 (commit created by merge operation)
+
+   **Only create commit if:** Still in worktree (user skipped merge) or in main repo
 
    **Commit Message Format:**
 
@@ -172,10 +291,9 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    Branch: feature/user-auth
    ```
 
-4. **Update PRD Status:** Mark the PRD as implemented in the frontmatter.
+5. **Update PRD Status:** Mark the PRD as implemented in the frontmatter.
 
    **Updates to PRD Frontmatter:**
-
    - **Increment version:** `version: N` → `version: N+1`
    - **Update status:** `status: approved` → `status: implemented`
    - **Update timestamp:** `updated_at: [current ISO 8601 timestamp]`
@@ -184,26 +302,58 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 
    **Changelog Entry Format:**
 
+   For worktree merge:
+
+   ```markdown
+   | N+1 | YYYY-MM-DD HH:MM | Implementation complete - merged to [target-branch], worktree removed |
+   ```
+
+   For non-worktree (main repo):
+
    ```markdown
    | N+1 | YYYY-MM-DD HH:MM | Implementation complete - all X tasks closed |
    ```
 
-   **Example Changelog Update:**
+   **Example Changelog Update (with worktree merge):**
 
    ```markdown
    ## Changelog
 
-   | Version | Date             | Summary of Changes                                    |
-   | ------- | ---------------- | ----------------------------------------------------- |
-   | 4       | 2025-01-03 14:30  | Implementation complete - all 8 tasks closed          |
-   | 3       | 2025-01-02 16:45  | Updated priority for password reset requirement       |
-   | 2       | 2025-01-02 14:22  | Added Admin role permissions                          |
-   | 1       | 2025-01-02 10:30  | Initial PRD approved                                  |
+   | Version | Date             | Summary of Changes                                           |
+   | ------- | ---------------- | ------------------------------------------------------------ |
+   | 4       | 2025-01-03 14:30 | Implementation complete - merged to master, worktree removed |
+   | 3       | 2025-01-02 16:45 | Updated priority for password reset requirement              |
+   | 2       | 2025-01-02 14:22 | Added Admin role permissions                                 |
+   | 1       | 2025-01-02 10:30 | Initial PRD approved                                         |
    ```
 
-5. **Display Cleanup Summary:** Show the user what was accomplished.
+6. **Display Cleanup Summary:** Show the user what was accomplished.
 
-   **Output Format:**
+   **Output Format (with worktree merge):**
+
+   ```
+   🧹 Implementation Cleanup Complete!
+
+   📋 PRD: prd-[feature]-vN.md
+      Status: approved → implemented
+      Version: N → N+1
+
+   📊 Worktree: [worktree-name]
+      ✓ Merged to [target-branch]
+      ✓ Worktree removed
+      ✓ Branch deleted
+
+   📊 Tasks: X/X completed
+      ✓ All issues closed
+
+   📝 Merge Commit:
+      Commit: [commit SHA]
+      Message: feat([scope]): merge [feature] - complete
+
+   ✨ PRD implemented and merged!
+   ```
+
+   **Output Format (without worktree merge):**
 
    ```
    🧹 Implementation Cleanup Complete!
@@ -223,13 +373,13 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    ✨ PRD is now marked as implemented!
    ```
 
-6. **Optional Next Step:** Suggest running `/prd:summary` to view the final implementation summary.
+7. **Optional Next Step:** Suggest running `/flow:summary` to view the final implementation summary.
 
    **Suggestion:**
 
    ```
    Optional next step:
-   → Run /prd:summary to view the final implementation summary
+   → Run /flow:summary to view the final implementation summary
    ```
 
 ## With beads (`bd`) installed:
@@ -283,8 +433,10 @@ Before performing cleanup, the following safety checks are performed:
 2. **Git Status Check:** Ensure there are uncommitted changes to commit
 3. **Branch Check:** Verify current branch matches PRD's git context
 4. **Task Completion Check:** Verify all tasks are marked as completed
+5. **Worktree Clean State Check:** If in worktree, ensure no uncommitted changes before merge
 
 If any safety check fails, the AI will:
+
 - Display the specific issue
 - Offer options to resolve or continue anyway
 - Document the decision in the commit message if continuing
@@ -293,18 +445,23 @@ If any safety check fails, the AI will:
 
 **Common Errors and Resolutions:**
 
-| Error | Cause | Resolution |
-|-------|-------|------------|
-| No PRD found | No matching PRD for current context | Offer to create new PRD or select manually |
-| Tasks not complete | Some issues still open/in-progress | Show incomplete tasks, offer to exit or continue |
-| No git changes | Nothing to commit | Verify if work was done, may skip commit step |
-| Beads not available | `bd` command not found | Fall back to TodoWrite verification |
-| PRD already implemented | Status already `implemented` | Inform user, exit with message |
+| Error                           | Cause                               | Resolution                                             |
+| ------------------------------- | ----------------------------------- | ------------------------------------------------------ |
+| No PRD found                    | No matching PRD for current context | Offer to create new PRD or select manually             |
+| Tasks not complete              | Some issues still open/in-progress  | Show incomplete tasks, offer to exit or continue       |
+| No git changes                  | Nothing to commit                   | Verify if work was done, may skip commit step          |
+| Beads not available             | `bd` command not found              | Fall back to TodoWrite verification                    |
+| PRD already implemented         | Status already `implemented`        | Inform user, exit with message                         |
+| Merge conflicts                 | Merge failed due to conflicts       | Show conflict resolution steps, offer to keep worktree |
+| Worktree removal failed         | Cannot delete worktree              | Manual cleanup required, provide instructions          |
+| Uncommitted changes in worktree | Working directory not clean         | Warn user, require commit or stash before merge        |
 
 ## Example Session
 
+**Example with Worktree Merge:**
+
 ```
-User: /prd:cleanup
+User: /flow:cleanup
 
 AI: 🧹 Implementation Cleanup
 
@@ -313,6 +470,79 @@ Discovering PRD for current context...
    Status: approved
    Branch: feature/user-auth
    Worktree: feature-user-auth
+
+Verifying task completion...
+📊 Task Completion Status:
+   Total tasks: 8
+   Completed: 8
+   In Progress: 0
+   Open: 0
+   ✓ All tasks complete
+
+🔍 Worktree detected: feature-user-auth
+   Current branch: feature/user-auth
+   Target branch: master (inferred from PRD git context)
+
+⚠️  Worktree cleanup required before completion.
+   This will:
+   - Merge feature/user-auth → master
+   - Remove worktree: /worktrees/.../feature-user-auth
+   - Delete branch: feature/user-auth
+
+What would you like to do?
+
+User selects: "Merge and cleanup worktree"
+
+Executing merge...
+✓ Switched to main repository
+✓ Merged feature/user-auth into master
+✓ Removed worktree
+✓ Deleted branch
+
+Merge commit: def456ghi
+
+Updating PRD status...
+✓ Version: 3 → 4
+✓ Status: approved → implemented
+✓ Updated: 2025-01-03T14:30:00Z
+✓ Changelog entry added
+
+🧹 Implementation Cleanup Complete!
+
+📋 PRD: prd-authentication-v3.md
+   Status: approved → implemented
+   Version: 3 → 4
+
+📊 Worktree: feature-user-auth
+   ✓ Merged to master
+   ✓ Worktree removed
+   ✓ Branch deleted
+
+📊 Tasks: 8/8 completed
+   ✓ All issues closed
+
+📝 Merge Commit:
+   Commit: def456ghi
+   Message: feat(auth): merge user authentication - complete
+
+✨ PRD implemented and merged!
+
+Optional next step:
+→ Run /flow:summary to view the final implementation summary
+```
+
+**Example without Worktree (main repo):**
+
+```
+User: /flow:cleanup
+
+AI: 🧹 Implementation Cleanup
+
+Discovering PRD for current context...
+✓ Found: prd-authentication-v3.md
+   Status: approved
+   Branch: feature/user-auth
+   Worktree: main
 
 Verifying task completion...
 📊 Task Completion Status:
@@ -366,7 +596,7 @@ Updating PRD status...
 ✨ PRD is now marked as implemented!
 
 Optional next step:
-→ Run /prd:summary to view the final implementation summary
+→ Run /flow:summary to view the final implementation summary
 ```
 
 ## Key Design Decisions

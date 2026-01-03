@@ -2,7 +2,7 @@
 description: Show current feature implementation summary
 ---
 
-# Rule: Feature Summary (/prd:summary)
+# Rule: Feature Summary (/flow:summary)
 
 ## Goal
 
@@ -33,7 +33,7 @@ exec ~/.claude/scripts/summary/summary.sh
 
 ## Script Organization
 
-The `/prd:summary` command uses modular scripts:
+The `/flow:summary` command uses modular scripts:
 
 - **`lib.sh`** - Shared utilities (status display, progress bars, optional beads helpers)
 - **`detect-context.sh`** - Git worktree detection and context setup

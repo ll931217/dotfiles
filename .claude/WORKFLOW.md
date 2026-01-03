@@ -212,10 +212,10 @@ This repository uses a structured Product Requirements Document (PRD) workflow f
 
 | Command               | Purpose                              |
 | --------------------- | ------------------------------------ |
-| `/prd:plan`           | Create PRD with auto-generated tasks |
-| `/prd:implement`      | Implement approved PRD               |
-| `/prd:generate-tasks` | Generate tasks from approved PRD     |
-| `/prd:summary`        | Show PRD status and history          |
+| `/flow:plan`           | Create PRD with auto-generated tasks |
+| `/flow:implement`      | Implement approved PRD               |
+| `/flow:generate-tasks` | Generate tasks from approved PRD     |
+| `/flow:summary`        | Show PRD status and history          |
 
 ### PRD Structure
 
@@ -253,7 +253,7 @@ related_issues:
 - [ ] Criterion 2
 
 ## Implementation Tasks
-Generated via `/prd:generate-tasks`
+Generated via `/flow:generate-tasks`
 
 ## Testing Strategy
 [Describe testing approach]
@@ -264,12 +264,12 @@ Generated via `/prd:generate-tasks`
 
 ### Workflow Steps
 
-1. **Create PRD**: Use `/prd:plan` to generate requirements document
+1. **Create PRD**: Use `/flow:plan` to generate requirements document
 2. **Review**: PRD is marked as `review` status
 3. **Approve**: After review, mark as `approved`
-4. **Generate Tasks**: Use `/prd:generate-tasks` to create beads issues
-5. **Implement**: Use `/prd:implement` to begin implementation
-6. **Track**: Use `/prd:summary` to monitor progress
+4. **Generate Tasks**: Use `/flow:generate-tasks` to create beads issues
+5. **Implement**: Use `/flow:implement` to begin implementation
+6. **Track**: Use `/flow:summary` to monitor progress
 
 ### Priority Levels
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Display summary output for /prd:summary command
+# Display summary output for /flow:summary command
 
 # Get the absolute directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,7 +34,7 @@ display_single_summary() {
     echo "   Branch: $PRD_BRANCH"
     echo ""
     echo "ℹ️  No tasks generated yet for this PRD"
-    echo "   Run /prd:generate-tasks to create tasks"
+    echo "   Run /flow:generate-tasks to create tasks"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     return 0
@@ -149,7 +149,7 @@ display_worktree_block() {
     echo "  Status: $(get_status_display "$wt_status")"
     echo ""
     echo "  ℹ️  No tasks generated yet for this PRD"
-    echo "     Run /prd:generate-tasks to create tasks"
+    echo "     Run /flow:generate-tasks to create tasks"
     echo ""
     return 0
   fi
@@ -225,7 +225,7 @@ display_multi_summary() {
       echo "  - ${wt_name}: ${BRANCH_WORKTREES[$wt_name]}"
     done
     echo ""
-    echo "Run /prd:plan in a worktree to create a PRD"
+    echo "Run /flow:plan in a worktree to create a PRD"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     return 0
   fi

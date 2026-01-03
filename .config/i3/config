@@ -219,6 +219,11 @@ for_window [class="^(awakened-poe-trade)$"] floating enable, border none, move p
 for_window [title="^(Path of Exile)$"] floating enable, border none, move position center
 for_window [class="^(Emulator)$"] resize 1396 628
 
+# for_window [class="^Alacritty$"] border pixel 0
+# for_window [class="^Alacritty$"] title_format " "
+# default_border normal 2
+# titlebar_position left
+
 # Specialized configuration for mpv
 # for_window [class="mpv"] floating enable, workspace 0, resize 1058 595, move position 8 1282
 # for_window [class="mpv"] resize 1058 595, move position 8 1282
