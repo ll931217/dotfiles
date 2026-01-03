@@ -1,6 +1,10 @@
 # Task List Management
 
-Guidelines for managing task lists using beads (`bd`) to track progress on completing a PRD
+Guidelines for managing task lists to track progress on completing a PRD.
+
+**Task Management Options:**
+- **With beads (`bd`) installed:** Full-featured task tracking with dependencies, ready task detection, and persistent storage
+- **Without beads:** Basic task tracking using the internal TodoWrite tool (limited features, no persistent storage)
 
 ## Current Status
 
@@ -111,17 +115,23 @@ This protocol integrates with existing workflow sections:
 - **Blocker Resolution:** Refresh after unblocking tasks
 - **Completion Check:** Refresh before checking PRD completion status
 
-## Beads Prerequisites Check
+## Prerequisites Check
 
-Before beginning implementation, verify beads is available and initialized:
+Before beginning implementation, check for task tracking availability:
 
-**Automated Check:** The AI should verify that:
+**Automated Check:** The AI should verify whether beads (`bd`) is available:
 
+**With beads (`bd`) installed:**
 - The `bd` command is available in the system PATH
-- The `.beads` directory exists (initialize with beads if not present)
+- The `.beads` directory exists (initialize with `bd init` if not present)
 - Beads database is functional
 
-If beads is not available, provide installation instructions and pause execution.
+**Without beads (TodoWrite fallback):**
+- The AI will use the internal TodoWrite tool for task tracking
+- Note: Task context may be lost between sessions
+- Note: No persistent dependency tracking or ready task detection
+
+**Recommendation:** Consider installing beads for the best experience, especially for larger features with many tasks.
 
 ## PRD Discovery and Validation
 
@@ -197,7 +207,7 @@ Tasks are displayed with priority indicators and sorted by priority level (P0 �
 | 🔵    | P3       | Low      | Nice-to-have, enhancement       |
 | ⚪    | P4       | Lowest   | Backlog, future consideration    |
 
-**Display Format:**
+**Display Format (with beads):**
 ```
 Available Ready Tasks (sorted by priority):
 
@@ -210,10 +220,22 @@ Available Ready Tasks (sorted by priority):
   ├─ proj-ghi.1: Create email service
 ```
 
-**View Sorted Tasks:**
-```bash
-bd ready --sort priority  # Sort by priority (P0 → P4)
+The AI views tasks sorted by priority level (P0 → P4) using internal beads integration.
+
+**Display Format (without beads - TodoWrite):**
 ```
+Available Tasks (sorted by priority):
+
+🔴 P0 | Epic: Critical Security Fix
+  ├─ [Epic: Critical Security Fix] Patch authentication bypass
+🟠 P1 | Epic: User Authentication
+  ├─ [Epic: User Authentication] Implement login endpoint
+  ├─ [Epic: User Authentication] Add password reset flow
+🟢 P2 | Epic: Email Notifications
+  ├─ [Epic: Email Notifications] Create email service
+```
+
+The AI views tasks from the internal TodoWrite state, organized by epic hierarchy.
 
 **PRD Updates During Implementation:**
 - When PRD changes are made (see "PRD Change Management"), update frontmatter:
@@ -225,11 +247,20 @@ bd ready --sort priority  # Sort by priority (P0 → P4)
 
 ## PRD Completion Detection
 
-After closing each task with `bd close`, check if all PRD tasks are complete and update the PRD status to `implemented`.
+After completing each task, check if all PRD tasks are complete and update the PRD status to `implemented`.
+
+**With beads (`bd`) installed:**
+- After closing each task with `bd close`, check if all PRD tasks are complete
+- Use the helper function below to verify completion and update status
+
+**Without beads (TodoWrite fallback):**
+- After marking each task as completed in TodoWrite, check if all tasks are complete
+- Check the internal TodoWrite state for completion
+- Note: Manual verification may be needed if context is lost
 
 ### Helper Functions
 
-**Function: check_prd_completion**
+**Function: check_prd_completion (with beads)**
 
 Checks if all tasks for a PRD are complete and updates the PRD status to `implemented` if so.
 
@@ -305,6 +336,20 @@ check_prd_completion() {
 }
 ```
 
+**Function: check_prd_completion_todo (TodoWrite fallback)**
+
+Checks if all TodoWrite tasks for a PRD are complete (manual process).
+
+```
+The AI should:
+1. Review all TodoWrite items related to the current PRD
+2. Check if all tasks have status "completed"
+3. If all complete, update the PRD frontmatter:
+   - Change status from "approved" to "implemented"
+   - Update version, updated_at, updated_at_commit
+4. Display completion message to user
+```
+
 **Function: find_prd_for_issue**
 
 Finds which PRD file contains a given issue in its `related_issues`.
@@ -330,18 +375,7 @@ find_prd_for_issue() {
 
 ### Usage Example
 
-After closing a task with `bd close`, check if the PRD is now complete:
-
-```bash
-# After closing a task
-bd close "$issue_id"
-
-# Check if PRD is now complete
-PRD_FILE=$(find_prd_for_issue "$issue_id")
-if [ -n "$PRD_FILE" ]; then
-  check_prd_completion "$PRD_FILE"
-fi
-```
+After closing a task, the AI checks if the PRD is now complete by calling the `check_prd_completion` function with the appropriate PRD file.
 
 ## Beads Integration
 
@@ -364,8 +398,8 @@ Every 5 completed tasks or 30 minutes of work, execute `/prd:summary` to refresh
 - **Parallel Group Execution ([P:Group-X] flags):**
 - **Phase 1 - Pre-execution Analysis:** Before starting any parallel group:
   - Check which tasks are unblocked
-  - Use `bd dep tree <issue-id>` to verify no blocking dependencies
-  - Run `bd show <issue-id>` to check task details and any blockers
+  - Verify there are no blocking dependencies
+  - Review task details and any blockers
 
 **Pre-Group Refresh (REQUIRED):**
 Before starting ANY [P:Group-X] parallel task group, you MUST execute `/prd:summary` to ensure you have the current task state. Parallel groups require accurate context about dependencies and blocking issues.
@@ -373,18 +407,18 @@ Before starting ANY [P:Group-X] parallel task group, you MUST execute `/prd:summ
 - **Phase 2 - Concurrent Execution:** Launch all tasks in the group simultaneously:
   - Use multiple specialized subagents via Task tool with parallel invocations
   - Each subagent works on their assigned files (listed in task description)
-  - Update task status with `bd update <issue-id> --status in_progress`
+  - Update task status to in_progress
 - **Phase 3 - Coordination & Monitoring:**
-  - Monitor progress via `bd list --status in_progress`
+  - Monitor progress via in-progress task status
   - Use beads database for coordination between parallel tasks
   - Wait for ALL tasks in the group to complete before proceeding
 - **Phase 4 - Post-execution Validation:**
-  - Verify all group tasks are completed with `bd list`
-  - Close completed tasks with `bd close <issue-id>`
+  - Verify all group tasks are completed
+  - Close completed tasks
   - Run tests if applicable before moving to next group/task
 - **Completion protocol:**
   - When you finish a **sub-task**, immediately mark it as completed:
-    - Update beads to close the task
+    - Update the task status to closed in beads
     - Update markdown: change `[ ]` to `[x]`
   - If **all** sub-tasks underneath a parent task are now complete, follow this sequence:
     - **First**: Run the full test suite (pytest, npm test, bin/rails test, etc.)
@@ -394,10 +428,10 @@ Before starting ANY [P:Group-X] parallel task group, you MUST execute `/prd:summ
       - Uses conventional commit format (`feat:`, `fix:`, `refactor:`, etc.)
       - Summarizes what was accomplished in the parent task
       - Lists key changes and additions
-      - References the beads issue ID and PRD context
+      - References the issue ID and PRD context
       - **Formats the message as a single-line command using `-m` flags**
 
-  - Once all the subtasks are closed in beads and changes have been committed, close the **parent task** in beads.
+  - Once all the subtasks are closed and changes have been committed, close the **parent task** in beads.
 
 ## PRD Change Management
 
@@ -604,96 +638,25 @@ Functional Requirements: 5. The system shall support user roles: User and Admin 
     - Show which new tasks are ready to work on
 
 2. **Create backup directory:**
-   ```bash
-   # Create timestamped backup directory
-   mkdir -p .beads/backups/prd-v3-to-v4-$(date +%Y%m%d-%H%M%S)
-
-   # Backup directory: .beads/backups/prd-v3-to-v4-20250116-143022/
-````
+   The AI creates a timestamped backup directory in `.beads/backups/prd-vN-to-vN+1-TIMESTAMP/`
 
 3. **Save current task state:**
-
-   ```bash
-   BACKUP_DIR=".beads/backups/prd-v3-to-v4-$(date +%Y%m%d-%H%M%S)"
-
-   # Export all task information
-   bd list > "$BACKUP_DIR/task-list.txt"
-   bd list --status open > "$BACKUP_DIR/open-tasks.txt"
-   bd list --status in_progress > "$BACKUP_DIR/in-progress-tasks.txt"
-   bd list --status closed > "$BACKUP_DIR/completed-tasks.txt"
-
-   # Export dependency trees for all epics
-   for epic_id in $(bd list --type epic --format "{{.ID}}"); do
-     bd dep tree $epic_id > "$BACKUP_DIR/dependency-tree-$epic_id.txt"
-   done
-
-   # Export task details
-   for task_id in $(bd list --format "{{.ID}}"); do
-     echo "=== Task: $task_id ===" >> "$BACKUP_DIR/task-details.txt"
-     bd show $task_id >> "$BACKUP_DIR/task-details.txt"
-     echo "" >> "$BACKUP_DIR/task-details.txt"
-   done
-   ```
+   The AI exports all task information to the backup directory:
+   - All tasks list
+   - Tasks by status (open, in-progress, closed)
+   - Dependency trees for all epics
+   - Detailed information for all tasks
 
 4. **Create migration map:**
-
-   ```bash
-   BACKUP_DIR=".beads/backups/prd-v3-to-v4-$(date +%Y%m%d-%H%M%S)"
-
-   cat > "$BACKUP_DIR/migration-map.md" << 'EOF'
-   # PRD v3 to v4 Migration Map
-
-   ## Overview
-   - **From:** PRD v3 (REST API architecture)
-   - **To:** PRD v4 (GraphQL API architecture)
-   - **Date:** 2025-01-16 14:30:22
-   - **Reason:** Architectural shift from REST to GraphQL
-
-   ## Completed Work (v3)
-
-   ### Can Reuse in v4
-   - **proj-ghi789:** Initialize project structure → ✓ Reuse for GraphQL setup
-   - **proj-jkl012:** Create user table → ✓ Reuse (database schema same)
-
-   ### Cannot Reuse (Architecture Mismatch)
-   - **proj-mno345:** Implement authentication service (REST) → ✗ Discard (needs GraphQL resolvers)
-   - **proj-abc123:** Setup & Configuration → ✗ Partial (update to GraphQL server setup)
-
-   ## Open Tasks (v3 → v4 Mapping)
-
-   | v3 Task ID | v3 Task Title | v4 Action | New v4 Task ID |
-   |------------|---------------|-----------|----------------|
-   | proj-pqr678 | Create login endpoint | Regenerate as GraphQL mutation | TBD |
-   | proj-stu901 | Add rate limiting | Regenerate as GraphQL middleware | TBD |
-   | proj-vwx123 | Implement refresh tokens | Regenerate as GraphQL mutation | TBD |
-   | proj-yza456 | Write unit tests | Regenerate for GraphQL | TBD |
-
-   ## Decisions Made
-   1. Database schema unchanged (reuse completed tasks)
-   2. Authentication logic needs GraphQL adaptation (regenerate)
-   3. All REST endpoints become GraphQL mutations/queries (regenerate)
-   4. Rate limiting middleware adapted for GraphQL context (regenerate)
-
-   ## Notes
-   - Save WIP from proj-mno345 as reference for GraphQL resolver implementation
-   - User table design is solid, no changes needed
-   - GraphQL schema design completed separately before task regeneration
-   EOF
-   ```
+   The AI creates a markdown file documenting:
+   - Overview (from/to PRD versions, date, reason)
+   - Completed work (tasks that can be reused vs cannot be reused)
+   - Open tasks mapping (vN task IDs to vN+1 actions)
+   - Decisions made (what gets reused vs regenerated)
+   - Notes about the migration
 
 5. **Auto-close all open and in-progress tasks:**
-
-   ```bash
-   # Find all open and in-progress tasks
-   TASKS_TO_CLOSE=$(bd list --status open,in_progress --format "{{.ID}}")
-
-   # Auto-close with regeneration reason
-   for task_id in $TASKS_TO_CLOSE; do
-     bd close $task_id --reason "Auto-closed for PRD v4 regeneration: REST to GraphQL migration"
-   done
-
-   echo "✓ Closed $(echo $TASKS_TO_CLOSE | wc -w) tasks for regeneration"
-   ```
+   The AI finds all open and in-progress tasks and closes them with a reason explaining the PRD version change and migration.
 
 6. **Completed tasks remain open** (marked as completed, not closed):
    - Keep visible in beads for reference
@@ -706,38 +669,9 @@ Functional Requirements: 5. The system shall support user roles: User and Admin 
    - Create new dependencies
 
 8. **Migrate completed work:**
-
-   ```bash
-   # For each completed v3 task, determine if v4 task covers same functionality
-   # Reference migration map for decisions
-
-   # Example 1: Database schema (can reuse)
-   bd create "Define GraphQL types for User" -p 2 -t task -d "PRD: /.flow/prd-auth-v4.md
-
-   GraphQL types for User entity (reusing database schema from v3).
-
-   Reference: Completed v3 task proj-jkl012 (Create user table)
-
-   Files:
-   - src/graphql/types/user.ts"
-   # Returns: proj-new123
-
-   # Mark as complete (based on v3 work)
-   bd close proj-new123 --reason "Migrated from completed v3 task proj-jkl012 (database schema complete)"
-
-   # Example 2: Authentication service (cannot reuse)
-   bd create "Implement authentication GraphQL resolvers" -p 2 -t task -d "PRD: /.flow/prd-auth-v4.md
-
-   GraphQL mutations for login, register, and token refresh.
-
-   Reference: In-progress v3 task proj-mno345 (saved in backup for reference)
-
-   Files:
-   - src/graphql/resolvers/auth.ts"
-   # Returns: proj-new456
-
-   # Start fresh (not marked complete)
-   ```
+   For each completed vN task, the AI determines if the vN+1 task covers the same functionality by referencing the migration map:
+   - **Can reuse**: Mark new task as complete (reference old task ID)
+   - **Cannot reuse**: Start fresh (reference backup, not marked complete)
 
 9. **Update all references:**
    - New tasks reference `prd-auth-v4.md`
@@ -745,9 +679,7 @@ Functional Requirements: 5. The system shall support user roles: User and Admin 
    - Keep v3 tasks visible but completed for reference
 
 10. **Resume implementation:**
-    ```bash
-    bd ready --sort priority  # Show tasks sorted by priority (P0 → P4)
-    ```
+    The AI shows tasks sorted by priority (P0 → P4) to begin implementation.
 
     **Priority Indicators:**
     - 🔴 P0 = Critical (urgent)
@@ -846,12 +778,12 @@ PRD change request during implementation?
 │ └─ Continue implementation without pausing
 │
 ├─ Moderate change (new requirement within scope/small UX change)
-│ ├─ Pause current task: bd update --status blocked
+│ ├─ Pause current task: mark as blocked
 │ ├─ Update PRD (vN → vN+1)
 │ ├─ Update history file
 │ ├─ Identify affected tasks
-│ │ ├─ Task NOT started: bd close --reason "Regenerating"
-│ │ └─ Task IN PROGRESS: Commit WIP → bd close
+│ │ ├─ Task NOT started: close with regeneration reason
+│ │ └─ Task IN PROGRESS: Commit WIP → close
 │ ├─ Regenerate affected tasks from updated PRD
 │ ├─ Update task descriptions with new PRD version
 │ └─ Resume with regenerated tasks
@@ -870,7 +802,7 @@ PRD change request during implementation?
 ├─ Migrate completed work:
 │ ├─ Can reuse: Mark new task as complete
 │ └─ Cannot reuse: Start fresh, reference backup
-└─ Resume from new task structure: bd ready --sort priority
+└─ Resume from new task structure: view tasks sorted by priority
 
 ```
 

@@ -1,12 +1,16 @@
 ---
-description: Generate tasks in beads (`bd`)
+description: Generate tasks from a PRD (using beads if available, otherwise TodoWrite)
 ---
 
-# Rule: Generating Issues from a PRD using Beads
+# Rule: Generating Tasks from a PRD
 
 ## Goal
 
-To guide an AI assistant in creating a detailed, step-by-step issue hierarchy using the `bd` (beads) tool based on an existing Product Requirements Document (PRD). The issues should guide a developer through implementation with proper dependency tracking.
+To guide an AI assistant in creating a detailed, step-by-step task hierarchy based on an existing Product Requirements Document (PRD). The tasks should guide a developer through implementation with proper dependency tracking.
+
+**Task Storage Options:**
+- **With beads (`bd`) installed:** Tasks are stored in the `.beads/` database with full dependency tracking
+- **Without beads:** Tasks are tracked using the internal TodoWrite tool with basic hierarchical organization
 
 ## PRD Update Detection
 
@@ -64,12 +68,23 @@ This command intelligently detects whether a PRD has been previously processed a
 
 ## Output
 
-- **Format:** Beads issues in `.beads/` database
-- **Tool:** `bd` (beads dependency-aware issue tracker)
+- **With beads (`bd`) installed:**
+  - **Format:** Beads issues in `.beads/` database
+  - **Tool:** `bd` (beads dependency-aware issue tracker)
+  - **Features:** Dependency tracking, persistent storage, ready task detection
+
+- **Without beads:**
+  - **Format:** Internal TodoWrite tool state
+  - **Tool:** TodoWrite (built-in AI Agent tool)
+  - **Limitations:** Task context may be lost between sessions; no persistent dependency tracking
 
 ## Prerequisites
 
-Ensure beads is initialized in the project. If not, initialize beads.
+- **Required:** A PRD file created via `/prd:plan` in the current branch/worktree context
+- **Optional:** beads (`bd`) - If installed, tasks will be stored persistently in the `.beads/` database
+  - Check with: `which bd`
+  - Initialize if needed: `bd init` (only if using beads)
+  - If beads is not available, the AI will use the internal TodoWrite tool for task tracking
 
 ## Process
 
@@ -100,29 +115,15 @@ Ensure beads is initialized in the project. If not, initialize beads.
        b) Select existing PRD manually
        c) Exit
 
-   **Discovery Commands:**
+   **Discovery Process:**
 
-   ```bash
-   # Find latest PRD
-   LATEST_PRD=$(find /.flow -name "prd-*.md" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+   The AI performs the following discovery process internally:
 
-   # Extract branch from PRD frontmatter
-   PRD_BRANCH=$(grep -A5 "^git:" "$LATEST_PRD" | grep "branch:" | awk '{print $2}' | tr -d '"')
-
-   # Get current branch
-   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-   # Check worktree
-   PRD_WORKTREE_PATH=$(grep -A5 "^worktree:" "$LATEST_PRD" | grep "path:" | awk '{print $2}' | tr -d '"')
-   CURRENT_WORKTREE=$(if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then git rev-parse --git-dir; else echo ""; fi)
-
-   # Validate match
-   if [ "$PRD_BRANCH" = "$CURRENT_BRANCH" ] && [ "$PRD_WORKTREE_PATH" = "$CURRENT_WORKTREE" ]; then
-     echo "Match found: $LATEST_PRD"
-   else
-     echo "Searching for matching PRD..."
-   fi
-   ```
+   1. Find the most recently modified PRD in the `/.flow/` directory
+   2. Extract metadata from the PRD frontmatter (branch, worktree path)
+   3. Detect current git context (branch, worktree)
+   4. Validate that the PRD context matches the current git context
+   5. If no match is found, search all PRDs for a context match
 
    **User Interaction Example:**
 
@@ -150,24 +151,16 @@ Ensure beads is initialized in the project. If not, initialize beads.
 
 2. **Analyze PRD:** The AI reads and analyzes the functional requirements, user stories, and other sections of the specified PRD.
 
-3. **Check Existing Beads Tasks (Update Detection):**
+3. **Check Existing Tasks (Update Detection):**
    Before generating new tasks, check if tasks already exist for this PRD context.
+
+   **If beads (`bd`) is installed:**
    - **Step 3a - Query Beads for Existing Tasks:**
-
-     ```bash
-     # Get all issues in beads database
-     bd list --format json
-
-     # Filter issues by current git context (branch/worktree)
-     # Issues may have PRD reference in description or tags
-     ```
+     The AI queries the beads database to retrieve all existing issues and filters them by the current git context (branch/worktree).
 
    - **Step 3b - Identify Related Issues:**
-     - Look for issues that reference this PRD by:
-       - Checking PRD filename in issue descriptions
-       - Checking PRD version in issue descriptions
-       - Checking `beads.related_issues` or `beads.related_epics` in PRD frontmatter
-     - Extract issue IDs and their status from PRD frontmatter:
+     - Look for issues that reference this PRD by checking PRD filename/version in descriptions
+     - Check `beads.related_issues` or `beads.related_epics` in PRD frontmatter:
        ```yaml
        beads:
          related_issues: [proj-123, proj-456, proj-789]
@@ -175,36 +168,12 @@ Ensure beads is initialized in the project. If not, initialize beads.
        ```
 
    - **Step 3c - Compare PRD Version:**
-     - Compare current PRD `updated_at_commit` with existing task creation time
-     - Determine if PRD has been significantly updated:
-
-       ```bash
-       # Get commit when tasks were last generated
-       PRD_UPDATED_COMMIT=$(grep "^  updated_at_commit:" "$PRD_FILE" | awk '{print $2}')
-
-       # Get current HEAD commit
-       CURRENT_COMMIT=$(git rev-parse HEAD)
-
-       # Check if there are new commits since last task generation
-       if [ "$PRD_UPDATED_COMMIT" != "$CURRENT_COMMIT" ]; then
-         # Check if PRD file itself was modified
-         git log "$PRD_UPDATED_COMMIT..HEAD" --oneline "$PRD_FILE" | grep -q .
-         if [ $? -eq 0 ]; then
-           echo "PRD has been updated since last task generation"
-         fi
-       fi
-       ```
+     Compare current PRD `updated_at_commit` with existing task creation time
 
    - **Step 3d - Update Strategy Decision:**
      Present options to user based on existing tasks:
-
      ```
      ℹ️  Found existing tasks for this PRD:
-     - PRD: prd-authentication.md (version: 2)
-     - Last updated: commit abc123d (2025-01-02)
-     - Existing epics: 3
-     - Existing tasks: 15
-
      Options:
      a) Review and update existing tasks (keep completed tasks, update pending ones)
      b) Regenerate all tasks (archive existing, create new from scratch)
@@ -213,44 +182,37 @@ Ensure beads is initialized in the project. If not, initialize beads.
      ```
 
    - **Step 3e - Intelligent Task Update:**
-     If user chooses option (a) "Review and update":
+     If user chooses option (a):
      - Parse existing issues from beads using `bd show <issue-id>`
-     - Compare existing issue descriptions with PRD requirements
-     - Identify:
-       - Completed tasks - mark as done, don't regenerate
-       - Obsolete tasks - mark for archival or deletion
-       - New requirements - generate new tasks
-       - Modified requirements - update existing task descriptions
-
-     **Update Logic:**
-
-     ```bash
-     # For each existing epic
-     for epic_id in "${existing_epics[@]}"; do
-       epic_status=$(bd show "$epic_id" | grep "Status:" | awk '{print $2}')
-
-       if [ "$epic_status" = "done" ]; then
-         # Skip - epic already completed
-         continue
-       fi
-
-       # Check if epic still relevant to updated PRD
-       # If yes: keep and potentially update description
-       # If no: mark as obsolete
-     done
-     ```
+     - Compare with PRD requirements
+     - Keep completed tasks, update pending ones, generate new tasks
 
    - **Step 3f - No Existing Tasks:**
-     If `beads.related_issues` and `beads.related_epics` are empty or null:
-     - Proceed to full task generation (skip to step 4)
-     - This is a fresh PRD or first-time task generation
+     If `beads.related_issues` and `beads.related_epics` are empty or null, proceed to full task generation
+
+   **If beads is NOT installed (TodoWrite fallback):**
+   - Check internal TodoWrite state for existing tasks related to current PRD
+   - Compare PRD version `updated_at_commit` with last task generation
+   - Present similar update options (review, regenerate, show diff, cancel)
+   - If no existing TodoWrite state, proceed to full task generation
+   - Note: Without beads, task history between sessions is limited
 
 4. **Assess Current State:** Review the existing codebase to understand existing infrastructure, architectural patterns and conventions. Also, identify any existing components or features that already exist and could be relevant to the PRD requirements. Then, identify existing related files, components, and utilities that can be leveraged or need modification.
 
 5. **Phase 1: Generate Parent Issues (Epics) - For New or Updated Requirements Only:**
-   - If this is a fresh PRD (no existing tasks): Generate all parent epics as before
+   - If this is a fresh PRD (no existing tasks): Generate all parent epics
    - If this is an updated PRD: Only generate NEW or MODIFIED epics
    - Skip generation of completed/unchanged epics
+
+   **With beads (`bd`) installed:**
+   - Use `bd create` to create epic issues
+   - Set epic properties (title, description, priority, labels)
+   - Store epic IDs for later reference
+
+   **Without beads (TodoWrite fallback):**
+   - Use TodoWrite tool to track epics internally
+   - Each epic is a todo item with status "pending"
+   - Use epic naming convention: "Epic: [title]" for clarity
 
    **Generation Strategy for Updates:**
    - Compare PRD requirements with existing epic descriptions
@@ -290,7 +252,19 @@ Ensure beads is initialized in the project. If not, initialize beads.
 
 7. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
 
-8. **Phase 2: Generate Sub-Issues - For New or Updated Epics Only:** Once the user confirms, break down each parent issue into smaller, actionable sub-issues necessary to complete the parent issue. Ensure sub-issues logically follow from the parent issue, cover the implementation details implied by the PRD, and consider existing codebase patterns where relevant without being constrained by them.
+8. **Phase 2: Generate Sub-Issues - For New or Updated Epics Only:** Once the user confirms, break down each parent issue into smaller, actionable sub-issues necessary to complete the parent issue.
+
+   **With beads (`bd`) installed:**
+   - Use `bd create` to create sub-issues
+   - Link each sub-issue to its parent epic using parent-child relationship
+   - Set dependencies between sub-issues based on file conflicts
+   - Use `bd add-blocked-by` or `bd add-depends-on` as needed
+
+   **Without beads (TodoWrite fallback):**
+   - Use TodoWrite tool to create sub-tasks
+   - Name sub-tasks with parent epic prefix: "[Epic Title] Sub-task: specific task"
+   - Mark sub-tasks as status "pending"
+   - Note: Dependency tracking is limited with TodoWrite
 
    **For updated PRDs:** Only generate sub-issues for epics that are new or modified. Skip sub-issue generation for completed/unchanged epics.
 
@@ -308,6 +282,16 @@ Ensure beads is initialized in the project. If not, initialize beads.
    - Test files and source files are considered separate for conflict purposes
    - Configuration files (package.json, etc.) should have blocking dependencies if multiple issues modify them
 
+   **With beads (`bd`) installed:**
+   - Use `bd add-depends-on` to add blocking dependencies
+   - Use `bd add-related` for soft connections
+   - Run `bd ready` to identify tasks ready to start (no blockers)
+
+   **Without beads (TodoWrite fallback):**
+   - Note dependencies in task descriptions
+   - Manual ordering required when executing tasks
+   - No automatic "ready" task detection
+
 10. **Task Priority Inheritance:** When creating sub-issues, assign priorities based on inheritance rules:
     - **Default Rule:** Sub-tasks inherit parent epic priority
     - **Exception 1:** Documentation tasks default to P3 unless epic is P0
@@ -322,36 +306,42 @@ Ensure beads is initialized in the project. If not, initialize beads.
     - Ensure dependencies are correctly set between old and new issues
     - Archive obsolete issues if user chose option (b) "Regenerate all"
 
-13. **Verify Issue Structure:** After creating all issues, verify the structure using beads to view issues, dependency trees, and ready tasks.
+13. **Verify Issue Structure:** After creating all issues, verify the structure.
 
-14. **Update PRD Metadata:** After creating beads issues, update the PRD frontmatter.
+    **With beads (`bd`) installed:**
+    - Use `bd list` to view all issues
+    - Use `bd show <issue-id>` to view specific issue details
+    - Use `bd ready` to identify tasks ready to start (no blockers)
+    - Review dependency trees to ensure correct relationships
+
+    **Without beads (TodoWrite fallback):**
+    - Review the internal TodoWrite state
+    - Verify all epics and sub-tasks are created
+    - Check task descriptions for completeness
+
+14. **Update PRD Metadata:** After creating tasks, update the PRD frontmatter.
     - Update `updated_at` timestamp
     - Update `updated_at_commit` with current commit SHA
-    - Add newly created issue IDs to `beads.related_issues`
-    - Add epic IDs to `beads.related_epics`
     - Change status from `draft` to `approved` if not already (only if current status is draft)
 
-    **Update Commands:**
+    **With beads (`bd`) installed:**
+    - Add newly created issue IDs to `beads.related_issues`
+    - Add epic IDs to `beads.related_epics`
 
-    ```bash
-    # Update timestamp and commit
-    sed -i "s/^  updated_at: .*/  updated_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")/" "$PRD_FILE"
-    sed -i "s/^  updated_at_commit: .*/  updated_at_commit: $(git rev-parse HEAD)/" "$PRD_FILE"
+    **Without beads (TodoWrite fallback):**
+    - Set `beads.related_issues: []` (empty array, since beads is not installed)
+    - Set `beads.related_epics: []` (empty array)
+    - Note: Tasks are tracked internally via TodoWrite
 
-    # Update status (only if currently draft)
-    CURRENT_STATUS=$(grep "^  status:" "$PRD_FILE" | awk '{print $2}')
-    if [ "$CURRENT_STATUS" = "draft" ]; then
-      sed -i 's/^  status: draft/  status: approved/' "$PRD_FILE"
-      echo "✓ PRD status updated: draft → approved"
-    else
-      echo "  PRD status is '$CURRENT_STATUS' - leaving as-is"
-    fi
+    **Update Process:**
 
-    # Note: Adding issue IDs to beads section requires parsing the output
-    # of bd create commands or using a YAML parser like yq
-    ```
+    The AI updates the PRD frontmatter by:
+    1. Updating the `updated_at` timestamp to the current UTC time
+    2. Updating the `updated_at_commit` to the current git HEAD SHA
+    3. Changing status from `draft` to `approved` (only if current status is draft)
+    4. Adding issue/epic IDs to beads frontmatter (if beads is installed)
 
-    **Example Updated Frontmatter:**
+    **Example Updated Frontmatter (with beads):**
 
     ```yaml
     ---
@@ -359,48 +349,61 @@ Ensure beads is initialized in the project. If not, initialize beads.
       version: 1
       feature_name: authentication
       status: approved # Changed from draft
-    git:
-      branch: feature/auth
-      branch_type: feature
-      created_at_commit: abc123def4567890
-      updated_at_commit: def789ghi0123456 # Updated
-    worktree:
-      is_worktree: true
-      name: feature-auth
-      path: /home/user/project/.git/worktrees/feature-auth
-      repo_root: /home/user/project
-    metadata:
-      created_at: 2025-01-02T10:30:00Z
-      updated_at: 2025-01-02T14:45:00Z # Updated
-      created_by: John Doe <john@example.com>
-      filename: prd-authentication.md
     beads:
       related_issues: [proj-123, proj-456, proj-789] # Added
       related_epics: [proj-001, proj-002] # Added
+    ...
+    ```
+
+    **Example Updated Frontmatter (without beads):**
+
+    ```yaml
     ---
+    prd:
+      version: 1
+      feature_name: authentication
+      status: approved # Changed from draft
+    beads:
+      related_issues: [] # Empty - beads not installed, using TodoWrite
+      related_epics: [] # Empty - beads not installed, using TodoWrite
+    ...
     ```
 
 15. Once all tasks are completed, suggest to the user to use the `/prd:implement` slash command
 
 ## Issue Structure
 
+### With beads (`bd`) installed:
+
 Issues are stored in the `.beads/` database with the following hierarchy:
 
-### Epic (Parent Issue)
-
+#### Epic (Parent Issue)
 High-level issue grouping multiple related tasks. Should include:
-
 - Epic description with clear purpose
 - Files to be created/modified
 - Reference to PRD version
 
-### Task (Sub-Issue)
-
+#### Task (Sub-Issue)
 Individual actionable tasks that complete epic requirements. Should include:
-
 - Task description with specific deliverable
 - Files to be created/modified
 - Link to parent epic (parent-child relationship)
+
+### Without beads (TodoWrite fallback):
+
+Tasks are tracked internally using the TodoWrite tool:
+
+#### Epic (Parent Todo Item)
+High-level task grouping multiple related sub-tasks. Should include:
+- Epic description with clear purpose
+- Status: "pending", "in_progress", or "completed"
+- Active form: "[Verb]-ing [epic title]"
+
+#### Task (Sub-Todo Item)
+Individual actionable tasks that complete epic requirements. Should include:
+- Task description with specific deliverable
+- Status: "pending", "in_progress", or "completed"
+- Parent epic name in the task title for hierarchy: "[Epic Title] Sub-task: specific task"
 
 ### Dependency Types
 

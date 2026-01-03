@@ -10,35 +10,73 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
 
 ## Process
 
-1.  **Check Prerequisites:** Verify that required tools are installed. Check for: `git`, `gwq`, `bd`.
+1.  **Check Prerequisites:** Verify that required tools are installed. Check for: `git` (required), `wt` (optional), `bd` (optional).
 
-    For each missing tool, offer to install:
+    For each missing optional tool, offer to install:
 
     | Tool  | Check       | Installation                                                                                    |
     | ----- | ----------- | ----------------------------------------------------------------------------------------------- |
     | `git` | `which git` | Use system package manager (e.g., `sudo apt install git`, `brew install git`)                   |
-    | `bd`  | `which bd`  | `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh \| bash` |
-    | `gwq` | `which gwq` | Download from latest release, extract, and add to PATH                                          |
-    - If any tool is missing, show the installation command and ask user to confirm before running.
-    - If user declines installation, warn that some features may not work and ask if they want to continue anyway.
-    - Only proceed to step 2 when all tools are available or user explicitly chooses to continue.
+    | `bd`  | `which bd`  | `curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh \| bash` (optional - TodoWrite fallback available) |
+    | `wt`   | `which wt`  | `brew install max-sixty/worktrunk/wt` OR `cargo install worktrunk` (optional - git fallback available) |
+    - Only `git` is required.
+    - If `wt` is missing, the AI will use native git worktree commands.
+    - If `bd` is missing, the AI will use the internal TodoWrite tool for task tracking.
+
+⚠️  **Warning about beads (bd):**
+Without beads installed, task context may be lost between sessions. Beads provides:
+- Persistent task storage across sessions
+- Dependency tracking between tasks
+- Better visibility into progress and blockers
+- Integration with PRD frontmatter for traceability
+
+Consider installing beads for the best experience, especially for larger features with many tasks.
 
 2.  **Verify Git Worktree:** Before proceeding, check if the current directory is a Git worktree. If it is not a worktree, warn the user and offer options.
     - **Warning message should include:**
       - An explanation that PRDs are best created in isolated worktrees for better branch/feature management.
     - **Offer 3 choices:**
       1. **Create worktree now** - Ask for a feature name, create the worktree, then instruct user to start a new session:
+
+         The AI will:
+         - Check if `wt` (worktrunk) is installed
+         - If `wt` is available: Use `wt switch -c -x claude feature/<name>` to create and start Claude
+         - If `wt` is NOT available: Use `git worktree add -b feature/<name> ../repo.<name>` and save the prompt to a file
+
+         **With worktrunk (wt) installed:**
+         The AI will create the worktree and launch Claude automatically:
          ```bash
-         gwq add -b feature/<user-provided-name>
+         wt switch -c -x claude feature/<name>
          ```
-         After creation, tell the user:
-         - Exit this Claude Code session
-         - Run `gwq exec feature/<name> -- claude` to open Claude Code in the new worktree
-         - Then re-run `/prd:plan` to continue
+
+         **Without worktrunk (git fallback):**
+         The AI will:
+         1. Create the worktree: `git worktree add -b feature/<name> ../repo.<name>`
+         2. Save the current prompt to: `/tmp/prd-prompt-<timestamp>.txt`
+         3. Instruct user to:
+            - Exit this Claude Code session
+            - Navigate to the new worktree: `cd ../repo.<name>` (or the actual path)
+            - Open Claude Code in the new directory
+            - Read the prompt file: `/tmp/prd-prompt-<timestamp>.txt`
+            - Continue with the prompt
+
+         Example prompt file:
+         ```
+         # PRD Planning Prompt Saved from Previous Session
+
+         Your feature name: auth
+
+         To continue planning your PRD:
+         1. Re-run the /prd:plan command in this new worktree
+         2. Answer the clarifying questions again
+
+         [Original prompt context preserved]
+         ```
       2. **Continue without worktree** - Proceed with the current directory.
       3. **Exit** - Gracefully exit the process.
     - Example interaction:
 
+      **With worktrunk (wt) installed:**
       ```
       ⚠️  Not in a git worktree. PRDs work best in isolated worktrees.
 
@@ -50,12 +88,37 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
       > a
       Enter feature name: auth
 
+      ✓ Checking for worktrunk (wt)...
+      ✓ worktrunk found! Creating worktree with Claude integration...
       ✓ Created worktree: feature/auth
+
+      Claude Code will now open in the new worktree. Continue with /prd:plan there.
+      ```
+
+      **Without worktrunk (git fallback):**
+      ```
+      ⚠️  Not in a git worktree. PRDs work best in isolated worktrees.
+      ℹ️  worktrunk (wt) not found - using git worktree commands
+
+      Options:
+      a) Create worktree now (recommended)
+      b) Continue without worktree
+      c) Exit
+
+      > a
+      Enter feature name: auth
+
+      ✓ Creating worktree using git...
+      ✓ Created worktree: feature/auth at /path/to/repo.auth
+
+      📝 Your prompt has been saved to: /tmp/prd-prompt-20250103-143022.txt
 
       To continue in the new worktree:
       1. Exit this Claude Code session (Ctrl+C or type 'exit')
-      2. Run: gwq exec feature/auth -- claude
-      3. Then run: /prd:plan
+      2. Navigate to worktree: cd /path/to/repo.auth
+      3. Start Claude Code
+      4. Read the saved prompt file for context: cat /tmp/prd-prompt-20250103-143022.txt
+      5. Re-run: /prd:plan
 
       Goodbye!
       ```
@@ -276,22 +339,11 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
 - **Critical:** Do NOT proceed to task generation without explicit approval
 
 **PRD Update Process (when changes are requested):**
-```bash
-# Read current version
-CURRENT_VERSION=$(grep "^  version:" "$PRD_FILE" | awk '{print $2}')
-NEW_VERSION=$((CURRENT_VERSION + 1))
-
-# Update version in frontmatter
-sed -i "s/^  version: $CURRENT_VERSION/  version: $NEW_VERSION/" "$PRD_FILE"
-
-# Update timestamps and commit
-sed -i "s/updated_at: .*/updated_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")/" "$PRD_FILE"
-sed -i "s/updated_at_commit: .*/updated_at_commit: $(git rev-parse HEAD)/" "$PRD_FILE"
-
-# Add entry to changelog
-NEW_CHANGELOG_ENTRY="| $NEW_VERSION | $(date -u +"%Y-%m-%d %H:%M") | [Summary of changes] |"
-# Insert this entry in the changelog table
-```
+The AI performs the following steps internally to update the PRD:
+1. Read the current version from the frontmatter
+2. Increment the version number
+3. Update the version, timestamp, and commit SHA in the frontmatter
+4. Add an entry to the changelog table
 
 **PRD Iteration Workflow (when editing existing approved/implemented PRD):**
 
@@ -303,65 +355,25 @@ When the user edits an existing PRD that has status `approved` or `implemented`:
 4. **Archive existing tasks**: Mark old tasks as superseded
 5. **Prompt to regenerate**: Offer to run `/prd:generate-tasks`
 
-```bash
-# Check current status before updating PRD
-CURRENT_STATUS=$(grep "^  status:" "$PRD_FILE" | awk '{print $2}')
-
-# If approved or implemented, handle iteration workflow
-if [ "$CURRENT_STATUS" = "approved" ] || [ "$CURRENT_STATUS" = "implemented" ]; then
-  # Reset to draft
-  sed -i "s/^  status: $CURRENT_STATUS/  status: draft/" "$PRD_FILE"
-
-  # Get current version and increment
-  CURRENT_VERSION=$(grep "^  version:" "$PRD_FILE" | awk '{print $2}')
-  NEW_VERSION=$((CURRENT_VERSION + 1))
-  sed -i "s/^  version: $CURRENT_VERSION/  version: $NEW_VERSION/" "$PRD_FILE"
-
-  # Update timestamp
-  sed -i "s/^  updated_at: .*/  updated_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")/" "$PRD_FILE"
-  sed -i "s/^  updated_at_commit: .*/  updated_at_commit: $(git rev-parse HEAD)/" "$PRD_FILE"
-
-  # Archive related tasks
-  archive_prd_tasks "$PRD_FILE"
-
-  # Add changelog entry
-  CHANGELOG_ENTRY="| $NEW_VERSION | $(date -u +"%Y-%m-%d %H:%M") | PRD updated - status reset to draft, tasks archived |"
-  sed -i "/^| Version |/a $CHANGELOG_ENTRY" "$PRD_FILE"
-
-  echo "⚠️  PRD updated - status reset to draft"
-  echo "   Existing tasks have been archived"
-  echo "   Run '/prd:generate-tasks' to create new tasks"
-fi
-```
+The AI performs the following steps:
+- Check current PRD status
+- If approved or implemented:
+  - Reset status to draft
+  - Increment version number
+  - Update timestamp and commit SHA
+  - Archive related tasks by marking them as superseded and closing them
+  - Add changelog entry
+  - Display success message with next steps
 
 **Archive function for old tasks:**
 
-```bash
-# Archive all tasks related to a PRD
-archive_prd_tasks() {
-  local prd_file="$1"
-
-  # Get related issues
-  local related_issues=$(grep -A2 "^beads:" "$prd_file" | grep "related_issues:" | sed 's/.*: \[\(.*\)\]/\1/')
-  related_issues=$(echo "$related_issues" | tr -d '[]",' | tr ' ' '\n' | grep -v '^$')
-
-  local archived_count=0
-  for issue in $related_issues; do
-    if bd show "$issue" >/dev/null 2>&1; then
-      # Add "superseded" label and close
-      bd label add "$issue" superseded 2>/dev/null || true
-      bd close "$issue" 2>/dev/null || true
-      archived_count=$((archived_count + 1))
-    fi
-  done
-
-  # Clear related_issues from PRD
-  sed -i 's/^  related_issues: .*/  related_issues: []/' "$prd_file"
-  sed -i 's/^  related_epics: .*/  related_epics: []/' "$prd_file"
-
-  echo "   Archived $archived_count tasks from previous PRD version"
-}
-```
+The AI archives all tasks related to a PRD by:
+1. Getting the list of related issues from the PRD frontmatter
+2. For each related issue that exists:
+   - Adding a "superseded" label
+   - Closing the issue
+3. Clearing the related_issues and related_epics from the PRD frontmatter
+4. Displaying the count of archived tasks
 
 **Auto-Regeneration Prompt:**
 
