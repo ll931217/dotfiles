@@ -82,7 +82,7 @@ get_context_bar() {
     fi
 
     # Create compact progress bar
-    local bar=$(progress_bar "$percentage" 6)
+    local bar=$(progress_bar "$percentage" 15)
 
     # Format: ▓▓▓▓░░ 78%
     printf '%s[%s%s%s]%s%d%%%s' "$color" "$C_BOLD" "$bar" "$color" "$C_RESET" "$percentage" "$C_RESET"
