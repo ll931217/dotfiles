@@ -129,6 +129,17 @@ configure_wm() {
     bash "$SCRIPT_DIR/05-configure-wm.sh"
 }
 
+# Install Baoge Hooks plugin (delegates to 99-baoge-hooks.sh)
+install_baoge_hooks() {
+    if [[ $DRY_RUN == true ]]; then
+        log "[DRY RUN] Would install Baoge Hooks plugin"
+        return 0
+    fi
+
+    log "Installing Baoge Hooks plugin..."
+    bash "$SCRIPT_DIR/99-baoge-hooks.sh"
+}
+
 # ============================================================================
 # ITEM ROUTER
 # ============================================================================
@@ -160,6 +171,9 @@ install_item() {
                 ;;
             BASE_DEPS)
                 install_base_dependencies
+                ;;
+            BAOGE_HOOKS)
+                install_baoge_hooks
                 ;;
             *)
                 install_config_item "$item_name"

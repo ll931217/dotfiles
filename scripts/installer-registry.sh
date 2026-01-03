@@ -43,6 +43,12 @@ declare -A CATEGORY_AI=(
     [icon]="🤖"
 )
 
+declare -A CATEGORY_PLUGINS=(
+    [name]="Plugins"
+    [description]="Plugin installations"
+    [icon]="🔌"
+)
+
 declare -A CATEGORY_FILE_MANAGERS=(
     [name]="File Managers"
     [description]="File manager configurations"
@@ -85,6 +91,7 @@ CATEGORIES=(
     "BROWSER"
     "FONTS"
     "BASE_DEPS"
+    "PLUGINS"
 )
 
 # ============================================================================
@@ -244,6 +251,18 @@ declare -A ITEM_CLAUDE=(
     [dependencies]=""
     [packages]=""
     [description]="Claude Code AI assistant configuration"
+)
+
+declare -A ITEM_BAOGE_HOOKS=(
+    [name]="Baoge Hooks"
+    [category]="plugins"
+    [config_path]="$REPO_ROOT/plugins/baoge-hooks"
+    [target_path]="$HOME/.scripts/opencode"
+    [detection]="dir"
+    [dependencies]="jq"
+    [packages]="jq"
+    [description]="Claude Code hooks plugin with notifications and context monitoring"
+    [module]="99-baoge-hooks.sh"
 )
 
 # Future items can be added here for Continue.dev, Cursor, etc.
@@ -454,7 +473,8 @@ get_all_items() {
         BTOP DUNST ROFI CAVA FASTFETCH PICOM \
         QUTEBROWSER \
         FONTS \
-        BASE_DEPS | sort
+        BASE_DEPS \
+        BAOGE_HOOKS | sort
 }
 
 # Check if item has conflicts
