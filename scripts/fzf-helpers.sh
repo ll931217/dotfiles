@@ -183,8 +183,8 @@ show_confirmation() {
     local to_update=()
 
     for item in "${selected_items[@]}"; do
-        local item_name="${ITEM_${item}[name]}"
-        item_name="${!item_name}"
+        local item_var="ITEM_${item}"
+        local item_name=$(get_item_value "$item_var" "name")
 
         if get_item_status "$item"; then
             already_installed+=("$item_name")
@@ -239,10 +239,10 @@ show_conflict_resolver() {
         local item1="${conflict% vs *}"
         local item2="${conflict#* vs }"
 
-        local name1="${ITEM_${item1}[name]}"
-        local name2="${ITEM_${item2}[name]}"
-        name1="${!name1}"
-        name2="${!name2}"
+        local item_var1="ITEM_${item1}"
+        local item_var2="ITEM_${item2}"
+        local name1=$(get_item_value "$item_var1" "name")
+        local name2=$(get_item_value "$item_var2" "name")
 
         echo "  ⚠️  $name1 conflicts with $name2"
     done
@@ -254,10 +254,10 @@ show_conflict_resolver() {
     for conflict in "${conflicts[@]}"; do
         local item1="${conflict% vs *}"
         local item2="${conflict#* vs }"
-        local name1="${ITEM_${item1}[name]}"
-        local name2="${ITEM_${item2}[name]}"
-        name1="${!name1}"
-        name2="${!name2}"
+        local item_var1="ITEM_${item1}"
+        local item_var2="ITEM_${item2}"
+        local name1=$(get_item_value "$item_var1" "name")
+        local name2=$(get_item_value "$item_var2" "name")
 
         options+=("Keep ${name1}")
         options+=("Keep ${name2}")

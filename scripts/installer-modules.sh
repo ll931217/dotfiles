@@ -157,8 +157,8 @@ install_item() {
     fi
 
     # Check for module delegation
-    local module="${ITEM_${item_name}[module]}"
-    module="${!module}"
+    local item_var="ITEM_${item_name}"
+    local module=$(get_item_value "$item_var" "module")
 
     if [[ -n "$module" ]]; then
         # Delegate to module script

@@ -12,25 +12,35 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Internal logging helper
+_log_to_file() {
+    local input="$1"
+    if [[ -n "$LOG_FILE" ]]; then
+        echo -e "$input" | tee -a "$LOG_FILE" >&2
+    else
+        echo -e "$input" >&2
+    fi
+}
+
 # Logging functions
 log() {
-    echo -e "${BLUE}[INFO]${NC} $*" | tee -a "$LOG_FILE" >&2
+    _log_to_file "${BLUE}[INFO]${NC} $*"
 }
 
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $*" | tee -a "$LOG_FILE" >&2
+    _log_to_file "${GREEN}[SUCCESS]${NC} $*"
 }
 
 warn() {
-    echo -e "${YELLOW}[WARNING]${NC} $*" | tee -a "$LOG_FILE" >&2
+    _log_to_file "${YELLOW}[WARNING]${NC} $*"
 }
 
 error() {
-    echo -e "${RED}[ERROR]${NC} $*" | tee -a "$LOG_FILE" >&2
+    _log_to_file "${RED}[ERROR]${NC} $*"
 }
 
 info() {
-    echo -e "${CYAN}[INFO]${NC} $*" | tee -a "$LOG_FILE" >&2
+    _log_to_file "${CYAN}[INFO]${NC} $*"
 }
 
 # ============================================================================

@@ -257,7 +257,7 @@ declare -A ITEM_BAOGE_HOOKS=(
     [name]="Baoge Hooks"
     [category]="plugins"
     [config_path]="$REPO_ROOT/plugins/baoge-hooks"
-    [target_path]="$HOME/.scripts/opencode"
+    [target_path]="$HOME/.claude/scripts/baoge-hooks"
     [detection]="dir"
     [dependencies]="jq"
     [packages]="jq"
@@ -420,8 +420,8 @@ get_items_for_category() {
     local items=()
 
     for item in $(get_all_items); do
-        local item_cat="${ITEM_${item}[category]}"
-        item_cat="${!item_cat}"
+        local item_var="ITEM_${item}"
+        local item_cat=$(get_item_value "$item_var" "category")
         if [[ "$item_cat" == "$category" ]]; then
             items+=("$item")
         fi
@@ -450,8 +450,8 @@ get_category_item_count() {
     local count=0
 
     for item in $(get_all_items); do
-        local item_cat="${ITEM_${item}[category]}"
-        item_cat="${!item_cat}"
+        local item_var="ITEM_${item}"
+        local item_cat=$(get_item_value "$item_var" "category")
         if [[ "$item_cat" == "$category" ]]; then
             ((count++))
         fi
@@ -480,8 +480,8 @@ get_all_items() {
 # Check if item has conflicts
 get_item_conflicts() {
     local item="$1"
-    local conflicts="${ITEM_${item}[conflicts]}"
-    conflicts="${!conflicts}"
+    local item_var="ITEM_${item}"
+    local conflicts=$(get_item_value "$item_var" "conflicts")
     echo "$conflicts"
 }
 
