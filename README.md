@@ -6,6 +6,7 @@
 # Setup
 
 ## Requirements
+
 - Gnome terminal
 - Compton(This is actually optional since I don't use it anymore)
 - Rofi
@@ -31,6 +32,30 @@ Setting fonts for `gnome-terminal`:
 Use `feh` to apply the wallpaper.
 
 The 2 files `chrome` folder should be placed in your `Firefox` home directory. To access that, go to `Menu` -> `Help` -> `Troubleshooting Information` -> `Open Directory`.
+
+## AI Coding Agent Integration (Mainly Claude Code)
+
+This dotfiles repository includes a sophisticated [Claude Code](https://claude.ai/code) configuration that transforms it into an AI-assisted development environment. The `.claude/` directory contains:
+
+- **31 specialized agents** for architecture, frontend/backend development, DevOps, security, and more
+- **10 custom slash commands** for PRD workflows, git operations, and analysis tools
+- **5 specialized skills** for document processing, frontend design, and MCP server creation
+- **Advanced hook system** with notifications, session tracking, and tool monitoring
+- **Integration with beads** for distributed issue tracking and **worktrunk** for parallel git workflows
+
+### Key Commands
+
+- `/prd:plan` - Create Product Requirements Documents with auto-generated tasks
+- `/prd:implement` - Implement approved PRDs with task tracking
+- `/tools:parallel-analyze` - Spawn multiple agents for collaborative analysis
+- `/tools:debug` - AI-assisted debugging workflows
+- `/gh:create-commit` - Standardized git commit creation
+
+For complete documentation on the Claude AI setup, see:
+
+- [`.claude/WORKFLOW.md`](.claude/WORKFLOW.md) - Complete workflow guide
+- [`.claude/COMMANDS.md`](.claude/COMMANDS.md) - Custom slash commands reference
+- [`.claude/AGENTS.md`](.claude/AGENTS.md) - Available AI agents
 
 ---
 
@@ -95,6 +120,7 @@ declare -A COMPONENT_NAME=(
 ### State Management
 
 Installation state is tracked in `.install-state.json`:
+
 - Installed versions for each component
 - File checksums for change detection
 - Backup locations for rollback capability
@@ -105,6 +131,7 @@ The snapshot system creates pre-installation backups, enabling rollback to any p
 ### Symlink Management
 
 Unlike GNU stow, this system uses custom symlink creation with:
+
 - Timestamped backups before replacing files
 - Intelligent handling of existing symlinks
 - Dry-run mode for preview
@@ -113,6 +140,7 @@ Unlike GNU stow, this system uses custom symlink creation with:
 ### Health Check System
 
 `./install.sh --health` provides two modes:
+
 - **Quick check**: Validates symlinks exist and commands are available
 - **Comprehensive**: Validates configs and tests system integration
 
@@ -123,6 +151,7 @@ Unlike GNU stow, this system uses custom symlink creation with:
 **Theme Consistency**: Catppuccin theme used across all terminals (alacritty, kitty, wezterm, ghostty) with multiple flavor variants (mocha, latte, frappe, macchiato).
 
 **Zsh Modularity**:
+
 - `~/.zshrc` redirects to `~/.config/zsh/.zshrc`
 - Config split into: `options.zsh`, `aliases.zsh`, `functions.zsh`, `keybinds.zsh`, `theme.zsh`, `fzf.zsh`, `env.zsh`
 - Private configs in `~/.config/zsh/private/` (gitignored)
