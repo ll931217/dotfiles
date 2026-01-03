@@ -41,7 +41,7 @@ This file provides general guidance to Claude Code (claude.ai/code) when working
 - Always use Claude Code sub-agents for research before implementing.
 - When in plan mode, always try to group tasks that can be processed in parallel together. When the user is satisfied and want you to implement it, try to work on as many tasks on the todo list as possible by delegating tasks to appropriate sub-agents
 - Always use multiple sub-agents when doing research and forming a plan for code implementation
-- We are inside the company's internal network without access to the internet, unless using a proxy which only allows certain access mainly to github
+- We are mostly inside the company's internal network without access to the internet, unless using a proxy which only allows certain access mainly to github
 
 ## Available MCP Servers
 
@@ -73,4 +73,3 @@ You MUST follow these user specified guidelines where necessary:
   - React: If data is passed down to multiple components, use react context instead
   - React: If there is too many handlers for a single state, use the reducer instead
   - React: Please keep react components compact and focused, do not overcomplicate a single react component
-

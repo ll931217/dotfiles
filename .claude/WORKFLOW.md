@@ -27,19 +27,19 @@ This project uses [beads](https://github.com/steveyegge/beads) for distributed, 
 
 ### Essential Commands
 
-| Command | Purpose |
-|---------|---------|
-| `bd ready` | **Most important**: Find tasks with no open blockers |
-| `bd show <id>` | View issue details, audit trail, and dependencies |
-| `bd create "Title" -p 0` | Create P0 (urgent) task |
-| `bd create "Title" -t epic` | Create epic (parent task) |
-| `bd update <id> --status in_progress` | Claim work on a task |
-| `bd update <id> --assignee <agent>` | Assign task to specific agent |
-| `bd close <id> --reason "Done"` | Complete task with reason |
-| `bd dep add <child> <parent>` | Link tasks (default: blocks) |
-| `bd dep tree <id>` | View dependency hierarchy |
-| `bd sync` | Export DB → JSONL, commit, and push (MANDATORY) |
-| `bd stats` | Show project statistics and progress |
+| Command                               | Purpose                                              |
+| ------------------------------------- | ---------------------------------------------------- |
+| `bd ready`                            | **Most important**: Find tasks with no open blockers |
+| `bd show <id>`                        | View issue details, audit trail, and dependencies    |
+| `bd create "Title" -p 0`              | Create P0 (urgent) task                              |
+| `bd create "Title" -t epic`           | Create epic (parent task)                            |
+| `bd update <id> --status in_progress` | Claim work on a task                                 |
+| `bd update <id> --assignee <agent>`   | Assign task to specific agent                        |
+| `bd close <id> --reason "Done"`       | Complete task with reason                            |
+| `bd dep add <child> <parent>`         | Link tasks (default: blocks)                         |
+| `bd dep tree <id>`                    | View dependency hierarchy                            |
+| `bd sync`                             | Export DB → JSONL, commit, and push (MANDATORY)      |
+| `bd stats`                            | Show project statistics and progress                 |
 
 ### Dependency Types
 
@@ -97,12 +97,17 @@ bd list --status in_progress
 ### Git Hooks
 
 Beads installs git hooks automatically during `bd init`:
+
 - **pre-commit**: Flushes SQLite DB → JSONL before commit
 - **post-merge**: Imports JSONL → DB after pull
 - **pre-push**: Exports DB → JSONL before push
 - **post-checkout**: Imports JSONL → DB after branch switch
 
-**Always run `bd sync` before ending a session** to ensure changes are committed and pushed.
+### Rules
+
+- Whenever the user suggests changes, no matter in which mode, you should create tasks in `beads` before, confirm with the user before proceeding with implementing those changes.
+- If there is a PRD available at `.flow/prd-*.md`, make sure to update the current PRD. Check the frontmatter of the file for the current PRD, if you can't find one then ignore this rule.
+- **Always run `bd sync` before ending a session** to ensure changes are committed and pushed.
 
 ---
 
@@ -131,14 +136,14 @@ wt config shell install
 
 ### Core Commands
 
-| Task | Worktrunk | Plain git |
-|------|-----------|-----------|
-| Switch worktrees | `wt switch feat` | `cd ../repo.feat` |
-| Create + switch | `wt switch -c feat` | `git worktree add -b feat ../repo.feat && cd ../repo.feat` |
-| Create + start Claude | `wt switch -c -x claude feat` | *(multiple commands)* |
-| List with status | `wt list` | `git worktree list` *(no status)* |
-| Clean up | `wt remove` | `git worktree remove && git branch -d` |
-| Merge back | `wt merge` | *(complex manual process)* |
+| Task                  | Worktrunk                     | Plain git                                                  |
+| --------------------- | ----------------------------- | ---------------------------------------------------------- |
+| Switch worktrees      | `wt switch feat`              | `cd ../repo.feat`                                          |
+| Create + switch       | `wt switch -c feat`           | `git worktree add -b feat ../repo.feat && cd ../repo.feat` |
+| Create + start Claude | `wt switch -c -x claude feat` | _(multiple commands)_                                      |
+| List with status      | `wt list`                     | `git worktree list` _(no status)_                          |
+| Clean up              | `wt remove`                   | `git worktree remove && git branch -d`                     |
+| Merge back            | `wt merge`                    | _(complex manual process)_                                 |
 
 ### Workflow Examples
 
@@ -184,17 +189,17 @@ Project-specific hooks can be defined in `.worktrunk.yml`:
 hooks:
   create:
     - "npm install"
-    - "bd sync"  # Ensure beads is synced
+    - "bd sync" # Ensure beads is synced
 
   # Run before merging
   pre-merge:
     - "npm test"
-    - "bd ready"  # Check if any tasks remain
+    - "bd ready" # Check if any tasks remain
 
   # Run after merge
   post-merge:
     - "bd sync"
-    - "wt remove"  # Clean up worktree
+    - "wt remove" # Clean up worktree
 ```
 
 ---
@@ -205,12 +210,12 @@ This repository uses a structured Product Requirements Document (PRD) workflow f
 
 ### Custom Commands
 
-| Command | Purpose |
-|---------|---------|
-| `/prd:plan` | Create PRD with auto-generated tasks |
-| `/prd:implement` | Implement approved PRD |
-| `/prd:generate-tasks` | Generate tasks from approved PRD |
-| `/prd:summary` | Show PRD status and history |
+| Command               | Purpose                              |
+| --------------------- | ------------------------------------ |
+| `/prd:plan`           | Create PRD with auto-generated tasks |
+| `/prd:implement`      | Implement approved PRD               |
+| `/prd:generate-tasks` | Generate tasks from approved PRD     |
+| `/prd:summary`        | Show PRD status and history          |
 
 ### PRD Structure
 
@@ -268,13 +273,13 @@ Generated via `/prd:generate-tasks`
 
 ### Priority Levels
 
-| Priority | Description | Response Time |
-|----------|-------------|---------------|
-| P0 | Critical/Blocking | Immediate |
-| P1 | High Priority | Within 24 hours |
-| P2 | Medium Priority | Within 1 week |
-| P3 | Low Priority | Within 1 month |
-| P4 | Backlog | When available |
+| Priority | Description       | Response Time   |
+| -------- | ----------------- | --------------- |
+| P0       | Critical/Blocking | Immediate       |
+| P1       | High Priority     | Within 24 hours |
+| P2       | Medium Priority   | Within 1 week   |
+| P3       | Low Priority      | Within 1 month  |
+| P4       | Backlog           | When available  |
 
 ---
 

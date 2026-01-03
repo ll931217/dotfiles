@@ -5,3 +5,6 @@ versions
 *.zwc
 .config/zsh/private/*
 .config/zsh/plugins/
+
+.uuid
+.serena/
