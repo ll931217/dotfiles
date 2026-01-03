@@ -397,6 +397,22 @@ Would you like to run /prd:generate-tasks now? [Y/n]
 
 If user confirms, automatically invoke the generate-tasks workflow.
 
+**Next Step After Approval:**
+
+After the user approves the PRD (option "Yes"), display the following message:
+
+```
+✅ PRD Approved!
+
+📋 PRD: prd-[feature]-vN.md
+   Status: draft → approved
+   Version: N
+   Branch: [branch-name]
+
+Next steps:
+→ Run /prd:generate-tasks to create implementation tasks
+```
+
 8.  **Changelog:**
 
 Each PRD includes a changelog section at the bottom tracking all versions:

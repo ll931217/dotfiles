@@ -303,31 +303,24 @@ check_prd_completion() {
     fi
   done
 
-  # If all closed, update PRD status to implemented
+  # If all closed, notify user but don't update status yet (cleanup will do that)
   if [ "$all_closed" = true ] && [ $total -gt 0 ]; then
-    local current_version=$(grep "^  version:" "$prd_file" | awk '{print $2}')
-    local new_version=$((current_version + 1))
-
-    # Update version, status, timestamp, and commit
-    sed -i "s/^  version: $current_version/  version: $new_version/" "$prd_file"
-    sed -i 's/^  status: approved/  status: implemented/' "$prd_file"
-    sed -i "s/^  updated_at: .*/  updated_at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")/" "$prd_file"
-    sed -i "s/^  updated_at_commit: .*/  updated_at_commit: $(git rev-parse HEAD)/" "$prd_file"
-
-    # Add entry to changelog
-    local changelog_entry="| $new_version | $(date -u +"%Y-%m-%d %H:%M") | All $closed tasks completed - status set to implemented |"
-
-    # Insert changelog entry after the header row
-    sed -i "/^| Version |/a $changelog_entry" "$prd_file"
-
     echo ""
     echo "✨ ──────────────────────────────────────────────────"
-    echo "  PRD Implementation Complete!"
+    echo "  All PRD Tasks Complete!"
     echo "  PRD: $(basename "$prd_file")"
     echo "  Tasks completed: $closed/$total"
-    echo "  Status: approved → implemented"
-    echo "  Version: $current_version → $new_version"
     echo "✨ ──────────────────────────────────────────────────"
+    echo ""
+    echo "Recommended next steps:"
+    echo "1. 🧪 Manually test the implementation to verify everything works"
+    echo "2. 📝 If issues found, iterate on fixes (tasks can be reopened)"
+    echo "3. 🧹 If satisfied, run /prd:cleanup to finalize:"
+    echo "   - Create summary commit"
+    echo "   - Update PRD status to 'implemented'"
+    echo "   - Add changelog entry"
+    echo ""
+    echo "Run /prd:cleanup when ready to finalize."
     echo ""
   else
     # Show progress

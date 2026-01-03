@@ -369,7 +369,28 @@ This command intelligently detects whether a PRD has been previously processed a
     ...
     ```
 
-15. Once all tasks are completed, suggest to the user to use the `/prd:implement` slash command
+15. **Next Steps After Task Generation:**
+
+After successfully creating all tasks, display the following message to guide the user:
+
+```
+✅ Tasks Generated Successfully!
+
+📋 PRD: prd-[feature]-vN.md
+   Status: approved
+   Branch: [branch-name]
+
+📊 Tasks Created:
+   Epics: X
+   Sub-tasks: Y
+   Total: Z
+
+Next steps:
+→ Run /prd:summary to view all tasks and their status
+→ Run /prd:implement to start implementation
+```
+
+This guides the user to either review the tasks first or dive straight into implementation.
 
 ## Issue Structure
 
