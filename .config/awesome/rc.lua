@@ -336,7 +336,8 @@ awful.screen.connect_for_each_screen(function(s)
             awful.widget.taglist(s, awful.widget.taglist.filter.all, taglist_buttons)
         },
         { -- Middle
-            awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, wibox.layout.flex.horizontal)
+            layout = wibox.layout.flex.horizontal,
+            awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags)
         },
         { -- Right
             layout = wibox.layout.fixed.horizontal,
