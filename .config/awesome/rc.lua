@@ -1,6 +1,16 @@
 -- AwesomeWM Configuration
 -- Based on your i3 config migration
 
+-- {{{ Standard libraries
+local gears = require("gears")
+local awful = require("awful")
+require("awful.autofocus")
+local wibox = require("wibox")
+local beautiful = require("beautiful")
+local naughty = require("naughty")
+local hotkeys_popup = require("awful.hotkeys_popup")
+-- }}}
+
 -- {{{ Debug logging
 local debug_log_file = os.getenv("HOME") .. "/.awesome-debug.log"
 local debug_enabled = true
@@ -32,15 +42,6 @@ end
 
 debug_log("AwesomeWM starting up...")
 -- }}}
-
--- {{{ Standard libraries
-local gears = require("gears")
-local awful = require("awful")
-require("awful.autofocus")
-local wibox = require("wibox")
-local beautiful = require("beautiful")
-local naughty = require("naughty")
-local hotkeys_popup = require("awful.hotkeys_popup")
 
 -- Hotkeys popup is available via hotkeys_popup.show_help()
 
@@ -370,8 +371,8 @@ awful.rules.rules = {
       },
       properties = { floating = true } },
 
-    -- Terminal
-    { rule = { class = "Alacritty" }, properties = { tag = "3" } },
+    -- Terminal (no tag assignment - lets it open on default tag for debugging)
+    -- { rule = { class = "Alacritty" }, properties = { tag = "3" } },
 
     -- Browsers
     { rule = { class = "Brave-browser" }, properties = { tag = "1" } },
