@@ -219,7 +219,8 @@ for_window [class="^(awakened-poe-trade)$"] floating enable, border none, move p
 for_window [title="^(Path of Exile)$"] floating enable, border none, move position center
 for_window [class="^(Emulator)$"] resize 1396 628
 
-# for_window [class="^Alacritty$"] border pixel 0
+# Alacritty window - no border (left border handled by padding script)
+for_window [class="^Alacritty$"] border pixel 0
 # for_window [class="^Alacritty$"] title_format " "
 # default_border normal 2
 # titlebar_position left
@@ -250,6 +251,7 @@ exec --no-startup-id xrandr --output DP-0 --primary --output HDMI-0 --auto --rot
 exec_always --no-startup-id $HOME/GitHub/i3-alternating-layout/alternating_layouts.py
 exec_always --no-startup-id picom --config $HOME/.config/picom.conf
 exec_always --no-startup-id sh $HOME/.fehbg
+# exec_always --no-startup-id bash $HOME/.scripts/alacritty_border_poll.sh
 # Dynamic picom slide animation for workspace transitions
 # exec --no-startup-id python3 $HOME/.scripts/dynamic_picom_slide.py
 
