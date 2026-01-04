@@ -33,6 +33,23 @@ alias hl='history -10000 | less'
 alias hs='history -10000 | grep'
 alias hsi='history -10000 | grep -i'
 
+# Atuin - enhanced shell history
+alias ats='atuin search'
+alias atl='atuin history list'
+alias atsync='atuin sync'
+alias atdoc='atuin doctor'
+alias atssh='atuin search ssh'
+alias atsshl='atuin history list | grep ssh'
+alias atdk='atuin search docker'
+alias atdkb='atuin search "docker build"'
+alias atdkr='atuin search "docker run"'
+alias atdkl='atuin history list | grep -i docker'
+alias atgit='atuin search git'
+alias atgitc='atuin search "git commit"'
+alias atgitb='atuin search "git branch"'
+alias atstat='atuin history list | cut -d" " -f2- | sort | uniq -c | sort -nr | head -20'
+alias atfail='atuin search --filter "exit=1"'
+
 # GitHub Copilot
 alias ghcu="gh extension upgrade gh-copilot"
 alias ghce="gh copilot explain"
