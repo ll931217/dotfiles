@@ -100,7 +100,7 @@ export BROWSER="brave"
 # export BROWSER="qutebrowser"
 export VISUAL="nvim"
 export EDITOR="nvim"
-export PAGER="moar"
+export PAGER="moor"
 # export PAGER="less"
 
 export XDG_CONFIG_HOME="$HOME/.config"
