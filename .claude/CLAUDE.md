@@ -43,6 +43,73 @@ This file provides general guidance to Claude Code (claude.ai/code) when working
 - Always use multiple sub-agents when doing research and forming a plan for code implementation
 - We are mostly inside the company's internal network without access to the internet, unless using a proxy which only allows certain access mainly to github
 
+## Universal Code Quality Principles
+
+Apply these principles consistently across all languages and projects. Focus on intent, clarity, and maintainability.
+
+### SOLID Principles (OOP Context)
+
+Use these guidelines when working with object-oriented code:
+
+- **Single Responsibility Principle**: Each class/module should have one reason to change. Split classes that handle multiple concerns.
+- **Open/Closed Principle**: Design for extension without modification. Use interfaces, abstract classes, or strategy patterns for variability.
+- **Liskov Substitution Principle**: Subtypes must be substitutable for base types. Don't violate parent class contracts in overrides.
+- **Interface Segregation Principle**: Prefer small, focused interfaces over large ones. Clients shouldn't depend on methods they don't use.
+- **Dependency Inversion Principle**: Depend on abstractions, not concretions. Use dependency injection for testability and flexibility.
+
+### Clean Code Practices
+
+Write code that reads like prose:
+
+- **Naming**: Use verbs for functions (`saveUser`, `calculateTotal`) and nouns for classes (`UserService`, `Invoice`). Names should reveal intent without abbreviations. Use prefixes like `is/has/can` for booleans.
+- **Function Structure**: Keep functions small (under 20 lines). Do one thing well. Use early returns to reduce nesting. Prefer pure functions when possible.
+- **Arguments**: Aim for 0-2 arguments. Three or more signals the function does too much or needs an object parameter. Avoid flag arguments that change function behavior.
+- **Comments**: Comment "why" not "what." Code should be self-documenting. Delete outdated comments immediately.
+- **Magic Numbers/Strings**: Extract to named constants with descriptive names. No bare literals in logic.
+
+### Modular Design
+
+Build systems that are easy to understand and change:
+
+- **High Cohesion**: Group related functionality together. Each module should have a clear, single purpose.
+- **Low Coupling**: Minimize dependencies between modules. Use interfaces/protocols to decouple implementation from usage.
+- **Composition Over Inheritance**: Prefer composing behavior from small objects over deep inheritance hierarchies.
+- **Dependency Injection**: Pass dependencies via constructor/function parameters. Avoid global state and singletons.
+- **Layered Architecture**: Separate concerns into distinct layers (presentation, business logic, data access). Dependencies point inward.
+- **Law of Demeter**: Don't talk to strangers. Only call methods on immediate dependencies.
+
+### Functional Programming (JavaScript/TypeScript)
+
+Leverage FP concepts in JS/TS codebases:
+
+- **Immutability**: Never modify existing objects/arrays. Use spread operators, `Object.freeze()`, or libraries like Immer.
+- **Pure Functions**: Write functions that return output based only on input. No side effects (no I/O, no global state mutation).
+- **Side Effects Isolation**: Contain side effects (network calls, file I/O, mutations) at system edges. Keep core logic pure.
+- **Higher-Order Functions**: Use `map`, `filter`, `reduce` over for-loops. Chain operations for data transformations.
+- **Avoid Shared State**: Pass data explicitly through function arguments. Design data flow clearly.
+
+### Code Organization
+
+Structure projects for clarity and scalability:
+
+- **One Export Per File**: Major components/classes get their own file. Small utilities can be grouped.
+- **Barrel Exports**: Use `index.ts`/`index.js` to re-export public APIs. Keep internal implementation private.
+- **Import Order**: Group imports: 1) External libraries, 2) Internal modules, 3) Relative imports. Separate groups with blank lines.
+- **Directory Layout**: Group by feature or layer. Common patterns: `src/components/`, `src/services/`, `src/utils/`, `src/types/`.
+- **File Naming**: Use kebab-case for files (`user-service.ts`) or match the export name (`UserService.ts`). Be consistent.
+
+### Refactoring Guidelines
+
+Improve code structure without changing behavior:
+
+- **Code Smells**: Watch for long functions, duplicate code, deep nesting, shotgun surgery (changes touch many files), and feature envy (methods using other objects more than their own).
+- **When to Refactor**: Rule of three (first time, just do it; second time, wince; third time, refactor). Also before adding new features.
+- **Refactoring Steps**: 1) Add tests covering existing behavior, 2) Make small changes, 3) Run tests after each change, 4) Commit frequently.
+- **Safe Refactoring**: Extract methods/classes, rename for clarity, eliminate duplication, simplify conditionals, replace magic values with constants.
+- **Don't Over-Abstract**: YAGNI (You Aren't Gonna Need It). Build for current requirements, not hypothetical future needs.
+
+These principles apply universally. Adapt specifics to language idioms and project conventions.
+
 ## Available MCP Servers
 
 The following are MCP servers that I have provided which you should use when needed:
