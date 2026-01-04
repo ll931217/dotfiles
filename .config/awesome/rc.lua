@@ -10,8 +10,14 @@ local beautiful = require("beautiful")
 local naughty = require("naughty")
 local hotkeys_popup = require("awful.hotkeys_popup")
 
--- Enable hotkeys help widget
-hotkeys_popup.enable()
+-- Hotkeys popup is available via hotkeys_popup.show_help()
+
+-- {{{ Notification configuration
+naughty.config.defaults.timeout = 5
+naughty.config.defaults.position = "top_right"
+naughty.config.defaults.margin = 8
+naughty.config.defaults.gap = 1
+-- }}}
 
 -- {{{ Error handling
 if awesome.startup_errors then
@@ -180,13 +186,6 @@ root.keys(globalkeys)
 local clientkeys = gears.table.join(
     awful.key({ modkey }, "q", function(c) c:kill() end)
 )
-
-client.connect_signal("manage", function(c)
-    clientkeys = gears.table.join(clientkeys,
-        awful.key({ modkey }, "q", function(c) c:kill() end)
-    )
-    c:keys(clientkeys)
-end)
 -- }}}
 
 -- {{{ Tag switching (Mod+1-0)
@@ -266,19 +265,7 @@ function enter_exit_mode()
 end
 -- }}}
 
--- {{{ Per-side borders for Alacritty (Feature #3)
--- Add titlebar to left side for Alacritty windows
-client.connect_signal("manage", function(c)
-    if c.class and c.class:match("Alacritty") then
-        awful.titlebar(c, {
-            size = 3,
-            position = "left",
-            bg = "#00000000",
-            fg = "#f3f4f5"
-        })
-    end
-end)
-
+-- {{{ Per-side borders for Alacritty
 -- Update titlebar color on focus change
 client.connect_signal("focus", function(c)
     if c.class and c.class:match("Alacritty") and c.titlebars_left then
@@ -295,8 +282,8 @@ end)
 
 -- {{{ Wibar (status bar)
 screen.connect_signal("request::desktop", function(s)
-    -- Only on HDMI-0 output (like your i3bar)
-    if s.outputs.HDMI_0 then
+    -- On all screens (comment shows original HDMI-0 behavior)
+    -- if s.outputs.HDMI_0 then
         mywibox = awful.wibar({
             position = "bottom",
             screen = s,
@@ -322,7 +309,7 @@ screen.connect_signal("request::desktop", function(s)
                 mytextclock
             }
         }
-    end
+    -- end
 end)
 -- }}}
 
@@ -379,10 +366,21 @@ end)
 
 -- {{{ Signals
 client.connect_signal("manage", function(c)
+    -- Set proper placement for windows during startup
     if awesome.startup and
       not c.size_hints.user_position
       and not c.size_hints.program_position then
         awful.placement.no_offscreen(c)
+    end
+
+    -- Add titlebar to left side for Alacritty windows
+    if c.class and c.class:match("Alacritty") then
+        awful.titlebar(c, {
+            size = 3,
+            position = "left",
+            bg = "#00000000",
+            fg = "#f3f4f5"
+        })
     end
 end)
 

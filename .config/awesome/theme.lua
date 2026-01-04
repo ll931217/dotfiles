@@ -62,20 +62,6 @@ theme.hotkeys_border_color = "#06b6d4"
 theme.hotkeys_modifiers_fg = "#06b6d4"
 -- }}}
 
--- {{{ Notifications
-naughty.config.defaults.timeout = 5
-naughty.config.defaults.screen = awful.screen.preferred
-naughty.config.defaults.position = "top_right"
-naughty.config.defaults.margin = 8
-naughty.config.defaults.gap = 1
-
-theme.notification_font = "JetBrainsMonoNL Nerd Font Medium 8"
-theme.notification_bg = "#1e293b"
-theme.notification_fg = "#f1f5f9"
-theme.notification_border_width = 2
-theme.notification_border_color = "#06b6d4"
--- }}}
-
 -- {{{ Layout icons
 theme.layout_fairh           = "/usr/share/awesome/themes/default/layouts/fairhw.png"
 theme.layout_fairv           = "/usr/share/awesome/themes/default/layouts/fairvw.png"
