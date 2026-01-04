@@ -79,26 +79,6 @@ local layouts = {
 }
 -- }}}
 
--- {{{ Helper: Find tag by name on a screen
-local function find_tag_by_name(screen, name)
-    if not screen then
-        naughty.notify({text = "find_tag_by_name: screen is nil!", timeout = 10})
-        return nil
-    end
-    if not screen.tags then
-        naughty.notify({text = "find_tag_by_name: screen.tags is nil for screen!", timeout = 10})
-        return nil
-    end
-    for _, tag in ipairs(screen.tags) do
-        if tag.name == name then
-            return tag
-        end
-    end
-    naughty.notify({text = "Tag '" .. name .. "' not found on screen!", timeout = 10})
-    return nil
-end
--- }}}
-
 -- {{{ Menu
 local myawesomemenu = awful.menu({ items = {
     { "hotkeys", function() hotkeys_popup.show_help(nil, awful.screen.focused()) end },
@@ -356,83 +336,22 @@ awful.rules.rules = {
       properties = { floating = true } },
 
     -- Terminal
-    { rule = { class = "Alacritty" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          naughty.notify({text = "Alacritty screen: " .. tostring(s) .. ", tags: " .. #s.tags, timeout = 5})
-          local t = find_tag_by_name(s, "3")
-          if t then
-              c:move_to_tag(t)
-              t:view_only()
-              naughty.notify({text = "Alacritty moved to tag 3 and switched view", timeout = 3})
-          else
-              naughty.notify({text = "Failed to find tag 3 for Alacritty!", timeout = 10})
-          end
-      end },
+    { rule = { class = "Alacritty" }, properties = { tag = "3" } },
 
     -- Browsers
-    { rule = { class = "Brave-browser" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "1")
-          if t then c:move_to_tag(t) end
-      end },
-    { rule = { class = "Firefox" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "2")
-          if t then c:move_to_tag(t) end
-      end },
-    { rule = { class = "zen" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "2")
-          if t then c:move_to_tag(t) end
-      end },
+    { rule = { class = "Brave-browser" }, properties = { tag = "1" } },
+    { rule = { class = "Firefox" }, properties = { tag = "2" } },
+    { rule = { class = "zen" }, properties = { tag = "2" } },
 
     -- Gaming
-    { rule = { class = "steam" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "5")
-          if t then c:move_to_tag(t) end
-          c.floating = true
-      end },
-    { rule = { class = "Lutris" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "5")
-          if t then c:move_to_tag(t) end
-          c.floating = true
-      end },
-    { rule = { class = "winboat" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "7")
-          if t then c:move_to_tag(t) end
-          c.floating = true
-      end },
+    { rule = { class = "steam" }, properties = { tag = "5", floating = true } },
+    { rule = { class = "Lutris" }, properties = { tag = "5", floating = true } },
+    { rule = { class = "winboat" }, properties = { tag = "7", floating = true } },
 
     -- Other
-    { rule = { class = "Discord" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "8")
-          if t then c:move_to_tag(t) end
-      end },
-    { rule = { class = "Spotify" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "9")
-          if t then c:move_to_tag(t) end
-      end },
-    { rule = { class = "mpv" },
-      callback = function(c)
-          local s = c.screen or awful.screen.preferred(c)
-          local t = find_tag_by_name(s, "10")
-          if t then c:move_to_tag(t) end
-          c.floating = true
-      end },
+    { rule = { class = "Discord" }, properties = { tag = "8" } },
+    { rule = { class = "Spotify" }, properties = { tag = "9" } },
+    { rule = { class = "mpv" }, properties = { tag = "10", floating = true } },
 }
 -- }}}
 
@@ -443,17 +362,11 @@ screen.connect_signal("request::desktop", function(s)
                        layouts[1], layouts[1], layouts[1], layouts[1],
                        layouts[1], layouts[1]}
     awful.tag(tag_names, s, tag_layouts)
-
-    -- Debug: Verify tags were created
-    naughty.notify({text = "Created " .. #s.tags .. " tags on screen", timeout = 5})
 end)
 -- }}}
 
 -- {{{ Signals
 client.connect_signal("manage", function(c)
-    -- Debug: Log when a window is managed
-    naughty.notify({text = "Managing: " .. (c.name or c.class or "unknown"), timeout = 3})
-
     -- Set proper placement for windows during startup
     if awesome.startup and
       not c.size_hints.user_position
