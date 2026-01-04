@@ -284,8 +284,25 @@ end
 function enter_gaps_mode()
     local grabber = awful.keygrabber.run(function(_, key, event)
         if event == "release" then return end
-        if key == "Escape" then awful.keygrabber.stop(grabber) end
+
+        local s = awful.screen.focused()
+        local t = s.selected_tag
+
+        if key == "Escape" or key == "Return" then
+            awful.keygrabber.stop(grabber)
+        elseif key == "Equal" or key == "+" then
+            t.gap = t.gap + 5
+            naughty.notify({text = "Gap: " .. t.gap, timeout = 1})
+        elseif key == "Minus" or key == "-" then
+            t.gap = math.max(0, t.gap - 5)
+            naughty.notify({text = "Gap: " .. t.gap, timeout = 1})
+        elseif key == "0" then
+            t.gap = 0
+            naughty.notify({text = "Gap: 0 (disabled)", timeout = 1})
+        end
     end)
+
+    naughty.notify({text = "Gap mode: +/- to adjust, 0 to disable, Esc to exit", timeout = 3})
 end
 
 function enter_exit_mode()
