@@ -130,16 +130,19 @@ display_worktree_block() {
   # Extract metadata
   wt_version=$(grep -A3 "^prd:" "$prd_file" | grep "version:" | awk '{print $2}' | tr -d '"')
   wt_status=$(grep -A3 "^prd:" "$prd_file" | grep "status:" | awk '{print $2}' | tr -d '"')
-  # Extract related_issues from multiline YAML array format
+  # Extract related_issues from YAML array format (single-line)
   wt_related_issues=$(awk '
-    BEGIN { found = 0 }
-    /^beads:/ {
-      if (found == 0) in_beads = 1
+    /^beads:/ { in_beads = 1 }
+    in_beads && /related_issues:/ {
+      match($0, /\[.*\]/)
+      if (RSTART > 0) {
+        content = substr($0, RSTART + 1, RLENGTH - 2)
+        gsub(/,/, " ", content)
+        print content
+      }
+      exit
     }
-    in_beads && /related_issues:/ { in_issues = 1; next }
-    in_issues && /^\s*\]/ { found = 1; exit }
-    in_issues && /flow-/ { gsub(/[\s,]/, " ", $0); gsub(/"/, "", $0); printf "%s ", $0 }
-  ' "$prd_file" | sed 's/[[:space:]]*$//')
+  ' "$prd_file" | tr -s '[:space:]' ' ' | sed 's/[[:space:]]*$//')
 
   # Check if PRD has related issues
   if [ -z "$wt_related_issues" ] || [ "$wt_related_issues" = " " ]; then
@@ -240,16 +243,19 @@ display_multi_summary() {
 
     # Extract related issues count for overall totals
     local wt_related_issues wt_total wt_closed
-    # Extract related_issues from multiline YAML array format
+    # Extract related_issues from YAML array format (single-line)
     wt_related_issues=$(awk '
-      BEGIN { found = 0 }
-      /^beads:/ {
-        if (found == 0) in_beads = 1
+      /^beads:/ { in_beads = 1 }
+      in_beads && /related_issues:/ {
+        match($0, /\[.*\]/)
+        if (RSTART > 0) {
+          content = substr($0, RSTART + 1, RLENGTH - 2)
+          gsub(/,/, " ", content)
+          print content
+        }
+        exit
       }
-      in_beads && /related_issues:/ { in_issues = 1; next }
-      in_issues && /^\s*\]/ { found = 1; exit }
-      in_issues && /flow-/ { gsub(/[\s,]/, " ", $0); gsub(/"/, "", $0); printf "%s ", $0 }
-    ' "$prd_file" | sed 's/[[:space:]]*$//')
+    ' "$prd_file" | tr -s '[:space:]' ' ' | sed 's/[[:space:]]*$//')
     wt_total=0
     wt_closed=0
 

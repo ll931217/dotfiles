@@ -28,7 +28,7 @@ discover_prd_single() {
 
   # Stage 2: Context Validation
   local prd_branch prd_wt_path
-  prd_branch=$(grep -A5 "^git:" "$latest_prd" | grep "branch:" | awk '{print $2}' | tr -d '"')
+  prd_branch=$(grep -A5 "^git:" "$latest_prd" | grep -E "^\s+branch:" | awk '{print $2}' | tr -d '"')
   prd_wt_path=$(grep -A5 "^worktree:" "$latest_prd" | head -6 | grep -E "^  path:" | awk '{print $2}' | tr -d '"')
 
   if [ "$prd_branch" = "$current_branch" ] && [ "$prd_wt_path" = "$current_worktree" ]; then
@@ -39,7 +39,7 @@ discover_prd_single() {
   # Stage 3: Fallback search - iterate all PRDs
   local prd
   for prd in "$flow_dir"/prd-*.md; do
-    prd_branch=$(grep -A5 "^git:" "$prd" | grep "branch:" | awk '{print $2}' | tr -d '"')
+    prd_branch=$(grep -A5 "^git:" "$prd" | grep -E "^\s+branch:" | awk '{print $2}' | tr -d '"')
     prd_wt_path=$(grep -A5 "^worktree:" "$prd" | head -6 | grep -E "^  path:" | awk '{print $2}' | tr -d '"')
     if [ "$prd_branch" = "$current_branch" ] && [ "$prd_wt_path" = "$current_worktree" ]; then
       echo "$prd"
@@ -101,21 +101,26 @@ extract_prd_metadata() {
   PRD_VERSION=$(grep -A3 "^prd:" "$prd_file" | grep "version:" | awk '{print $2}' | tr -d '"')
   PRD_STATUS=$(grep -A3 "^prd:" "$prd_file" | grep "status:" | awk '{print $2}' | tr -d '"')
   PRD_FEATURE_NAME=$(grep -A3 "^prd:" "$prd_file" | grep "feature_name:" | awk '{print $2}' | tr -d '"')
-  # Extract related_issues from multiline YAML array format
-  # Pattern: captures everything from "related_issues:" to closing "]" on its own line
+  # Extract related_issues from YAML array format (single-line)
+  # Pattern: matches "related_issues: [flow-xxx.1,flow-xxx.2,...]"
   PRD_RELATED_ISSUES=$(awk '
-    BEGIN { found = 0 }
-    /^beads:/ {
-      if (found == 0) in_beads = 1
+    /^beads:/ { in_beads = 1 }
+    in_beads && /related_issues:/ {
+      # Extract content between [ and ]
+      match($0, /\[.*\]/)
+      if (RSTART > 0) {
+        content = substr($0, RSTART + 1, RLENGTH - 2)
+        # Split by comma and replace with spaces
+        gsub(/,/, " ", content)
+        print content
+      }
+      exit
     }
-    in_beads && /related_issues:/ { in_issues = 1; next }
-    in_issues && /^\s*\]/ { found = 1; exit }
-    in_issues && /flow-/ { gsub(/[\s,]/, " ", $0); gsub(/"/, "", $0); printf "%s ", $0 }
-  ' "$prd_file" | sed 's/[[:space:]]*$//')
+  ' "$prd_file" | tr -s '[:space:]' ' ' | sed 's/[[:space:]]*$//')
 
   # related_epics is typically on one line, use original grep approach
   PRD_RELATED_EPICS=$(grep -A2 "^beads:" "$prd_file" | grep "related_epics:" | sed 's/related_epics: //' | tr -d '[]')
-  PRD_BRANCH=$(grep -A5 "^git:" "$prd_file" | grep "branch:" | awk '{print $2}' | tr -d '"')
+  PRD_BRANCH=$(grep -A5 "^git:" "$prd_file" | grep -E "^\s+branch:" | awk '{print $2}' | tr -d '"')
   export PRD_VERSION PRD_STATUS PRD_FEATURE_NAME PRD_RELATED_ISSUES PRD_RELATED_EPICS PRD_BRANCH
 }
 
@@ -134,7 +139,7 @@ show_no_prd_error() {
   echo ""
   echo "Available PRDs:"
   for prd in "$flow_dir"/prd-*.md; do
-    prd_branch=$(grep -A5 "^git:" "$prd" | grep "branch:" | awk '{print $2}' | tr -d '"')
+    prd_branch=$(grep -A5 "^git:" "$prd" | grep -E "^\s+branch:" | awk '{print $2}' | tr -d '"')
     prd_version=$(grep -A3 "^prd:" "$prd" | grep "version:" | awk '{print $2}' | tr -d '"')
     prd_status=$(grep -A3 "^prd:" "$prd" | grep "status:" | awk '{print $2}' | tr -d '"')
     echo "- $(basename "$prd") (branch: $prd_branch, version: $prd_version, status: $prd_status)"

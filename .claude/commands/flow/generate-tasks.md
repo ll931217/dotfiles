@@ -511,7 +511,7 @@ The process explicitly requires a pause after generating parent tasks to get use
 
 ## Target Audience
 
-Assume the primary reader of the task list is a **junior developer** who will implement the feature with awareness of the existing codebase context.
+Assume the primary reader of the task list is a **senior engineer** who will implement the feature with awareness of the existing codebase context and architectural patterns.
 
 ## Testing Strategy Approaches
 

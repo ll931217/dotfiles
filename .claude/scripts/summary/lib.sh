@@ -34,7 +34,7 @@ get_issue_status() {
 # Get parent epic name for an issue using beads
 get_epic_for_issue() {
   local issue_id="$1"
-  bd dep show "$issue_id" 2>/dev/null | grep "parent:" | awk '{print $2}' | tr -d '[]'
+  bd dep list "$issue_id" 2>/dev/null | grep "parent-child" | awk '{print $1}'
 }
 
 # Draw a visual progress bar using block characters

@@ -6,7 +6,7 @@ description: Generating a Product Requirements Document (PRD)
 
 ## Goal
 
-To guide an AI assistant in creating a detailed Product Requirements Document (PRD) in Markdown format, based on an initial user prompt. The PRD should be clear, actionable, and suitable for a junior developer to understand and implement the feature.
+To guide an AI assistant in creating a detailed Product Requirements Document (PRD) in Markdown format, based on an initial user prompt. The PRD should be clear, actionable, and suitable for a senior engineer to architect and implement the feature using established software engineering patterns.
 
 ## Process
 
@@ -632,6 +632,26 @@ AskUserQuestion({
 - **Existing Systems:** "Are there existing systems, APIs, or modules this should integrate with?"
 - **Constraints:** "Are there any known technical constraints or dependencies?"
 
+### Architecture Patterns
+
+- **Pattern Preferences:** "Which architectural patterns should be considered?"
+  - Factory pattern for object creation
+  - Registry pattern for dynamic lookup
+  - IoC/DI for dependency management
+  - SOLID principles review
+  - None needed for this feature
+
+- **Code Organization:** "Any architectural constraints or preferences?"
+  - Layered architecture (controllers, services, repositories)
+  - Microservice boundaries
+  - Domain-driven design (aggregates, repositories)
+  - No specific preference
+
+- **Extensibility Needs:** "Should this feature be designed for extension?"
+  - Plugin system needed
+  - Strategy pattern for variants
+  - No extensibility requirements
+
 ### UX/Design
 
 - **Design/UI:** "Are there any existing design mockups or UI guidelines to follow?" or "Can you describe the desired look and feel?"
@@ -737,6 +757,8 @@ When presenting a PRD for review, verify all items are complete:
 - [ ] **Acceptance Criteria:** Criteria are specific, measurable, and testable
 - [ ] **Dependencies:** All external dependencies are documented
 - [ ] **Technical Constraints:** Technical limitations are reasonable given codebase
+- [ ] **Pattern Consideration:** Architecture patterns section includes relevant pattern selections
+- [ ] **Architectural Consistency:** Patterns align with existing codebase conventions
 - [ ] **Risks:** Potential blockers have been identified with mitigation strategies
 - [ ] **Success Metrics:** Success can be objectively measured
 
@@ -796,21 +818,53 @@ The generated PRD should include the following sections:
 8.  **Acceptance Criteria:** Detailed, testable criteria for each functional requirement.
 9.  **Design Considerations (Optional):** Link to mockups, describe UI/UX requirements, or mention relevant components/styles if applicable.
 10. **Technical Considerations (Optional):** Mention any known technical constraints, dependencies, or suggestions (e.g., "Should integrate with the existing Auth module").
-11. **Risks & Mitigations:** Identify potential blockers and how to address them.
-12. **Success Metrics:** How will the success of this feature be measured? (e.g., "Increase user engagement by 10%", "Reduce support tickets related to X").
-13. **Priority/Timeline:** Indicate urgency or target release if known.
-14. **Open Questions:** List any remaining questions or areas needing further clarification.
-15. **Glossary (Optional):** Define technical terms, especially helpful for junior developers.
-16. **Changelog:** A table tracking all PRD versions with dates and change summaries.
+11. **Architecture Patterns:** Review applicable software engineering patterns for this feature. Use the checklist below to identify relevant patterns:
+
+### Pattern Checklist
+
+**SOLID Principles:**
+- [ ] **Single Responsibility:** Each component/service has one clear purpose
+- [ ] **Open/Closed:** Extensible without modification (plugins, strategies)
+- [ ] **Liskov Substitution:** Implementations can substitute base types
+- [ ] **Interface Segregation:** Clients depend only on used interfaces
+- [ ] **Dependency Inversion:** Depend on abstractions, not concretions
+
+**Creational Patterns:**
+- [ ] **Factory Pattern:** Create objects without specifying exact classes (handlers, strategies, parsers)
+- [ ] **Abstract Factory:** Families of related objects (multi-platform, multi-protocol)
+- [ ] **Builder:** Complex object construction (configs, requests, queries)
+
+**Structural Patterns:**
+- [ ] **Registry Pattern:** Central lookup for objects/services (command handlers, route registration)
+- [ ] **Adapter:** Interface compatibility (third-party integrations)
+- [ ] **Decorator:** Add behavior without inheritance (middleware, caching)
+
+**Inversion of Control / Dependency Injection:**
+- [ ] **Constructor Injection:** Dependencies via constructor (preferred for required deps)
+- [ ] **Setter Injection:** Dependencies via setters (optional/swappable deps)
+- [ ] **Service Locator:** Registry-based lookup (use sparingly)
+- [ ] **DI Container:** Framework for automatic wiring (consider complexity vs. benefit)
+
+**When to Apply:**
+- **Simple features:** SOLID + minimal patterns (avoid over-engineering)
+- **Moderate complexity:** Add Factory/Registry for extensibility
+- **Complex systems:** Consider IoC/DI for large-scale dependency management
+
+12. **Risks & Mitigations:** Identify potential blockers and how to address them.
+13. **Success Metrics:** How will the success of this feature be measured? (e.g., "Increase user engagement by 10%", "Reduce support tickets related to X").
+14. **Priority/Timeline:** Indicate urgency or target release if known.
+15. **Open Questions:** List any remaining questions or areas needing further clarification.
+16. **Glossary (Optional):** Define domain-specific terms or project-specific conventions (assumes standard SE knowledge).
+17. **Changelog:** A table tracking all PRD versions with dates and change summaries.
 
 ## Complexity Guidance
 
-- **Simple features:** Keep the PRD concise (1-2 pages). Focus on core sections.
-- **Complex features:** Be more thorough (3-5 pages). Include all optional sections.
+- **Simple features:** Keep the PRD concise (1-2 pages). Focus on core sections with basic pattern consideration.
+- **Complex features:** Be more thorough (3-5 pages). Include all optional sections with comprehensive architecture patterns analysis.
 
 ## Target Audience
 
-Assume the primary reader of the PRD is a **junior developer**. Therefore, requirements should be explicit, unambiguous, and avoid jargon where possible. Provide enough detail for them to understand the feature's purpose and core logic.
+Assume the primary reader of the PRD is a **senior engineer**. Requirements should be technically precise with appropriate architectural guidance. Include pattern considerations where applicable. The reader is expected to understand standard software engineering terminology and make independent architectural decisions within stated constraints.
 
 ## Output
 
