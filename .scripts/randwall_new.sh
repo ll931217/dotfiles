@@ -135,7 +135,9 @@ print_api_error() {
 # Function to generate parameter hash for cache validation
 generate_params_hash() {
   # Create hash of all relevant parameters
-  local params="${SORTING}:${AI_ART_FILTER}:${MIN_RESOLUTION}:${RATIO}:${PURITY}:${CATEGORIES}:${API_KEY}:${MAX_PAGES}"
+  # Use a stable placeholder for API key to ensure cache stability across environments
+  local api_key_placeholder="${API_KEY:+KEY}"
+  local params="${SORTING}:${AI_ART_FILTER}:${MIN_RESOLUTION}:${RATIO}:${PURITY}:${CATEGORIES}:${api_key_placeholder}:${MAX_PAGES}"
   echo "$params" | sha256sum | cut -d' ' -f1
 }
 
@@ -169,8 +171,9 @@ fetch_all_pages_wallpapers() {
     curl_exit_code=$(echo "$curl_output" | grep "CURL_EXIT:" | cut -d: -f2)
     local http_status
     http_status=$(echo "$curl_output" | grep "HTTP_STATUS:" | cut -d: -f2)
+    # Extract JSON response - only lines starting with { (JSON object start)
     local json_response
-    json_response=$(echo "$curl_output" | sed '/HTTP_STATUS:/d' | sed '/CURL_EXIT:/d')
+    json_response=$(echo "$curl_output" | sed -n '/^{/p')
 
     # Check for errors
     if [ "$curl_exit_code" != "0" ] || [ "$http_status" != "200" ]; then
@@ -178,22 +181,38 @@ fetch_all_pages_wallpapers() {
       continue
     fi
 
-    # Validate JSON
+    # Validate JSON structure
     if ! echo "$json_response" | jq empty 2>/dev/null; then
       echo "Warning: Invalid JSON response from page ${page_num}" >&2
       continue
     fi
 
-    # Extract wallpaper URLs
+    # Validate JSON has expected .data structure
+    if ! echo "$json_response" | jq -e '.data | type' >/dev/null 2>&1; then
+      echo "Warning: JSON structure invalid for page ${page_num} (missing .data)" >&2
+      continue
+    fi
+
+    # Extract wallpaper URLs, filtering out invalid entries
+    # Use jq to select only paths that start with https://
     local page_wallpapers
-    page_wallpapers=$(echo "$json_response" | jq -r '.data[].path')
+    page_wallpapers=$(echo "$json_response" | jq -r '.data[].path | select(. | startswith("https://"))')
 
     # Add to array
     while IFS= read -r url; do
-      if [ -n "$url" ] && [ "$url" != "null" ]; then
-        all_wallpapers_urls+=("$url")
-        ((total_wallpapers++))
+      # Skip empty or null values
+      if [ -z "$url" ] || [ "$url" = "null" ]; then
+        continue
       fi
+
+      # Validate URL format - must be full Wallhaven wallpaper URL
+      if [[ ! "$url" =~ ^https://w\.wallhaven\.cc/full/ ]]; then
+        echo "Warning: Skipping malformed URL: $url" >&2
+        continue
+      fi
+
+      all_wallpapers_urls+=("$url")
+      ((total_wallpapers++))
     done <<<"$page_wallpapers"
 
     echo "Page ${page_num}: $(echo "$page_wallpapers" | grep -c .) wallpapers" >&2
@@ -214,6 +233,7 @@ fetch_all_pages_wallpapers() {
 
     echo "Cached ${total_wallpapers} wallpapers to ${API_CACHE_FILE}" >&2
     echo "${total_wallpapers}"
+    return 0
   else
     echo "Error: Failed to create JSON output" >&2
     return 1
@@ -265,6 +285,12 @@ get_wallhaven_toplist_wallpaper() {
 
   if [ "$wallpaper_count" -eq 0 ]; then
     echo "Error: No wallpapers available" >&2
+    return 1
+  fi
+
+  # Validate wallpaper_count is a positive integer before arithmetic
+  if ! [[ "$wallpaper_count" =~ ^[0-9]+$ ]] || [ "$wallpaper_count" -le 0 ]; then
+    echo "Error: Invalid wallpaper count: '$wallpaper_count'" >&2
     return 1
   fi
 

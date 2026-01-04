@@ -96,6 +96,72 @@ local function client_menu_toggle_fn()
 		return
 	end
 end
+
+-- {{{ Cross-screen focus navigation
+local function get_adjacent_screen(current_screen, direction)
+	local current_geom = current_screen.geometry
+
+	-- Iterate over all screens using screen object
+	for s in screen do
+		if s ~= current_screen then
+			local geom = s.geometry
+			if direction == "left" and (geom.x + geom.width) <= current_geom.x then
+				return s
+			elseif direction == "right" and geom.x >= (current_geom.x + current_geom.width) then
+				return s
+			elseif direction == "up" and (geom.y + geom.height) <= current_geom.y then
+				return s
+			elseif direction == "down" and geom.y >= (current_geom.y + current_geom.height) then
+				return s
+			end
+		end
+	end
+	return nil
+end
+
+local function focus_cross_screen(direction)
+	debug_log("focus_cross_screen called with direction: " .. direction)
+
+	local old_focus = client.focus
+	debug_log("  Old focus: " .. tostring(old_focus))
+
+	-- Try normal navigation first
+	awful.client.focus.bydirection(direction)
+
+	debug_log("  New focus after bydirection: " .. tostring(client.focus))
+
+	if client.focus and client.focus ~= old_focus then
+		debug_log("  -> Successfully moved within screen")
+		return -- Successfully moved within current screen
+	end
+
+	-- Try adjacent screen
+	local current_screen = awful.screen.focused()
+	local adjacent_screen = get_adjacent_screen(current_screen, direction)
+
+	if not adjacent_screen then
+		debug_log("No adjacent screen found in direction: " .. direction)
+		return
+	end
+
+	debug_log("Cross-screen: " .. direction .. " from screen " .. tostring(current_screen) .. " to " .. tostring(adjacent_screen))
+
+	-- Find first visible client on adjacent screen
+	local clients = adjacent_screen.clients
+	debug_log("  Found " .. #clients .. " clients on target screen")
+
+	for _, c in ipairs(clients) do
+		if not c.minimized then
+			debug_log("  Focusing client: " .. (c.name or c.class or "unknown"))
+			client.focus = c
+			c:raise()
+			return
+		end
+	end
+
+	debug_log("  No visible (non-minimized) clients found on target screen")
+end
+-- }}} -- Cross-screen focus navigation
 -- }}}
 
 -- {{{ Layouts
@@ -170,7 +236,7 @@ gears.timer.start_new(3, function()
 
 	-- Get load average
 	local load_avg = "N/A"
-	f = io.popen("cat /proc/loadavg | awk '{print $1\",\"$2\",\"$3}'")
+	f = io.popen('cat /proc/loadavg | awk \'{print $1","$2","$3}\'')
 	if f then
 		load_avg = f:read("*a"):gsub("%s+", ""):gsub("\n", "")
 		f:close()
@@ -216,18 +282,18 @@ local globalkeys = gears.table.join(
 		awful.spawn("~/.config/rofi/scripts/powermenu_t1")
 	end, { description = "power menu", group = "launcher" }),
 
-	-- Focus (hjkl like i3)
+	-- Focus (hjkl like i3) - with cross-screen support
 	awful.key({ modkey }, "h", function()
-		awful.client.focus.bydirection("left")
+		focus_cross_screen("left")
 	end),
 	awful.key({ modkey }, "j", function()
-		awful.client.focus.bydirection("down")
+		focus_cross_screen("down")
 	end),
 	awful.key({ modkey }, "k", function()
-		awful.client.focus.bydirection("up")
+		focus_cross_screen("up")
 	end),
 	awful.key({ modkey }, "l", function()
-		awful.client.focus.bydirection("right")
+		focus_cross_screen("right")
 	end),
 
 	-- Move windows (Shift+hjkl like i3)
@@ -343,6 +409,78 @@ local globalkeys = gears.table.join(
 	end),
 	awful.key({}, "XF86AudioPrev", function()
 		awful.spawn("playerctl previous")
+	end),
+
+	-- Tag switching (Mod4+1-9, Mod4+0 for tag 10)
+	awful.key({ modkey }, "1", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[1]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "2", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[2]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "3", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[3]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "4", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[4]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "5", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[5]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "6", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[6]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "7", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[7]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "8", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[8]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "9", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[9]
+		if tag then
+			tag:view_only()
+		end
+	end),
+	awful.key({ modkey }, "0", function()
+		local screen = awful.screen.focused()
+		local tag = screen.tags[10]
+		if tag then
+			tag:view_only()
+		end
 	end)
 )
 
@@ -557,9 +695,6 @@ awful.rules.rules = {
 		properties = { floating = true },
 	},
 
-	-- Terminal (no tag assignment - lets it open on default tag for debugging)
-	-- { rule = { class = "Alacritty" }, properties = { tag = "3" } },
-
 	-- Browsers
 	{ rule = { class = "Brave-browser" }, properties = { tag = "1" } },
 	{ rule = { class = "Firefox" }, properties = { tag = "2" } },
@@ -663,11 +798,10 @@ end)
 -- {{{ Autostart
 local autostart = {
 	"systemctl --user restart pipewire",
-	"~/.screenlayout/default.sh",
 	"fcitx5 -d",
 	"dunst -config ~/.config/dunst/dunstrc",
 	"xrandr --output DP-0 --primary --output HDMI-0 --auto --rotate left --left-of DP-0",
-	"picom --config ~/.config/picom.conf",
+	"picom --config ~/.config/picom/picom-full.conf",
 	"sh ~/.fehbg",
 }
 
