@@ -1,6 +1,38 @@
 -- AwesomeWM Configuration
 -- Based on your i3 config migration
 
+-- {{{ Debug logging
+local debug_log_file = os.getenv("HOME") .. "/.awesome-debug.log"
+local debug_enabled = true
+
+local function debug_log(message)
+    if not debug_enabled then return end
+
+    -- Write to log file with timestamp
+    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+    local log_entry = string.format("[%s] %s\n", timestamp, message)
+
+    -- Append to log file
+    local f = io.open(debug_log_file, "a")
+    if f then
+        f:write(log_entry)
+        f:close()
+    end
+
+    -- Also show notification
+    naughty.notify({text = message, timeout = 3})
+end
+
+-- Clear log on startup
+local f = io.open(debug_log_file, "w")
+if f then
+    f:write("=== AwesomeWM Debug Log ===\n")
+    f:close()
+end
+
+debug_log("AwesomeWM starting up...")
+-- }}}
+
 -- {{{ Standard libraries
 local gears = require("gears")
 local awful = require("awful")
@@ -326,7 +358,10 @@ awful.rules.rules = {
           keys = clientkeys,
           screen = awful.screen.preferred,
           placement = awful.placement.no_overlap + awful.placement.no_offscreen
-      }
+      },
+      callback = function(c)
+          debug_log("Rules applied to: " .. (c.class or c.name or "unknown"))
+      end
     },
 
     -- Floating windows
@@ -357,16 +392,47 @@ awful.rules.rules = {
 
 -- {{{ Tags
 screen.connect_signal("request::desktop", function(s)
+    debug_log("Screen request::desktop - screen: " .. tostring(s))
+
     local tag_names = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
     local tag_layouts = {layouts[1], layouts[1], layouts[1], layouts[1],
                        layouts[1], layouts[1], layouts[1], layouts[1],
                        layouts[1], layouts[1]}
     awful.tag(tag_names, s, tag_layouts)
+
+    debug_log("Created " .. #s.tags .. " tags on screen")
+
+    -- List all tags
+    for i, tag in ipairs(s.tags) do
+        debug_log("  Tag " .. i .. ": " .. tag.name)
+    end
 end)
 -- }}}
 
 -- {{{ Signals
 client.connect_signal("manage", function(c)
+    debug_log("Managing window: " .. (c.name or c.class or "unknown"))
+
+    -- Log screen and tags info
+    local s = c.screen
+    if s then
+        debug_log("  Screen: " .. tostring(s) .. ", tags count: " .. #s.tags)
+        if #s.tags > 0 then
+            local tag_names = {}
+            for _, t in ipairs(s.tags) do table.insert(tag_names, t.name) end
+            debug_log("  Available tags: " .. table.concat(tag_names, ", "))
+        end
+    else
+        debug_log("  Screen: NONE!")
+    end
+
+    -- Log first tag (where window will be if not assigned)
+    if c.first_tag then
+        debug_log("  Assigned to tag: " .. c.first_tag.name)
+    else
+        debug_log("  No tag assigned (first_tag is nil)")
+    end
+
     -- Set proper placement for windows during startup
     if awesome.startup and
       not c.size_hints.user_position
