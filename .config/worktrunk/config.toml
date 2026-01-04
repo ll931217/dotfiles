@@ -1,0 +1,20 @@
+# Worktrunk hooks for tmux integration
+
+# Create new tmux session when worktree is created
+[post-create]
+tmux = """tmux new-session -d -s "{{ worktree_name }}" -c "{{ worktree }}" && \
+tmux send-keys -t "{{ worktree_name }}:0.0" "cd {{ worktree }}" Enter && \
+tmux send-keys -t "{{ worktree_name }}:0.0" "git status" Enter"""
+
+# Attach to tmux session when switching worktrees
+[post-switch]
+tmux = """if tmux has-session -t "{{ worktree_name }}" 2>/dev/null; then \
+  tmux switch-client -t "{{ worktree_name }}"; \
+else \
+  tmux new-session -d -s "{{ worktree_name }}" -c "{{ worktree }}" && \
+  tmux switch-client -t "{{ worktree_name }}"; \
+fi"""
+
+# Kill tmux session when worktree is removed
+[pre-remove]
+tmux = "tmux kill-session -t '{{ worktree_name }}' 2>/dev/null || true"
