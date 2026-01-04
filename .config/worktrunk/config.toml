@@ -6,7 +6,7 @@ tmux = """tmux new-session -d -s "{{ worktree_name | replace(\".\", \"_\") }}" -
   send-keys "cd {{ worktree }}" Enter \\; \
   send-keys "git status" Enter"""
 
-# Attach to tmux session when switching worktrees
+# Attach to tmux session when switching worktrees (Doesn't work, worktrunk limitation)
 [post-switch]
 tmux = """if [ -n "$TMUX" ]; then \
   tmux switch-client -t "{{ worktree_name | replace(\".\", \"_\") }}"; \
@@ -21,7 +21,4 @@ tmux = "tmux kill-session -t '{{ worktree_name | replace(\".\", \"_\") }}' 2>/de
 [projects]
 
 [projects."github.com/ll931217/sunnyvale"]
-approved-commands = [
-    "pnpm install --frozen-lockfile",
-    "npm run dev",
-]
+approved-commands = ["pnpm install --frozen-lockfile", "pnpm run dev"]
