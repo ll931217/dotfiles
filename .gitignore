@@ -8,3 +8,5 @@ versions
 
 .uuid
 .serena/
+
+*.log
