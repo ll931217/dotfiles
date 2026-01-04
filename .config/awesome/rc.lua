@@ -392,8 +392,9 @@ awful.rules.rules = {
 -- }}}
 
 -- {{{ Tags
-screen.connect_signal("request::desktop", function(s)
-    debug_log("Screen request::desktop - screen: " .. tostring(s))
+-- Create tags on each screen (runs immediately for existing screens)
+awful.screen.connect_for_each_screen(function(s)
+    debug_log("Setting up tags for screen: " .. tostring(s))
 
     local tag_names = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
     local tag_layouts = {layouts[1], layouts[1], layouts[1], layouts[1],
