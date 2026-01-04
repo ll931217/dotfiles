@@ -3,7 +3,8 @@ keys.zsh
 versions
 
 *.zwc
-.config/zsh/private/*
+.config/zsh/private/
+.config/hypr/custom/private.env
 .config/zsh/plugins/
 
 .uuid
