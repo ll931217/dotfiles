@@ -268,8 +268,6 @@ get_wallhaven_toplist_wallpaper() {
     return 1
   fi
 
-  echo "Selecting random wallpaper from ${wallpaper_count} cached wallpapers..." >&2
-
   # Get random wallpaper from cache
   local selected_index=$((RANDOM % wallpaper_count))
   local selected_wallpaper
