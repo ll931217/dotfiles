@@ -315,35 +315,36 @@ end)
 -- }}}
 
 -- {{{ Wibar (status bar)
-screen.connect_signal("request::desktop", function(s)
-    -- On all screens (comment shows original HDMI-0 behavior)
-    -- if s.outputs.HDMI_0 then
-        local mywibox = awful.wibar({
-            position = "bottom",
-            screen = s,
-            height = 24,
-            bg = "#1e293b"
-        })
+awful.screen.connect_for_each_screen(function(s)
+    debug_log("Creating wibar for screen: " .. tostring(s))
 
-        -- Clock
-        local mytextclock = wibox.widget.textclock("%H:%M")
+    local mywibox = awful.wibar({
+        position = "bottom",
+        screen = s,
+        height = 24,
+        bg = "#1e293b"
+    })
 
-        mywibox:setup {
-            layout = wibox.layout.align.horizontal,
-            { -- Left
-                layout = wibox.layout.fixed.horizontal,
-                mylauncher,
-                awful.widget.taglist(s, awful.widget.taglist.filter.all, taglist_buttons)
-            },
-            { -- Middle
-                awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, wibox.layout.flex.horizontal)
-            },
-            { -- Right
-                layout = wibox.layout.fixed.horizontal,
-                mytextclock
-            }
+    -- Clock
+    local mytextclock = wibox.widget.textclock("%H:%M")
+
+    mywibox:setup {
+        layout = wibox.layout.align.horizontal,
+        { -- Left
+            layout = wibox.layout.fixed.horizontal,
+            mylauncher,
+            awful.widget.taglist(s, awful.widget.taglist.filter.all, taglist_buttons)
+        },
+        { -- Middle
+            awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, wibox.layout.flex.horizontal)
+        },
+        { -- Right
+            layout = wibox.layout.fixed.horizontal,
+            mytextclock
         }
-    -- end
+    }
+
+    debug_log("Wibar created successfully")
 end)
 -- }}}
 
