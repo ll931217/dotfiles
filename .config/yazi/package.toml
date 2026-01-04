@@ -3,6 +3,16 @@ use = "Reledia/glow"
 rev = "4e016fa"
 hash = ""
 
+[[plugin.deps]]
+use = "uhs-robert/sshfs"
+rev = "75a025c"
+hash = "e1cebecfee70daef1f97aa083209340c"
+
+[[plugin.deps]]
+use = "Lil-Dank/lazygit"
+rev = "0e56060"
+hash = "ab2e66065a94cca4886b303518e44bd8"
+
 [[flavor.deps]]
 use = "yazi-rs/flavors:dracula"
 rev = "4296a38"
