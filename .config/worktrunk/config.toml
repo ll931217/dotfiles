@@ -2,19 +2,26 @@
 
 # Create new tmux session when worktree is created
 [post-create]
-tmux = """tmux new-session -d -s "{{ worktree_name }}" -c "{{ worktree }}" && \
-tmux send-keys -t "{{ worktree_name }}:0.0" "cd {{ worktree }}" Enter && \
-tmux send-keys -t "{{ worktree_name }}:0.0" "git status" Enter"""
+tmux = """tmux new-session -d -s "{{ worktree_name | replace(\".\", \"_\") }}" -c "{{ worktree }}" \\; \
+  send-keys "cd {{ worktree }}" Enter \\; \
+  send-keys "git status" Enter"""
 
 # Attach to tmux session when switching worktrees
 [post-switch]
-tmux = """if tmux has-session -t "{{ worktree_name }}" 2>/dev/null; then \
-  tmux switch-client -t "{{ worktree_name }}"; \
+tmux = """if [ -n "$TMUX" ]; then \
+  tmux switch-client -t "{{ worktree_name | replace(\".\", \"_\") }}"; \
 else \
-  tmux new-session -d -s "{{ worktree_name }}" -c "{{ worktree }}" && \
-  tmux switch-client -t "{{ worktree_name }}"; \
+  tmux attach-session -t "{{ worktree_name | replace(\".\", \"_\") }}"; \
 fi"""
 
 # Kill tmux session when worktree is removed
 [pre-remove]
-tmux = "tmux kill-session -t '{{ worktree_name }}' 2>/dev/null || true"
+tmux = "tmux kill-session -t '{{ worktree_name | replace(\".\", \"_\") }}' 2>/dev/null || true"
+
+[projects]
+
+[projects."github.com/ll931217/sunnyvale"]
+approved-commands = [
+    "pnpm install --frozen-lockfile",
+    "npm run dev",
+]
