@@ -79,6 +79,17 @@ local layouts = {
 }
 -- }}}
 
+-- {{{ Helper: Find tag by name on a screen
+local function find_tag_by_name(screen, name)
+    for _, tag in ipairs(screen.tags) do
+        if tag.name == name then
+            return tag
+        end
+    end
+    return nil
+end
+-- }}}
+
 -- {{{ Menu
 local myawesomemenu = awful.menu({ items = {
     { "hotkeys", function() hotkeys_popup.show_help(nil, awful.screen.focused()) end },
@@ -127,9 +138,6 @@ local globalkeys = gears.table.join(
         local c = client.focus
         if c then c.fullscreen = not c.fullscreen end
     end),
-
-    -- Kill window
-    awful.key({ modkey }, "q", function(c) c:kill() end),
 
     -- Scratchpad
     awful.key({ modkey }, "a", function() toggle_scratchpad() end),
@@ -191,7 +199,11 @@ local clientkeys = gears.table.join(
 -- {{{ Tag switching (Mod+1-0)
 local taglist_buttons = gears.table.join(
     awful.button({ }, 1, function(t) t:view_only() end),
-    awful.button({ modkey }, 1, function(t) client.focus:move_to_tag(t) end)
+    awful.button({ modkey }, 1, function(t)
+        if client.focus then
+            client.focus:move_to_tag(t)
+        end
+    end)
 )
 -- }}}
 
@@ -284,7 +296,7 @@ end)
 screen.connect_signal("request::desktop", function(s)
     -- On all screens (comment shows original HDMI-0 behavior)
     -- if s.outputs.HDMI_0 then
-        mywibox = awful.wibar({
+        local mywibox = awful.wibar({
             position = "bottom",
             screen = s,
             height = 24,
@@ -292,7 +304,7 @@ screen.connect_signal("request::desktop", function(s)
         })
 
         -- Clock
-        mytextclock = wibox.widget.textclock("%H:%M")
+        local mytextclock = wibox.widget.textclock("%H:%M")
 
         mywibox:setup {
             layout = wibox.layout.align.horizontal,
@@ -335,22 +347,76 @@ awful.rules.rules = {
       properties = { floating = true } },
 
     -- Terminal
-    { rule = { class = "Alacritty" }, properties = { tag = "3" } },
+    { rule = { class = "Alacritty" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "3")
+          if t then c:move_to_tag(t) end
+      end },
 
     -- Browsers
-    { rule = { class = "Brave-browser" }, properties = { tag = "1" } },
-    { rule = { class = "Firefox" }, properties = { tag = "2" } },
-    { rule = { class = "zen" }, properties = { tag = "2" } },
+    { rule = { class = "Brave-browser" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "1")
+          if t then c:move_to_tag(t) end
+      end },
+    { rule = { class = "Firefox" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "2")
+          if t then c:move_to_tag(t) end
+      end },
+    { rule = { class = "zen" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "2")
+          if t then c:move_to_tag(t) end
+      end },
 
     -- Gaming
-    { rule = { class = "steam" }, properties = { tag = "5", floating = true } },
-    { rule = { class = "Lutris" }, properties = { tag = "5", floating = true } },
-    { rule = { class = "winboat" }, properties = { tag = "7", floating = true } },
+    { rule = { class = "steam" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "5")
+          if t then c:move_to_tag(t) end
+          c.floating = true
+      end },
+    { rule = { class = "Lutris" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "5")
+          if t then c:move_to_tag(t) end
+          c.floating = true
+      end },
+    { rule = { class = "winboat" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "7")
+          if t then c:move_to_tag(t) end
+          c.floating = true
+      end },
 
     -- Other
-    { rule = { class = "Discord" }, properties = { tag = "8" } },
-    { rule = { class = "Spotify" }, properties = { tag = "9" } },
-    { rule = { class = "mpv" }, properties = { tag = "10", floating = true } },
+    { rule = { class = "Discord" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "8")
+          if t then c:move_to_tag(t) end
+      end },
+    { rule = { class = "Spotify" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "9")
+          if t then c:move_to_tag(t) end
+      end },
+    { rule = { class = "mpv" },
+      callback = function(c)
+          local s = c.screen or awful.screen.preferred(c)
+          local t = find_tag_by_name(s, "10")
+          if t then c:move_to_tag(t) end
+          c.floating = true
+      end },
 }
 -- }}}
 
