@@ -81,11 +81,20 @@ local layouts = {
 
 -- {{{ Helper: Find tag by name on a screen
 local function find_tag_by_name(screen, name)
+    if not screen then
+        naughty.notify({text = "find_tag_by_name: screen is nil!", timeout = 10})
+        return nil
+    end
+    if not screen.tags then
+        naughty.notify({text = "find_tag_by_name: screen.tags is nil for screen!", timeout = 10})
+        return nil
+    end
     for _, tag in ipairs(screen.tags) do
         if tag.name == name then
             return tag
         end
     end
+    naughty.notify({text = "Tag '" .. name .. "' not found on screen!", timeout = 10})
     return nil
 end
 -- }}}
@@ -350,8 +359,15 @@ awful.rules.rules = {
     { rule = { class = "Alacritty" },
       callback = function(c)
           local s = c.screen or awful.screen.preferred(c)
+          naughty.notify({text = "Alacritty screen: " .. tostring(s) .. ", tags: " .. #s.tags, timeout = 5})
           local t = find_tag_by_name(s, "3")
-          if t then c:move_to_tag(t) end
+          if t then
+              c:move_to_tag(t)
+              t:view_only()
+              naughty.notify({text = "Alacritty moved to tag 3 and switched view", timeout = 3})
+          else
+              naughty.notify({text = "Failed to find tag 3 for Alacritty!", timeout = 10})
+          end
       end },
 
     -- Browsers
@@ -427,11 +443,17 @@ screen.connect_signal("request::desktop", function(s)
                        layouts[1], layouts[1], layouts[1], layouts[1],
                        layouts[1], layouts[1]}
     awful.tag(tag_names, s, tag_layouts)
+
+    -- Debug: Verify tags were created
+    naughty.notify({text = "Created " .. #s.tags .. " tags on screen", timeout = 5})
 end)
 -- }}}
 
 -- {{{ Signals
 client.connect_signal("manage", function(c)
+    -- Debug: Log when a window is managed
+    naughty.notify({text = "Managing: " .. (c.name or c.class or "unknown"), timeout = 3})
+
     -- Set proper placement for windows during startup
     if awesome.startup and
       not c.size_hints.user_position
