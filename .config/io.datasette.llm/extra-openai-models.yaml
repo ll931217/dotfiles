@@ -1,0 +1,5 @@
+- model_id: glm-4.7
+  model_name: glm-4.7
+  api_base: https://api.z.ai/api/coding/paas/v4
+  api_key_name: GLM_API_KEY
+  aliases: ["glm"]
