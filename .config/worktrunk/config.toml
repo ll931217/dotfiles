@@ -1,22 +1,21 @@
 # Worktrunk hooks for tmux integration
 
-# Create new tmux session when worktree is created
+# Smart tmux session/window management when worktree is created
 [post-create]
-tmux = """tmux new-session -d -s "{{ worktree_name | replace(\".\", \"_\") }}" -c "{{ worktree }}" \\; \
-  send-keys "cd {{ worktree }}" Enter \\; \
-  send-keys "git status" Enter"""
-
-# Attach to tmux session when switching worktrees (Doesn't work, worktrunk limitation)
-[post-switch]
-tmux = """if [ -n "$TMUX" ]; then \
-  tmux switch-client -t "{{ worktree_name | replace(\".\", \"_\") }}"; \
+tmux = """SESSION_NAME="{{ worktree_name | replace(\".\", \"_\") }}"; \
+if [ -n "$TMUX" ]; then \
+  tmux new-window -c "{{ worktree }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
 else \
-  tmux attach-session -t "{{ worktree_name | replace(\".\", \"_\") }}"; \
+  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then \
+    tmux attach-session -t "$SESSION_NAME" \\; new-window -c "{{ worktree }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
+  else \
+    tmux new-session -s "$SESSION_NAME" -c "{{ worktree }}" \\; send-keys "claude" Enter; \
+  fi; \
 fi"""
 
-# Kill tmux session when worktree is removed
+# Kill tmux window when worktree is removed
 [pre-remove]
-tmux = "tmux kill-session -t '{{ worktree_name | replace(\".\", \"_\") }}' 2>/dev/null || true"
+tmux = "tmux kill-window -t '{{ worktree_name | replace(\".\", \"_\") }}:{{ branch }}' 2>/dev/null || true"
 
 [projects]
 

@@ -3,3 +3,8 @@
   api_base: https://api.z.ai/api/coding/paas/v4
   api_key_name: GLM_API_KEY
   aliases: ["glm"]
+- model_id: vertex-claude-opus-4-5
+  model_name: vertext-claude-opus-4-5
+  api_base: http://aigw-a.vici.corp
+  api_key_name: ANTHROPIC_API_KEY
+  aliases: ["opus"]
