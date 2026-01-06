@@ -1,15 +1,16 @@
 # Worktrunk hooks for tmux integration
 
 # Smart tmux session/window management when worktree is created
-[post-create]
+# Runs in background (post-start) so blocking project hooks complete first
+[post-start]
 tmux = """SESSION_NAME="{{ worktree_name | replace(\".\", \"_\") }}"; \
 if [ -n "$TMUX" ]; then \
-  tmux new-window -c "{{ worktree }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
+  tmux new-window -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
 else \
   if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then \
-    tmux attach-session -t "$SESSION_NAME" \\; new-window -c "{{ worktree }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
+    tmux attach-session -t "$SESSION_NAME" \\; new-window -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
   else \
-    tmux new-session -s "$SESSION_NAME" -c "{{ worktree }}" \\; send-keys "claude" Enter; \
+    tmux new-session -s "$SESSION_NAME" -c "{{ worktree_path }}" \\; send-keys "claude" Enter; \
   fi; \
 fi"""
 

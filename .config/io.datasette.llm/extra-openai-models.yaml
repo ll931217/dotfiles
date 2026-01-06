@@ -4,7 +4,8 @@
   api_key_name: GLM_API_KEY
   aliases: ["glm"]
 - model_id: vertex-claude-opus-4-5
-  model_name: vertext-claude-opus-4-5
-  api_base: http://aigw-a.vici.corp
+  model_name: vertex-claude-opus-4-5
+  api_base: http://aigw.vici.corp
   api_key_name: ANTHROPIC_API_KEY
+  streaming: true
   aliases: ["opus"]
