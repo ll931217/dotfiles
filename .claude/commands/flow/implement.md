@@ -503,9 +503,87 @@ Every 5 completed tasks or 30 minutes of work, execute `/flow:summary` to refres
 Before starting ANY [P:Group-X] parallel task group, you MUST execute `/flow:summary` to ensure you have the current task state. Parallel groups require accurate context about dependencies and blocking issues.
 
 - **Phase 2 - Concurrent Execution:** Launch all tasks in the group simultaneously:
-  - Use multiple specialized subagents via Task tool with parallel invocations
-  - Each subagent works on their assigned files (listed in task description)
-  - Update task status to in_progress
+
+**Subagent Selection Process:**
+
+For each task in the parallel group:
+
+1. **Read Task Metadata:**
+   - Query the beads issue for `subagent_type` metadata
+   - Extract `fallback_agents` array if present
+   - Extract `applicable_skills` array if present
+
+2. **Select Agent:**
+   - Use `subagent_type` as primary agent
+   - If primary agent is unavailable, try `fallback_agents` in order
+   - If no metadata found, auto-detect by analyzing task description against `.claude/subagent-types.yaml`
+
+3. **Apply Skills (if applicable):**
+   - When `applicable_skills` array is present and non-empty
+   - For each skill, use the Skill tool before launching the subagent
+   - Pass skill context to guide the subagent's approach
+
+**Example Parallel Execution:**
+
+```python
+# For a group with 3 tasks launching in parallel:
+
+# Task 1: Frontend component
+# Subagent: frontend-developer
+# Skill: frontend-design
+Task(
+  subagent="frontend-developer",
+  prompt="Implement React login component with TypeScript...",
+  relevant_files=["src/components/Login.tsx", "src/types/auth.ts"]
+)
+
+# Task 2: Backend API (parallel)
+# Subagent: backend-architect
+Task(
+  subagent="backend-architect",
+  prompt="Implement login POST endpoint with JWT...",
+  relevant_files=["src/api/routes.ts", "src/services/AuthService.ts"]
+)
+
+# Task 3: Database schema (parallel)
+# Subagent: database-admin
+Task(
+  subagent="database-admin",
+  prompt="Create users table with auth fields...",
+  relevant_files=["migrations/001_create_users.sql"]
+)
+```
+
+**Implementation Guidelines:**
+
+- Use multiple specialized subagents via Task tool with parallel invocations
+- Each subagent works on their assigned files (listed in task description)
+- Update task status to in_progress
+- Respect the subagent type metadata for optimal task routing
+
+**Auto-Detection Fallback:**
+
+If task lacks `subagent_type` metadata:
+1. Extract task description from beads issue
+2. Match against patterns in `.claude/subagent-types.yaml`
+3. Assign best-matching subagent type based on priority order
+4. Store assignment in task metadata for future reference
+5. Proceed with specialized subagent execution
+
+**Skill Integration Example:**
+
+```python
+# First apply the skill for guidance
+Skill(skill="frontend-design", args="Create distinctive UI for login component")
+
+# Then launch subagent with skill context
+Task(
+  subagent="frontend-developer",
+  prompt="Implement login component following design guidelines...",
+  relevant_files=["src/components/Login.tsx"]
+)
+```
+
 - **Phase 3 - Coordination & Monitoring:**
   - Monitor progress via in-progress task status
   - Use beads database for coordination between parallel tasks

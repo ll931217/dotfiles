@@ -281,6 +281,63 @@ This command intelligently detects whether a PRD has been previously processed a
 **Fallback for new projects:**
 - If no relevant files found, use: `No existing files found (new feature area)`
 
+4.6 **Determine Subagent Types:** For each epic/sub-issue, determine the most appropriate subagent type using the subagent type taxonomy.
+
+**Subagent Type Detection Process:**
+
+1. **Analyze Task Description:**
+   - Extract keywords and patterns from task title and description
+   - Identify primary technical domain (frontend/backend/data/etc)
+   - Detect language-specific requirements (Python, TypeScript, SQL, etc.)
+   - Look for domain-specific keywords (auth, testing, deployment, etc.)
+
+2. **Match to Subagent Type:**
+   - Consult `.claude/subagent-types.yaml` taxonomy
+   - Find best-matching task category based on pattern matching
+   - Use priority order from taxonomy (security > testing > frontend > etc.)
+   - Assign primary subagent type
+   - Identify fallback subagents if needed
+
+3. **Skill Detection:**
+   - Check for skill-specific triggers (frontend-design, mcp-builder, etc.)
+   - Associate applicable skills with the task
+
+4. **Store in Issue Metadata:**
+   - Add `subagent_type` field to beads issue
+   - Add `fallback_agents` array for alternatives
+   - Add `applicable_skills` array if skills detected
+
+**Example Output:**
+
+For task "Implement React login component with TypeScript":
+
+```yaml
+subagent_type: frontend-developer
+fallback_agents:
+  - react-pro
+  - typescript-pro
+applicable_skills:
+  - frontend-design
+```
+
+**Storage in beads:**
+```bash
+bd create \
+  --title "Implement React login component" \
+  --description "..." \
+  --metadata "subagent_type=frontend-developer" \
+  --metadata "fallback_agents=react-pro,typescript-pro" \
+  --metadata "applicable_skills=frontend-design"
+```
+
+**Auto-Detection Fallback:**
+
+If automatic detection fails:
+1. Use `general-purpose` as default subagent type
+2. Continue with task creation
+3. Log detection failure for review
+4. Manual agent selection still available during implementation
+
 5. **Phase 1: Generate Parent Issues (Epics) - For New or Updated Requirements Only:**
    - If this is a fresh PRD (no existing tasks): Generate all parent epics
    - If this is an updated PRD: Only generate NEW or MODIFIED epics
@@ -392,6 +449,11 @@ This command intelligently detects whether a PRD has been previously processed a
 
    [Task description...]
 
+   ### Agent Assignment
+   - **Primary Subagent:** `frontend-developer`
+   - **Fallback Agents:** `react-pro`, `typescript-pro`
+   - **Applicable Skills:** `frontend-design`
+
    ### Relevant Files
 
    | File | Lines | Purpose |
@@ -406,13 +468,18 @@ This command intelligently detects whether a PRD has been previously processed a
 
    **With beads (`bd`) installed:**
 
-   When creating issues with `bd create`, include the relevant files table in the description:
+   When creating issues with `bd create`, include the relevant files table in the description along with agent assignment:
 
    ```bash
    bd create --title "Implement login endpoint" \
      --description "## Task: Implement login endpoint
 
    Create a POST endpoint for user authentication.
+
+   ### Agent Assignment
+   - **Primary Subagent:** `backend-architect`
+   - **Fallback Agents:** `api-documenter`
+   - **Applicable Skills:**
 
    ### Relevant Files
 
@@ -422,7 +489,9 @@ This command intelligently detects whether a PRD has been previously processed a
    | \`src/services/AuthService.ts\` | 1-50 | Auth interface |
    | \`src/types/user.ts\` | 10-30 | User types |" \
      --priority "P1" \
-     --labels "feature,auth"
+     --labels "feature,auth" \
+     --metadata "subagent_type=backend-architect" \
+     --metadata "fallback_agents=api-documenter"
    ```
 
    **Without beads (TodoWrite fallback):**

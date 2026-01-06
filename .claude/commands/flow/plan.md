@@ -485,26 +485,125 @@ When creating a new worktree, the AI must maintain state across the session:
 
 7.  **PRD Review & Approval Cycle:**
 
-- Present the draft PRD to the user with the PRD Review Checklist (see section below)
+**7a. Display PRD Summary:**
+
+Before requesting approval, display a comprehensive summary of the PRD to the user.
+
+**Summary Format:**
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  📋 PRD Summary: [feature-name]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 File: /.flow/prd-[feature]-vN.md
+🔄 Status: draft (vN)
+🌿 Branch: [branch-name]
+📊 Related Issues: [count] issues, [count] epics
+
+┌─────────────────────────────────────────────────────┐
+│ 🎯 GOALS                                              │
+└─────────────────────────────────────────────────────┘
+• [Goal 1 from PRD]
+• [Goal 2 from PRD]
+
+┌─────────────────────────────────────────────────────┐
+│ 👥 USER STORIES                                       │
+└─────────────────────────────────────────────────────┘
+• [User story 1]
+• [User story 2]
+
+┌─────────────────────────────────────────────────────┐
+│ ✅ FUNCTIONAL REQUIREMENTS (with priorities)         │
+└─────────────────────────────────────────────────────┘
+🔴 P0 | [FR-ID]: [Requirement text]
+🟠 P1 | [FR-ID]: [Requirement text]
+🟢 P2 | [FR-ID]: [Requirement text]
+🔵 P3 | [FR-ID]: [Requirement text]
+
+┌─────────────────────────────────────────────────────┐
+│ 🚫 NON-GOALS (Out of Scope)                          │
+└─────────────────────────────────────────────────────┘
+• [Non-goal 1]
+• [Non-goal 2]
+
+┌─────────────────────────────────────────────────────┐
+│ 🏗️  ARCHITECTURE PATTERNS                             │
+└─────────────────────────────────────────────────────┘
+• [Pattern 1]
+• [Pattern 2]
+
+┌─────────────────────────────────────────────────────┐
+│ 📦 RELEVANT CODE REFERENCES                          │
+└─────────────────────────────────────────────────────┘
+| File | Lines | Purpose |
+|------|-------|---------|
+| `path/file.ts` | 45-120 | [Purpose] |
+
+[Show 3-5 most relevant files]
+
+┌─────────────────────────────────────────────────────┐
+│ ⚠️  RISKS & MITIGATIONS                              │
+└─────────────────────────────────────────────────────┘
+• [Risk 1] → [Mitigation]
+• [Risk 2] → [Mitigation]
+
+┌─────────────────────────────────────────────────────┐
+│ 📈 SUCCESS METRICS                                   │
+└─────────────────────────────────────────────────────┘
+• [Metric 1]
+• [Metric 2]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 Tip: The summary above contains the key information
+needed for review. You can open the full PRD file if you
+need more details:
+   cat /.flow/prd-[feature]-vN.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Content Extraction Strategy:**
+
+1. **Read the PRD file** that was just saved
+2. **Extract key sections:**
+   - Goals (from "Goals" section)
+   - User Stories (from "User Stories" section)
+   - Functional Requirements table (from "Functional Requirements")
+   - Non-Goals (from "Non-Goals")
+   - Architecture Patterns (from "Architecture Patterns" summary)
+   - code_references (from frontmatter)
+   - Risks & Mitigations (from "Risks & Mitigations")
+   - Success Metrics (from "Success Metrics")
+3. **Format and display** the summary
+4. **Then proceed** to AskUserQuestion for approval
+
+**7b. Request Approval:**
+
 - **Use AskUserQuestion to request approval:**
 
 ```
 AskUserQuestion({
   questions: [
     {
-      question: "Does this PRD meet your requirements?",
+      question: "Does the PRD summary above meet your requirements?",
       header: "Approval",
       options: [
         {
-          label: "Yes",
+          label: "Yes, approve",
           description: "Approve PRD and proceed to task generation"
         },
         {
-          label: "No",
+          label: "Review full PRD",
+          description: "Open the complete PRD file for detailed review"
+        },
+        {
+          label: "No, revise",
           description: "Restart from clarifying questions"
         },
         {
-          label: "Changes",
+          label: "Changes needed",
           description: "Collect feedback and revise"
         }
       ],
@@ -514,19 +613,29 @@ AskUserQuestion({
 })
 ```
 
-- **If "Yes":**
+- **If "Yes, approve":**
   - Update PRD status in frontmatter from `draft` to `approved`
   - Add initial changelog entry (version 1)
   - Proceed to task generation (user will invoke `/flow:generate-tasks`)
-- **If "No":**
+
+- **If "Review full PRD":**
+  - Display: "You can review the full PRD at: /.flow/prd-[feature]-vN.md"
+  - Show command to view: `cat /.flow/prd-[feature]-vN.md`
+  - Ask: "Would you like me to display the summary again after you've reviewed it?"
+  - If yes, re-display summary and re-ask for approval
+  - If no, proceed to ask for approval based on their review
+
+- **If "No, revise":**
   - Restart from clarifying questions (step 4)
-- **If "Changes":**
+
+- **If "Changes needed":**
   - Collect specific feedback on what needs to change
   - **Increment version number in frontmatter** (`version: 1` → `version: 2`)
   - **Update the same PRD file** (no new file created)
   - Update `updated_at` timestamp and `updated_at_commit`
   - **Add entry to changelog** at bottom of PRD
   - Present revised PRD and repeat approval cycle
+
 - **Critical:** Do NOT proceed to task generation without explicit approval
 
 **PRD Update Process (when changes are requested):**

@@ -1,0 +1,320 @@
+# Subagent Type Mapping System
+# Maps task types to appropriate specialized agents and skills
+
+task_categories:
+  # Frontend Development
+  frontend:
+    subagent: frontend-developer
+    skill: frontend-design
+    patterns:
+      - "component"
+      - "ui|interface"
+      - "react|vue|angular|svelte"
+      - "css|styling|style"
+      - "responsive"
+      - "accessibility"
+      - "frontend|front.?end"
+      - "webapp|web app"
+      - "dom|html|template"
+    fallback_agents:
+      - react-pro
+      - javascript-pro
+      - typescript-pro
+
+  backend:
+    subagent: backend-architect
+    patterns:
+      - "api|endpoint"
+      - "service|controller"
+      - "microservice"
+      - "rest|graphql"
+      - "database|schema"
+      - "backend|back.?end"
+      - "server.?side"
+    fallback_agents:
+      - api-documenter
+      - database-admin
+      - database-optimizer
+
+  # Architecture & Design
+  architecture:
+    subagent: architect-review
+    patterns:
+      - "design pattern"
+      - "architecture"
+      - "system design"
+      - "scalability|scale"
+      - "layer|tier"
+      - "structure|organization"
+    fallback_agents:
+      - backend-architect
+      - code-reviewer
+
+  # Security & Performance
+  security:
+    subagent: security-auditor
+    patterns:
+      - "auth|authentication|authorization"
+      - "security|vulnerability|secure"
+      - "jwt|oauth|saml"
+      - "encryption|encrypt"
+      - "owasp"
+      - "permission|role"
+      - "credential|secret"
+      - "injection|xss|csrf"
+    fallback_agents: []
+
+  performance:
+    subagent: performance-engineer
+    patterns:
+      - "optimization|optimize|optimise"
+      - "cache|caching"
+      - "performance|slow|speed"
+      - "latency|throughput"
+      - "profiling|profile"
+      - "memory|leak"
+      - "load|balance"
+    fallback_agents:
+      - database-optimizer
+
+  # Data & Analytics
+  data:
+    subagent: data-engineer
+    patterns:
+      - "etl|pipeline"
+      - "warehouse|data lake"
+      - "analytics|metric"
+      - "sql|query"
+      - "migration|migrate"
+      - "data.?base"
+    fallback_agents:
+      - data-scientist
+      - sql-pro
+
+  # Testing
+  testing:
+    subagent: test-automator
+    patterns:
+      - "test|spec|testing"
+      - "unit|integration|e2e"
+      - "mock|stub|fixture"
+      - "coverage"
+      - "assert|verify"
+      - "pytest|mocha|jest"
+    fallback_agents: []
+
+  # Code Quality
+  review:
+    subagent: code-reviewer
+    patterns:
+      - "refactor|refactoring"
+      - "clean up|cleanup"
+      - "code review|review code"
+      - "lint|quality"
+      - "technical debt"
+      - "improve.*code"
+    fallback_agents:
+      - architect-review
+
+  # Language-Specific
+  python:
+    subagent: python-pro
+    patterns:
+      - "\\.py$"
+      - "python|pip|poetry|pyproject"
+      - "django|flask|fastapi"
+      - "pythonic"
+    fallback_agents: []
+
+  javascript:
+    subagent: javascript-pro
+    patterns:
+      - "\\.js$|\\.ts$|\\.jsx$|\\.tsx$"
+      - "node|npm|yarn|pnpm"
+      - "typescript|ts"
+      - "javascript|js"
+    fallback_agents:
+      - react-pro
+      - typescript-pro
+
+  typescript:
+    subagent: typescript-pro
+    patterns:
+      - "\\.ts$|\\.tsx$"
+      - "typescript|ts"
+      - "typing|type.?safe"
+    fallback_agents:
+      - javascript-pro
+
+  sql:
+    subagent: sql-pro
+    patterns:
+      - "\\.sql$"
+      - "sql|query"
+      - "database|db"
+      - "migration"
+    fallback_agents:
+      - database-admin
+      - database-optimizer
+
+  # DevOps & Infrastructure
+  devops:
+    subagent: deployment-engineer
+    patterns:
+      - "deploy|deployment"
+      - "docker|container"
+      - "k8s|kubernetes"
+      - "cicd|ci/cd|github action"
+      - "pipeline|workflow"
+      - "infrastructure|infra"
+      - "provision|provisioning"
+    fallback_agents:
+      - terraform-specialist
+      - devops-troubleshooter
+
+  terraform:
+    subagent: terraform-specialist
+    patterns:
+      - "terraform|tf"
+      - "iac|infrastructure.?as.?code"
+      - "hcl"
+      - "aws|azure|gcp.*resource"
+    fallback_agents:
+      - deployment-engineer
+
+  # Documentation
+  documentation:
+    subagent: api-documenter
+    skill: document-skills
+    patterns:
+      - "document|doc|documentation"
+      - "readme|changelog"
+      - "openapi|swagger"
+      - "comment|docstring"
+    fallback_agents:
+      - prompt-engineer
+
+  # Debugging & Error Handling
+  debug:
+    subagent: debugger
+    patterns:
+      - "debug|debugging"
+      - "error|exception|bug"
+      - "fix.*issue|resolve.*problem"
+      - "troubleshoot|diagnose"
+      - "crash|failure"
+    fallback_agents:
+      - error-detective
+
+  # AI/LLM
+  ai:
+    subagent: ai-engineer
+    patterns:
+      - "llm|langchain|openai|anthropic"
+      - "rag|embedding|vector"
+      - "prompt|prompting"
+      - "ai.?agent|agent.*ai"
+      - "claude|gpt"
+      - "machine learning|ml"
+    fallback_agents:
+      - data-engineer
+
+  # Legacy Code
+  legacy:
+    subagent: legacy-modernizer
+    patterns:
+      - "legacy|modernize|modernise"
+      - "refactor.*old.*code"
+      - "upgrade.*version"
+      - "migrate.*from"
+    fallback_agents:
+      - code-reviewer
+      - backend-architect
+
+  # Context Management
+  context:
+    subagent: context-manager
+    patterns:
+      - "context|session"
+      - "multi.?agent|parallel.*agent"
+      - "coordination|orchestration"
+      - "workflow|process"
+    fallback_agents: []
+
+  # Default fallback
+  default:
+    subagent: general-purpose
+    fallback_agents: []
+
+# Skill-specific trigger patterns
+# These trigger the use of specific Agent Skills via the Skill tool
+skill_mappings:
+  frontend-design:
+    triggers:
+      - "create.*ui"
+      - "build.*interface"
+      - "design.*component"
+      - "front.?end.*design"
+      - "styling|style.*guide"
+      - "layout|visual"
+
+  mcp-builder:
+    triggers:
+      - "create.*mcp.*server"
+      - "build.*integration"
+      - "mcp.*tool"
+      - "model.?context.?protocol"
+
+  skill-creator:
+    triggers:
+      - "create.*skill"
+      - "new.*agent.*skill"
+      - "define.*agent"
+      - "agent.*capability"
+
+  webapp-testing:
+    triggers:
+      - "test.*web.*app"
+      - "e2e.*test"
+      - "playwright"
+      - "chrome.*devtool"
+      - "browser.*test"
+
+  document-skills:
+    triggers:
+      - "create.*pdf|docx|xlsx"
+      - "generate.*document"
+      - "export.*report"
+      - "document.*template"
+
+# Configuration for subagent type detection
+detection_config:
+  # Priority order for category matching
+  # Higher priority categories are checked first
+  priority_order:
+    - security
+    - testing
+    - frontend
+    - backend
+    - architecture
+    - performance
+    - data
+    - devops
+    - ai
+    - documentation
+    - debug
+    - review
+    - legacy
+    - context
+    - python
+    - javascript
+    - typescript
+    - sql
+    - terraform
+    - default
+
+  # Confidence threshold for pattern matching (0.0 to 1.0)
+  confidence_threshold: 0.6
+
+  # Maximum number of fallback agents to try
+  max_fallback_attempts: 3
