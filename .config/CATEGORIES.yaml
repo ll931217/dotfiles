@@ -1,0 +1,360 @@
+# Configuration Categorization System
+# Maps config directories to appropriate specialized agents
+#
+# This file defines which specialized agents should handle different
+# configuration categories. Used by the multi-agent setup system and
+# configuration validation tools.
+
+# Top-level categories
+categories:
+  # Development Tools Configuration
+  development:
+    description: "Development tool configurations and IDEs"
+    primary_agent: python-pro
+    configs:
+      nvim:
+        primary: python-pro
+        secondary: javascript-pro
+        tertiary: lua-pro
+        description: "Neovim text editor with Lua plugins, Python LSP, and TypeScript/JavaScript support"
+        validation:
+          - "Check plugin directory exists"
+          - "Validate init.lua syntax"
+          - "Verify LSP configurations"
+        files:
+          - "init.lua"
+          - "lua/plugins/"
+          - "lua/lsp/"
+
+      git:
+        primary: deployment-engine
+        description: "Git version control configuration"
+        validation:
+          - "Validate .gitconfig syntax"
+          - "Check include paths"
+          - "Verify credential helpers"
+        files:
+          - ".gitconfig"
+          - ".gitignore"
+
+      ranger:
+        primary: python-pro
+        description: "Ranger file manager with Python configuration"
+        validation:
+          - "Check rifle.conf syntax"
+          -Validate commands.py"
+        files:
+          - "ranger/rc.conf"
+          - "ranger/rifle.conf"
+
+  # Terminal & Shell Configuration
+  terminal:
+    description: "Terminal emulators and shell configurations"
+    primary_agent: frontend-developer
+    configs:
+      alacritty:
+        primary: frontend-developer
+        description: "Alacritty GPU-accelerated terminal emulator"
+        validation:
+          - "Validate YAML syntax"
+          - "Check color schemes"
+          - "Verify font configuration"
+        files:
+          - "alacritty.yml"
+          - "alacritty/catppuccin.yml"
+
+      kitty:
+        primary: frontend-developer
+        description: "Kitty terminal emulator"
+        validation:
+          - "Validate kitty.conf syntax"
+          - "Check theme configuration"
+        files:
+          - "kitty/kitty.conf"
+          - "kitty/themes/"
+
+      ghostty:
+        primary: frontend-developer
+        description: "Ghostty terminal emulator"
+        validation:
+          - "Validate config format"
+          - "Check font and theme settings"
+        files:
+          - "ghostty/config"
+
+      wezterm:
+        primary: frontend-developer
+        description: "WezTerm GPU-accelerated terminal"
+        validation:
+          - "Validate Lua syntax"
+          - "Check color schemes"
+        files:
+          - "wezterm/wezterm.lua"
+
+      zsh:
+        primary: python-pro
+        description: "Zsh shell with Znap plugin manager"
+        validation:
+          - "Check .zshrc syntax"
+          - "Verify Znap installation"
+          - "Validate plugin configurations"
+        files:
+          - ".zshrc"
+          - ".zsh/"
+          - ".znap/"
+
+      starship:
+        primary: python-pro
+        description: "Starship cross-shell prompt"
+        validation:
+          - "Validate TOML syntax"
+          - "Check module configurations"
+        files:
+          - "starship.toml"
+
+  # Window Manager Configuration
+  window_manager:
+    description: "Window manager and hotkey daemon configurations"
+    primary_agent: devops-troubleshooter
+    configs:
+      i3:
+        primary: devops-troubleshooter
+        description: "i3 tiling window manager"
+        validation:
+          - "Validate i3 config syntax"
+          - "Check keybinding conflicts"
+          - "Verify bar configuration"
+        files:
+          - "i3/config"
+          - "i3status/config"
+
+      hypr:
+        primary: devops-troubleshooter
+        description: "Hyprland dynamic tiling Wayland compositor"
+        validation:
+          - "Validate hyprland.conf syntax"
+          - "Check monitor and workspace configs"
+          - "Verify keybinding and rule configs"
+        files:
+          - "hypr/hyprland.conf"
+          - "hypr/hyprpaper.conf"
+          - "hypr/rules.conf"
+
+      awesome:
+        primary: devops-troubleshooter
+        secondary: lua-pro
+        description: "Awesome WM dynamic window manager"
+        validation:
+          - "Validate Lua syntax for rc.lua"
+          - "Check widget configurations"
+        files:
+          - "awesome/rc.lua"
+          - "awesome/widgets/"
+
+      skhd:
+        primary: devops-troubleshooter
+        description: "skhd hotkey daemon for macOS"
+        validation:
+          - "Validate skhdrc syntax"
+          - "Check keybinding patterns"
+        files:
+          - "skhd/skhdrc"
+
+      yabai:
+        primary: devops-troubleshooter
+        description: "yabai tiling window manager for macOS"
+        validation:
+          - "Validate yabairc syntax"
+          - "Check space and window configs"
+        files:
+          - "yabai/yabairc"
+
+  # Application Configurations
+  applications:
+    description: "Application-specific configurations"
+    primary_agent: frontend-developer
+    configs:
+      qutebrowser:
+        primary: frontend-developer
+        description: "Keyboard-driven browser"
+        validation:
+          - "Validate config.py syntax"
+          - "Check keybindings"
+        files:
+          - "qutebrowser/config.py"
+          - "qutebrowser/keys.py"
+
+      yazi:
+        primary: python-pro
+        description: "Blazing fast terminal file manager"
+        validation:
+          - "Validate TOML syntax"
+          - "Check theme and plugin configs"
+        files:
+          - "yazi/yazi.toml"
+          - "yazi/theme.toml"
+          - "yazi/plugins/"
+
+      zathura:
+        primary: python-pro
+        description: "Minimalistic PDF viewer"
+        validation:
+          - "Validate zathurarc syntax"
+          - "Check keybindings"
+        files:
+          - "zathura/zathurarc"
+
+      mpv:
+        primary: python-pro
+        description: "Media player configuration"
+        validation:
+          - "Validate mpv.conf syntax"
+          - "Check input.conf keybindings"
+        files:
+          - "mpv/mpv.conf"
+          - "mpv/input.conf"
+
+  # System Utilities
+  utilities:
+    description: "Command-line utility configurations"
+    primary_agent: python-pro
+    configs:
+      tmux:
+        primary: python-pro
+        description: "Terminal multiplexer"
+        validation:
+          - "Validate tmux.conf syntax"
+          - "Check keybinding conflicts"
+        files:
+          - "tmux/tmux.conf"
+          - "tmux/themes/"
+
+      fzf:
+        primary: python-pro
+        description: "Fuzzy finder configuration"
+        validation:
+          - "Validate shell integration"
+          - "Check key bindings"
+        files:
+          - "fzf/fzf.bash"
+          - "fzf/fzf.zsh"
+
+      bat:
+        primary: python-pro
+        description: "Cat alternative with syntax highlighting"
+        validation:
+          - "Validate config syntax"
+          - "Check theme configuration"
+        files:
+          - "bat/config"
+
+      ripgrep:
+        primary: python-pro
+        description: "Fast grep alternative"
+        validation:
+          - "Validate ripgrep.config syntax"
+          - "Check ignore patterns"
+        files:
+          - "ripgrep/rg.config"
+
+# Theme consistency across all configs
+themes:
+  description: "Theme and color scheme management"
+  primary_agent: frontend-developer
+  skill: frontend-design
+  theme_families:
+    catppuccin:
+      name: "Catppuccin"
+      variants:
+        - latte
+        - frappe
+        - macchiato
+        - mocha
+      configs:
+        - alacritty
+        - kitty
+        - bat
+        - fzf
+        - zathura
+        - vim
+      validation_agent: frontend-developer
+      validation_skill: frontend-design
+      task: "Ensure Catppuccin theme consistency across all supported configs"
+
+    tokyonight:
+      name: "Tokyo Night"
+      variants:
+        - night
+        - storm
+        - day
+      configs:
+        - alacritty
+        - kitty
+        - bat
+        - vim
+      validation_agent: frontend-developer
+      validation_skill: frontend-design
+
+    gruvbox:
+      name: "Gruvbox"
+      variants:
+        - hard
+        - medium
+        - soft
+      configs:
+        - vim
+        - bat
+        - fzf
+      validation_agent: frontend-developer
+      validation_skill: frontend-design
+
+# Special validation tasks
+validation_tasks:
+  theme_consistency:
+    description: "Check theme consistency across all configs"
+    primary_agent: frontend-developer
+    skill: frontend-design
+    steps:
+      - "Extract color schemes from all config files"
+      - "Compare color values across configs"
+      - "Identify inconsistencies in theme application"
+      - "Generate consistency report"
+      - "Suggest fixes for inconsistencies"
+
+  syntax_validation:
+    description: "Validate syntax of all configuration files"
+    primary_agent: architect-review
+    steps:
+      - "Parse all config files with respective parsers"
+      - "Check for syntax errors"
+      - "Validate file references and includes"
+      - "Report any syntax issues"
+
+  symlink_validation:
+    description: "Check for broken or missing symlinks"
+    primary_agent: architect-review
+    steps:
+      - "Scan .config directory for symlinks"
+      - "Check each symlink target exists"
+      - "Report broken symlinks"
+      - "Suggest fixes for broken links"
+
+# Configuration discovery patterns
+discovery:
+  config_file_patterns:
+    - "*.yaml"
+    - "*.yml"
+    - "*.toml"
+    - "*.conf"
+    - "*.lua"
+    - "*.py"
+    - "*.sh"
+    - ".*rc"
+    - ".*config"
+
+  ignore_patterns:
+    - "*/.git/*"
+    - "*/node_modules/*"
+    - "*/.venv/*"
+    - "*/__pycache__/*"
+    - "*/.DS_Store"
