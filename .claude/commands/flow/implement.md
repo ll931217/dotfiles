@@ -2,9 +2,21 @@
 
 Guidelines for managing task lists to track progress on completing a PRD.
 
+## Quick Start (5 steps)
+
+1. **Discover PRD** - Auto-detected from git context (branch/worktree)
+2. **Verify status** - Must be `approved` or `implementing`
+3. **Execute tasks** - Autonomous with specialized subagents
+4. **Track progress** - Execute `/flow:summary` every 5 tasks or 30 minutes
+5. **Complete PRD** - Run `/flow:cleanup` when all tasks are done
+
+**Pre-implementation:** PRD must be `approved` or `implementing` status.
+
+**Full workflow:** See `README.md` for complete flow command usage.
+
 **Task Management Options:**
 
-- **With beads (`bd`) installed:** Full-featured task tracking with dependencies, ready task detection, and persistent storage
+- **With beads (`bd`) installed:** Full-featured task tracking with dependencies, ready task detection, and persistent storage. See `shared/templates/beads-warning.md` for installation guidance.
 - **Without beads:** Basic task tracking using the internal TodoWrite tool (limited features, no persistent storage)
 
 ## Current Status
@@ -67,57 +79,12 @@ Implement secure user authentication with email/password...
 
 ## Auto-Compaction Detection Protocol
 
-Claude Code automatically compacts long conversations to manage token limits. This protocol ensures you maintain accurate context about current PRD status and task progress.
+See: `shared/protocols/auto-compaction-detection.md`
 
-### Detection Checklist
-
-**Check these conditions BEFORE starting any task:**
-
-- [ ] **Initial Read:** When first reading this workflow, check "Last Refresh" timestamp
-- [ ] **Time Threshold:** Is timestamp > 30 minutes old?
-- [ ] **Task Milestone:** Have you completed ~5 tasks since last refresh?
-- [ ] **Group Start:** Are you about to start a [P:Group-X] parallel task group?
-- [ ] **After Blocker:** Did you just resolve a blocked task?
-- [ ] **Context Uncertainty:** Do you feel unsure about current state?
-
-### Refresh Procedure
-
-If ANY checkbox above is checked:
-
-1. **Execute summary command:** Type `/flow:summary` in your response
-2. **Wait for output:** The command will execute and return current status
-3. **Update this section:**
-   - Replace content between `==== LATEST SUMMARY ====` markers
-   - Update "Last Refresh" to current timestamp
-   - Use format: `YYYY-MM-DD HH:MM UTC`
-4. **Verify alignment:** Ensure you're working on correct tasks
-5. **Resume workflow:** Continue with your planned task
-
-### Example Agent Response
-
-```
-I notice the "Last Refresh" timestamp is 45 minutes old. Let me refresh the context to ensure I have the current state.
-
-/flow:summary
-
-[summary output appears]
-
-Updating Current Status section with latest summary...
-
-Last Refresh updated to: 2026-01-02 14:30 UTC
-
-I can see from the summary that 3/8 tasks are complete and I should continue with proj-auth.3. Let me proceed with implementing the login endpoint.
-```
-
-### Integration Points
-
-This protocol integrates with existing workflow sections:
-
-- **PRD Discovery:** Refresh after discovering and validating PRD
-- **Parallel Groups:** REQUIRED refresh before starting [P:Group-X]
-- **PRD Changes:** REQUIRED refresh if PRD version changes
-- **Blocker Resolution:** Refresh after unblocking tasks
-- **Completion Check:** Refresh before checking PRD completion status
+**Critical integration points:**
+- Refresh before starting [P:Group-X] parallel tasks (REQUIRED)
+- Refresh if PRD version changes (REQUIRED)
+- Refresh every 5 tasks or 30 minutes
 
 ## Prerequisites Check
 
@@ -493,6 +460,81 @@ All task context is stored in beads' SQLite database. Task management is handled
 **Periodic Context Refresh:**
 Every 5 completed tasks or 30 minutes of work, execute `/flow:summary` to refresh your context. Update the "Current Status" section with the latest output.
 
+## Skill Integration Protocol
+
+Before executing tasks with applicable skills, invoke the Skill tool to provide domain-specific guidance.
+
+### Skill Invocation Process
+
+**Step 1: Check for Applicable Skills**
+
+For each task, check task metadata for `applicable_skills` array:
+- Using beads: Query task metadata for applicable_skills field
+- Without beads: Check task description for skill trigger patterns
+
+**Step 2: Invoke Skills Sequentially**
+
+For each skill in `applicable_skills`:
+```javascript
+Skill(skill="{skill_name}", args="{task_context}")
+```
+
+**Step 3: Pass Skill Context to Subagent**
+
+After skill invocation, include skill output in subagent prompt:
+```
+Skill Output: {skill_guidance}
+
+Task: {task_description}
+```
+
+### Skill-Mapped Categories
+
+Per `.claude/subagent-types.yaml`, the following task categories have associated skills:
+
+| Category | Skill | When Applied |
+|----------|-------|--------------|
+| frontend | frontend-design | UI components, interfaces, styling |
+| testing | webapp-testing | Test generation, browser testing |
+| documentation | document-skills | API docs, user guides, reports |
+
+### Skill Invocation Examples
+
+**Frontend Task with Skill:**
+```javascript
+// Step 1: Apply skill
+Skill(skill="frontend-design", args="Create distinctive UI for authentication flow")
+
+// Step 2: Subagent receives skill guidance
+Task(
+  subagent="frontend-developer",
+  prompt="Implement auth component following design guidelines...",
+  relevant_files=["src/components/Login.tsx"]
+)
+```
+
+**Testing Task with Skill:**
+```javascript
+// Step 1: Apply skill
+Skill(skill="webapp-testing", args="Generate Playwright tests for login flow")
+
+// Step 2: Subagent receives test guidance
+Task(
+  subagent="test-automator",
+  prompt="Implement tests for authentication...",
+  relevant_files=["tests/auth.test.ts"]
+)
+```
+
+### Conditional Skill Invocation
+
+When task metadata doesn't include `applicable_skills`, use trigger patterns from `.claude/subagent-types.yaml`:
+
+**Example Detection:**
+- Task description contains "create UI component" → Triggers frontend-design skill
+- Task description contains "test web app" → Triggers webapp-testing skill
+- Task description contains "generate API docs" → Triggers document-skills skill
+
 - **Parallel Group Execution ([P:Group-X] flags):**
 - **Phase 1 - Pre-execution Analysis:** Before starting any parallel group:
   - Check which tasks are unblocked
@@ -521,36 +563,44 @@ For each task in the parallel group:
 3. **Apply Skills (if applicable):**
    - When `applicable_skills` array is present and non-empty
    - For each skill, use the Skill tool before launching the subagent
-   - Pass skill context to guide the subagent's approach
+   - Pass skill output to guide the subagent's approach
 
-**Example Parallel Execution:**
+**Example Parallel Execution with Skills:**
 
 ```python
 # For a group with 3 tasks launching in parallel:
 
 # Task 1: Frontend component
 # Subagent: frontend-developer
-# Skill: frontend-design
+# Skill: frontend-design (applied first)
+Skill(skill="frontend-design", args="Create UI for authentication flow")
+↓
 Task(
   subagent="frontend-developer",
-  prompt="Implement React login component with TypeScript...",
+  prompt="Implement React login component with TypeScript...
+    Following design guidelines from frontend-design skill...",
   relevant_files=["src/components/Login.tsx", "src/types/auth.ts"]
 )
 
 # Task 2: Backend API (parallel)
 # Subagent: backend-architect
+# No associated skill
 Task(
   subagent="backend-architect",
   prompt="Implement login POST endpoint with JWT...",
   relevant_files=["src/api/routes.ts", "src/services/AuthService.ts"]
 )
 
-# Task 3: Database schema (parallel)
-# Subagent: database-admin
+# Task 3: Testing (parallel)
+# Subagent: test-automator
+# Skill: webapp-testing (applied first)
+Skill(skill="webapp-testing", args="Generate Playwright tests for login flow")
+↓
 Task(
-  subagent="database-admin",
-  prompt="Create users table with auth fields...",
-  relevant_files=["migrations/001_create_users.sql"]
+  subagent="test-automator",
+  prompt="Implement tests for authentication...
+    Following test patterns from webapp-testing skill...",
+  relevant_files=["tests/auth.test.ts"]
 )
 ```
 
@@ -560,6 +610,7 @@ Task(
 - Each subagent works on their assigned files (listed in task description)
 - Update task status to in_progress
 - Respect the subagent type metadata for optimal task routing
+- Apply skills before subagent execution when `applicable_skills` is present
 
 **Auto-Detection Fallback:**
 
@@ -567,22 +618,9 @@ If task lacks `subagent_type` metadata:
 1. Extract task description from beads issue
 2. Match against patterns in `.claude/subagent-types.yaml`
 3. Assign best-matching subagent type based on priority order
-4. Store assignment in task metadata for future reference
-5. Proceed with specialized subagent execution
-
-**Skill Integration Example:**
-
-```python
-# First apply the skill for guidance
-Skill(skill="frontend-design", args="Create distinctive UI for login component")
-
-# Then launch subagent with skill context
-Task(
-  subagent="frontend-developer",
-  prompt="Implement login component following design guidelines...",
-  relevant_files=["src/components/Login.tsx"]
-)
-```
+4. Check for associated skill in task category
+5. Store assignment in task metadata for future reference
+6. Proceed with specialized subagent execution
 
 - **Phase 3 - Coordination & Monitoring:**
   - Monitor progress via in-progress task status

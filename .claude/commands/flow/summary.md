@@ -4,6 +4,20 @@ description: Show current feature implementation summary
 
 # Rule: Feature Summary (/flow:summary)
 
+## Quick Start
+
+**Execute:** `/flow:summary`
+
+**Displays:**
+- Current PRD with metadata (name, version, status, branch)
+- Progress tracking (X/Y tasks completed)
+- Open tasks grouped by epic
+- What's left to do
+
+**Multi-Worktree:** In main directory, shows summaries for ALL related worktrees.
+
+**Full workflow:** See `README.md` for complete flow command usage.
+
 ## Goal
 
 Provide a concise summary of the current feature implementation, showing:

@@ -4,6 +4,18 @@ description: Generating a Product Requirements Document (PRD)
 
 # Rule: Generating a Product Requirements Document (PRD)
 
+## Quick Start (5 steps)
+
+1. **Check prerequisites** - git (required), beads (optional), worktrunk (optional)
+2. **Verify/create worktree** - Isolated worktrees recommended for feature branches
+3. **Ask clarifying questions** - 3-5 questions at a time to gather requirements
+4. **Generate PRD** - Creates structured markdown from your answers
+5. **Get approval** - Review and approve before task generation
+
+**Next:** Run `/flow:generate-tasks` to create implementation tasks
+
+**Full workflow:** See `README.md` for complete flow command usage.
+
 ## Goal
 
 To guide an AI assistant in creating a detailed Product Requirements Document (PRD) in Markdown format, based on an initial user prompt. The PRD should be clear, actionable, and suitable for a senior engineer to architect and implement the feature using established software engineering patterns.
@@ -23,46 +35,14 @@ To guide an AI assistant in creating a detailed Product Requirements Document (P
     - If `wt` is missing, the AI will use native git worktree commands.
     - If `bd` is missing, the AI will use the internal TodoWrite tool for task tracking.
 
-⚠️ **Warning about beads (bd):**
-Without beads installed, task context may be lost between sessions. Beads provides:
-
-- Persistent task storage across sessions
-- Dependency tracking between tasks
-- Better visibility into progress and blockers
-- Integration with PRD frontmatter for traceability
-
-Consider installing beads for the best experience, especially for larger features with many tasks.
+**Beads Installation:** See `shared/templates/beads-warning.md` for installation guidance and benefits.
 
 2.  **Verify Git Worktree:** Before proceeding, check if the current directory is a Git worktree. If it is not a worktree, warn the user and offer options.
     - **Warning message should include:**
       - An explanation that PRDs are best created in isolated worktrees for better branch/feature management.
     - **Use AskUserQuestion to offer 3 choices:**
 
-      ```
-      AskUserQuestion({
-        questions: [
-          {
-            question: "PRDs work best in isolated worktrees for better branch/feature management. What would you like to do?",
-            header: "Worktree",
-            options: [
-              {
-                label: "Create worktree",
-                description: "Create a new git worktree and continue PRD planning there (recommended)"
-              },
-              {
-                label: "Continue without worktree",
-                description: "Proceed with PRD planning in the current directory"
-              },
-              {
-                label: "Exit",
-                description: "Exit the PRD planning process"
-              }
-            ],
-            multiSelect: false
-          }
-        ]
-      })
-      ```
+      See `shared/templates/ask-user-questions.md` for the Worktree Selection Prompt template.
 
       - **If user selects "Create worktree":**
         The AI will:
@@ -142,73 +122,15 @@ NEW_WORKTREE_PATH="../repo.<name>"  # or actual path from git worktree add outpu
 echo "NEW_WORKTREE_PATH=\"$NEW_WORKTREE_PATH\"" >> /tmp/prd-prompt-<timestamp>.txt
 ```
 
-2.5 **Detect Git Context:** Gather git metadata for the PRD frontmatter. - Detect current branch name using `git rev-parse --abbrev-ref HEAD` - Determine if in a worktree by comparing `--git-dir` vs `--git-common-dir` - Get worktree name from branch or directory - Capture commit SHA, author, and timestamp - Store all context for frontmatter generation
+2.5 **Git Context Detection & PRD Discovery:**
 
-    **Detection Commands:**
-    ```bash
-    # Branch name
-    BRANCH=$(git rev-parse --abbrev-ref HEAD)
+Uses the shared PRD auto-discovery protocol. See: `shared/protocols/prd-discovery.md`
 
-    # Worktree detection
-    GIT_DIR=$(git rev-parse --git-dir)
-    GIT_COMMON_DIR=$(git rev-parse --git-common-dir)
-    IS_WORKTREE=$([ "$GIT_DIR" != "$GIT_COMMON_DIR" ] && echo "true" || echo "false")
-
-    # Worktree name (from git worktree list or branch)
-    if [ "$IS_WORKTREE" = "true" ]; then
-      WORKTREE_NAME=$(git worktree list --porcelain | grep -A1 "^$(git rev-parse --show-toplevel)$" | tail -1 | sed 's/^branch //' | sed 's|refs/heads/||')
-      WORKTREE_PATH="$GIT_DIR"
-    else
-      WORKTREE_NAME="main"
-      WORKTREE_PATH=""
-    fi
-
-    # Branch type categorization
-    case "$BRANCH" in
-      main|master) BRANCH_TYPE="main" ;;
-      develop|dev) BRANCH_TYPE="develop" ;;
-      feature/*) BRANCH_TYPE="feature" ;;
-      bugfix/*|fix/*) BRANCH_TYPE="bugfix" ;;
-      hotfix/*) BRANCH_TYPE="hotfix" ;;
-      *) BRANCH_TYPE="other" ;;
-    esac
-
-    # Commit info
-    COMMIT_SHA=$(git rev-parse HEAD)
-    AUTHOR_NAME=$(git log -1 --format="%an" HEAD)
-    AUTHOR_EMAIL=$(git log -1 --format="%ae" HEAD)
-    TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    REPO_ROOT=$(git rev-parse --show-toplevel)
-    ```
-
-2.75 **Check for Existing PRD (Iteration Detection):**
-After detecting git context, check if a PRD already exists for this context: - Search `/.flow/` directory for PRD files (`prd-*.md`) - For each PRD found, read its frontmatter - Compare `git.branch`, `worktree.name`, and `worktree.path` with current context - **Match criteria:** ALL of the following must match - Branch name matches exactly (or both are main/master) - Worktree name matches (if both in worktrees) - Worktree path matches (if both in worktrees)
-
-    **If existing PRD is found (iteration mode):**
-    - Display message: `Found existing PRD: [filename] (version: N, status: [status])`
-    - Explain: "I'll iterate on this existing PRD. When you provide your updates, I'll increment the version and update the content."
-    - Store the existing PRD path and version for later use in step 6
-
-    **If no existing PRD is found (new PRD mode):**
-    - Display message: "No existing PRD found for this context. Creating a new PRD."
-    - Proceed to create a new PRD file
-
-2.76 **Session State Management:**
-
-When creating a new worktree, the AI must maintain state across the session:
-
-**State Variables:**
-- `WORKTREE_CREATED`: Boolean flag indicating if worktree was created this session
-- `NEW_WORKTREE_PATH`: Path to the newly created worktree (if applicable)
-- `ORIGINAL_DIRECTORY`: Original directory before worktree creation (for fallback)
-
-**State Preservation:**
-- With worktrunk: State is implicit - new Claude session in new worktree
-- Without worktrunk: State is written to prompt file for user's new session
-
-**Usage:**
-- Step 6 (Save PRD Draft) checks these variables to determine save location
-- Ensures PRD is saved in the correct worktree regardless of creation method
+**Key steps:**
+1. Detect current git context (branch, worktree, commit info)
+2. Check for existing PRD matching current context (iteration mode)
+3. Manage session state for worktree creation
+4. Reference implementation: `~/.claude/scripts/summary/prd-discovery.sh`
 
 2.85 **Codebase Context Discovery:** Use Explore agents to identify relevant files for implementation context.
 
@@ -320,6 +242,84 @@ When creating a new worktree, the AI must maintain state across the session:
     **Default Handling:**
     - If user doesn't specify, use `default: P2` from frontmatter
     - Mark with `confidence: low` and `user_confirmed: false`
+
+4.6 **External Integration Detection:** Detect if the PRD requires integration with external APIs or services, and offer to create an MCP server.
+
+    **Detection Triggers:**
+    - PRD mentions external APIs (GitHub, Stripe, AWS, Google, etc.)
+    - Requirements include third-party service integrations
+    - User mentions "API", "webhook", "integration", or "external service"
+    - Keywords: "REST API", "GraphQL", "webhook", "SDK", "service integration"
+
+    **Detection Process:**
+    1. **Analyze User Responses:**
+       - Scan clarifying question answers for external API mentions
+       - Identify specific services named (e.g., "GitHub API", "Stripe payments")
+       - Note integration patterns mentioned (webhooks, callbacks, polling)
+
+    2. **Offer MCP Server Creation:**
+       - If external integrations detected, use AskUserQuestion:
+         ```
+         AskUserQuestion({
+           questions: [
+             {
+               question: "External integration detected: [API_NAME]. Would you like to create an MCP server for this integration?",
+               header: "MCP Server",
+               options: [
+                 {
+                   label: "Create MCP server",
+                   description: "Generate MCP server scaffolding for [API_NAME] integration"
+                 },
+                 {
+                   label: "Skip for now",
+                   description: "Continue with PRD without MCP server creation"
+                 }
+               ],
+               multiSelect: false
+             }
+           ]
+         })
+         ```
+
+    3. **Invoke mcp-builder Skill (if approved):**
+       - Apply the mcp-builder skill to generate MCP server scaffolding:
+         ```javascript
+         Skill(skill="mcp-builder", args="Build MCP server for [API_NAME] integration with [AUTH_METHOD] authentication")
+         ```
+
+    4. **Store MCP Server Context in PRD:**
+       - Add to PRD frontmatter:
+         ```yaml
+         mcp_servers:
+           - name: "[api-name]-server"
+             language: "python"  # or "typescript"
+             external_api: "[API_NAME]"
+             status: "planned"
+         ```
+
+    **MCP Server Examples:**
+
+    | Integration | Example Command | Description |
+    |-------------|-----------------|-------------|
+    | GitHub API | `Skill(skill="mcp-builder", args="Build MCP server for GitHub API with OAuth authentication")` | Repository management, issues, PRs |
+    | Stripe API | `Skill(skill="mcp-builder", args="Build MCP server for Stripe payments with API key authentication")` | Payment processing, webhooks |
+    | AWS S3 | `Skill(skill="mcp-builder", args="Build MCP server for AWS S3 with IAM credentials")` | File storage, buckets |
+    | Slack API | `Skill(skill="mcp-builder", args="Build MCP server for Slack with bot token")` | Messaging, notifications |
+
+    **Benefits of MCP Servers:**
+    - **Standardized Interface:** Consistent API for all external integrations
+    - **Model Context Protocol:** LLMs can interact with external services naturally
+    - **Reusable Components:** MCP servers can be shared across projects
+    - **Type Safety:** Generated schemas ensure correct API usage
+    - **Documentation Auto-Generation:** API specs become MCP tool definitions
+
+    **Skill Template:**
+
+    The mcp-builder skill accepts the following context:
+    - **External API:** Name and documentation URL of the API
+    - **Authentication Method:** OAuth, API key, JWT, etc.
+    - **Key Endpoints:** Primary API operations needed
+    - **Language Preference:** Python (FastMCP) or TypeScript (MCP SDK)
 
 5.  **Generate PRD:** Based on the initial prompt and the user's answers to the clarifying questions, generate a PRD using the structure outlined below.
 6.  **Save PRD Draft:**
@@ -583,37 +583,10 @@ need more details:
 
 - **Use AskUserQuestion to request approval:**
 
-```
-AskUserQuestion({
-  questions: [
-    {
-      question: "Does the PRD summary above meet your requirements?",
-      header: "Approval",
-      options: [
-        {
-          label: "Yes, approve",
-          description: "Approve PRD and proceed to task generation"
-        },
-        {
-          label: "Review full PRD",
-          description: "Open the complete PRD file for detailed review"
-        },
-        {
-          label: "No, revise",
-          description: "Restart from clarifying questions"
-        },
-        {
-          label: "Changes needed",
-          description: "Collect feedback and revise"
-        }
-      ],
-      multiSelect: false
-    }
-  ]
-})
-```
+See `shared/templates/ask-user-questions.md` for the PRD Approval Workflow template.
 
-- **If "Yes, approve":**
+**Response handling:**
+- **"Yes, approve"**:
   - Update PRD status in frontmatter from `draft` to `approved`
   - Add initial changelog entry (version 1)
   - Proceed to task generation (user will invoke `/flow:generate-tasks`)

@@ -4,6 +4,18 @@ description: Generate tasks from a PRD (using beads if available, otherwise Todo
 
 # Rule: Generating Tasks from a PRD
 
+## Quick Start (5 steps)
+
+1. **Auto-discover PRD** - Matches current git context (branch/worktree)
+2. **Check existing tasks** - Detects if PRD was previously processed
+3. **Generate epics** - 5-7 high-level parent issues
+4. **Generate sub-tasks** - Detailed tasks with dependencies
+5. **Wait for "Go"** - User confirmation before generation begins
+
+**Requirements:** PRD must exist and be `approved` status.
+
+**Full workflow:** See `README.md` for complete flow command usage.
+
 ## Goal
 
 To guide an AI assistant in creating a detailed, step-by-step task hierarchy based on an existing Product Requirements Document (PRD). The tasks should guide a developer through implementation with proper dependency tracking.
@@ -90,70 +102,8 @@ This command intelligently detects whether a PRD has been previously processed a
 ## Process
 
 1. **Auto-Discover PRD:** Automatically find the appropriate PRD based on git context.
-   - **Stage 1 - Latest PRD Check:**
-     - Find the most recently modified PRD in `/.flow/` directory
-     - Read its YAML frontmatter
-     - Extract branch, worktree name, and worktree path
 
-   - **Stage 2 - Context Validation:**
-     - Detect current git context (branch, worktree)
-     - Compare current context with PRD metadata
-     - **Match criteria:** ALL of the following must match
-       - Branch name matches exactly (or both are main/master)
-       - Worktree name matches (if both in worktrees)
-       - Worktree path matches (if both in worktrees)
-
-   - **Stage 3 - Fallback Search:**
-     - If latest PRD doesn't match, search all PRDs in `/.flow/`
-     - For each PRD, check if metadata matches current context
-     - Return first matching PRD
-
-   - **Stage 4 - No Match Found:**
-     - If no PRD matches current context, inform user
-     - List available PRDs with their metadata
-     - Offer options:
-       a) Create new PRD (run `/flow:plan`)
-       b) Select existing PRD manually
-       c) Exit
-
-   **Discovery Process:**
-
-   The AI performs the following discovery process internally:
-   1. Find the most recently modified PRD in the `/.flow/` directory
-   2. Extract metadata from the PRD frontmatter (branch, worktree path)
-   3. Detect current git context (branch, worktree)
-   4. Validate that the PRD context matches the current git context
-   5. If no match is found, search all PRDs for a context match
-
-   **User Interaction Example:**
-
-   **Use AskUserQuestion to prompt the user:**
-
-   ```
-   AskUserQuestion({
-     questions: [
-       {
-         question: "No PRD found matching current context (branch: feature/user-auth). What would you like to do?",
-         header: "PRD Action",
-         options: [
-           {
-             label: "Create new PRD",
-             description: "Run /flow:plan to create a new PRD for this context"
-           },
-           {
-             label: "Use existing PRD",
-             description: "Select and use one of the existing PRDs"
-           },
-           {
-             label: "Exit",
-             description: "Exit the task generation process"
-           }
-         ],
-         multiSelect: false
-       }
-     ]
-   })
-   ```
+   See: `shared/protocols/prd-discovery.md` for the multi-stage discovery algorithm.
 
    **After PRD Discovery:**
    - Display discovered PRD with its metadata
@@ -299,13 +249,20 @@ This command intelligently detects whether a PRD has been previously processed a
    - Identify fallback subagents if needed
 
 3. **Skill Detection:**
-   - Check for skill-specific triggers (frontend-design, mcp-builder, etc.)
-   - Associate applicable skills with the task
+   - Check task description and category against skill_mappings in `.claude/subagent-types.yaml`
+   - Match trigger patterns for each available skill:
+     - **frontend-design**: UI components, styling, layout, visual design
+     - **mcp-builder**: External API integrations, MCP server creation
+     - **skill-creator**: Custom skill definition requests
+     - **webapp-testing**: Browser testing, E2E testing, UI verification
+     - **document-skills**: API docs, user guides, technical documentation
+   - Associate all applicable skills with the task (multiple skills allowed)
 
 4. **Store in Issue Metadata:**
    - Add `subagent_type` field to beads issue
    - Add `fallback_agents` array for alternatives
    - Add `applicable_skills` array if skills detected
+   - Store skill-specific context for later use
 
 **Example Output:**
 
@@ -318,7 +275,18 @@ fallback_agents:
   - typescript-pro
 applicable_skills:
   - frontend-design
+  - webapp-testing
 ```
+
+**Skill Assignment Examples:**
+
+| Task Description | Category | Skills Assigned |
+|-----------------|----------|-----------------|
+| "Create responsive UI for dashboard" | frontend | `frontend-design`, `webapp-testing` |
+| "Build MCP server for GitHub integration" | backend | `mcp-builder` |
+| "Generate API documentation from endpoints" | documentation | `document-skills` |
+| "Add E2E tests for checkout flow" | testing | `webapp-testing` |
+| "Create custom skill for code review" | ai | `skill-creator` |
 
 **Storage in beads:**
 ```bash
@@ -327,7 +295,7 @@ bd create \
   --description "..." \
   --metadata "subagent_type=frontend-developer" \
   --metadata "fallback_agents=react-pro,typescript-pro" \
-  --metadata "applicable_skills=frontend-design"
+  --metadata "applicable_skills=frontend-design,webapp-testing"
 ```
 
 **Auto-Detection Fallback:**
@@ -452,7 +420,7 @@ If automatic detection fails:
    ### Agent Assignment
    - **Primary Subagent:** `frontend-developer`
    - **Fallback Agents:** `react-pro`, `typescript-pro`
-   - **Applicable Skills:** `frontend-design`
+   - **Applicable Skills:** `frontend-design`, `webapp-testing`
 
    ### Relevant Files
 
@@ -479,7 +447,7 @@ If automatic detection fails:
    ### Agent Assignment
    - **Primary Subagent:** `backend-architect`
    - **Fallback Agents:** `api-documenter`
-   - **Applicable Skills:**
+   - **Applicable Skills:** (none for this task)
 
    ### Relevant Files
 
@@ -492,6 +460,32 @@ If automatic detection fails:
      --labels "feature,auth" \
      --metadata "subagent_type=backend-architect" \
      --metadata "fallback_agents=api-documenter"
+   ```
+
+   **Frontend task example with skills:**
+
+   ```bash
+   bd create --title "Implement React login component" \
+     --description "## Task: Implement React login component
+
+   Create a responsive login form with email/password inputs.
+
+   ### Agent Assignment
+   - **Primary Subagent:** `frontend-developer`
+   - **Fallback Agents:** `react-pro`, `typescript-pro`
+   - **Applicable Skills:** `frontend-design`, `webapp-testing`
+
+   ### Relevant Files
+
+   | File | Lines | Purpose |
+   |------|-------|---------|
+   | \`src/components/Login.tsx\` | 1-50 | Component structure |
+   | \`src/styles/auth.css\` | 10-30 | Styling patterns |" \
+     --priority "P1" \
+     --labels "feature,auth,frontend" \
+     --metadata "subagent_type=frontend-developer" \
+     --metadata "fallback_agents=react-pro,typescript-pro" \
+     --metadata "applicable_skills=frontend-design,webapp-testing"
    ```
 
    **Without beads (TodoWrite fallback):**

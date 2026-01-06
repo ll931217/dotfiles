@@ -4,6 +4,19 @@ description: Clean up after implementation - close issues, commit changes, updat
 
 # Rule: Implementation Cleanup (/flow:cleanup)
 
+## Quick Start (6 steps)
+
+1. **Auto-discover PRD** - Matches current git context (branch/worktree)
+2. **Verify all tasks complete** - All issues must be closed
+3. **Check worktree** - Optional merge to target branch
+4. **Create summary commit** - Groups all implementation changes
+5. **Generate docs (optional)** - Auto-generate documentation with document-skills
+6. **Update PRD status** - `implementing` → `implemented`
+
+**Requirements:** All PRD tasks must be complete.
+
+**Full workflow:** See `README.md` for complete flow command usage.
+
 ## Goal
 
 To guide an AI assistant in performing post-implementation cleanup after all PRD tasks are complete. This includes:
@@ -30,51 +43,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 
 1. **Auto-Discover PRD:** Automatically find the appropriate PRD based on git context.
 
-   **Stage 1 - Latest PRD Check:**
-   - Find the most recently modified PRD in `/.flow/` directory
-   - Read its YAML frontmatter
-   - Extract branch, worktree name, and worktree path
-
-   **Stage 2 - Context Validation:**
-   - Detect current git context (branch, worktree)
-   - Compare current context with PRD metadata
-   - **Match criteria:** ALL of the following must match
-     - Branch name matches exactly (or both are main/master)
-     - Worktree name matches (if both in worktrees)
-     - Worktree path matches (if both in worktrees)
-
-   **Stage 3 - Fallback Search:**
-   - If latest PRD doesn't match, search all PRDs in `/.flow/`
-   - For each PRD, check if metadata matches current context
-   - Return first matching PRD
-
-   **Stage 4 - No Match Found:**
-   - If no PRD matches current context, use AskUserQuestion to inform user and offer options:
-     ```
-     AskUserQuestion({
-       questions: [
-         {
-           question: "No PRD matches the current context. Available PRDs: [list]. What would you like to do?",
-           header: "PRD Action",
-           options: [
-             {
-               label: "Create new PRD",
-               description: "Run /flow:plan to create a new PRD"
-             },
-             {
-               label: "Select existing PRD",
-               description: "Manually select one of the available PRDs"
-             },
-             {
-               label: "Exit",
-               description: "Exit the cleanup process"
-             }
-           ],
-           multiSelect: false
-         }
-       ]
-     })
-     ```
+   See: `shared/protocols/prd-discovery.md` for the multi-stage discovery algorithm.
 
 2. **Verify Implementation Complete:** Check that all PRD tasks are completed before cleanup.
 
@@ -291,7 +260,77 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    Branch: feature/user-auth
    ```
 
-5. **Update PRD Status:** Mark the PRD as implemented in the frontmatter.
+5. **Generate Documentation (Optional):** After implementation is complete, offer to generate project documentation using the document-skills skill.
+
+   **Step 5a - Detect Documentation Needs:**
+   - Check PRD for documentation requirements
+   - Analyze implemented features for documentation opportunities
+   - Identify API endpoints, user-facing features, and technical components
+
+   **Step 5b - Offer Documentation Generation:**
+   - Use AskUserQuestion to present documentation options:
+     ```
+     AskUserQuestion({
+       questions: [
+         {
+           question: "Implementation complete! Would you like to generate documentation?",
+           header: "Documentation",
+           options: [
+             {
+               label: "Generate API documentation",
+               description: "Create OpenAPI/Swagger spec from implemented endpoints"
+             },
+             {
+               label: "Generate user guide",
+               description: "Create user-facing documentation from PRD requirements"
+             },
+             {
+               label: "Generate technical spec",
+               description: "Create technical documentation with architecture details"
+             },
+             {
+               label: "Skip documentation",
+               description: "Proceed with cleanup without generating docs"
+             }
+           ],
+           multiSelect: true
+         }
+       ]
+     })
+     ```
+
+   **Step 5c - Invoke Document Skills:**
+   - For each selected documentation type, invoke the document-skills skill:
+     ```javascript
+     Skill(skill="document-skills", args="Generate API documentation from src/api/")
+
+     Skill(skill="document-skills", args="Create user guide from PRD and implementation")
+
+     Skill(skill="document-skills", args="Export technical spec as docx with architecture diagrams")
+     ```
+
+   **Step 5d - Commit Generated Documentation:**
+   - Stage documentation files: `git add docs/`
+   - Create documentation commit: `git commit -m "docs: add generated documentation"`
+   - Display commit SHA for reference
+
+   **Supported Document Formats:**
+   - **PDF** (`*.pdf`): Portable documents for distribution
+   - **Word** (`*.docx`): Editable documents
+   - **PowerPoint** (`*.pptx`): Presentation slides
+   - **Excel** (`*.xlsx`): Spreadsheets and data tables
+   - **Markdown** (`*.md`): Repository documentation
+
+   **Documentation Examples:**
+
+   | Document Type | Description | Example Command |
+   |---------------|-------------|-----------------|
+   | API Reference | OpenAPI/Swagger spec from endpoints | `Skill(skill="document-skills", args="Generate API docs from src/api/routes.ts")` |
+   | User Guide | End-user documentation from PRD | `Skill(skill="document-skills", args="Create user guide from prd-authentication-v3.md")` |
+   | Technical Spec | Architecture and implementation details | `Skill(skill="document-skills", args="Generate technical spec as docx")` |
+   | Changelog | Release notes from PRD changelog | `Skill(skill="document-skills", args="Export changelog as pdf")` |
+
+6. **Update PRD Status:** Mark the PRD as implemented in the frontmatter.
 
    **Updates to PRD Frontmatter:**
    - **Increment version:** `version: N` → `version: N+1`
@@ -327,7 +366,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    | 1       | 2025-01-02 10:30 | Initial PRD approved                                         |
    ```
 
-6. **Display Cleanup Summary:** Show the user what was accomplished.
+7. **Display Cleanup Summary:** Show the user what was accomplished.
 
    **Output Format (with worktree merge):**
 
@@ -373,7 +412,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    ✨ PRD is now marked as implemented!
    ```
 
-7. **Optional Next Step:** Suggest running `/flow:summary` to view the final implementation summary.
+8. **Optional Next Step:** Suggest running `/flow:summary` to view the final implementation summary.
 
    **Suggestion:**
 
@@ -457,6 +496,11 @@ If any safety check fails, the AI will:
 | Uncommitted changes in worktree | Working directory not clean         | Warn user, require commit or stash before merge        |
 
 ## Example Session
+
+See `shared/examples/session-cleanup.md` for complete session transcripts showing:
+- Example with worktree merge
+- Example without worktree (main repo)
+- Error handling scenarios
 
 **Example with Worktree Merge:**
 

@@ -1,5 +1,8 @@
 # Subagent Type Mapping System
 # Maps task types to appropriate specialized agents and skills
+#
+# Skills are invoked before subagent execution to provide domain-specific guidance
+# The skill output is passed to the subagent as additional context
 
 task_categories:
   # Frontend Development
@@ -94,6 +97,7 @@ task_categories:
   # Testing
   testing:
     subagent: test-automator
+    skill: webapp-testing
     patterns:
       - "test|spec|testing"
       - "unit|integration|e2e"
@@ -257,6 +261,18 @@ skill_mappings:
       - "front.?end.*design"
       - "styling|style.*guide"
       - "layout|visual"
+    prompt_template: |
+      Create distinctive, production-grade frontend UI for: {task_description}
+
+      Requirements:
+      - Avoid generic AI aesthetics
+      - Use creative, polished design patterns
+      - Ensure accessibility compliance
+      - Responsive design for all screen sizes
+
+      Context:
+      - PRD: {prd_context}
+      - Existing patterns: {existing_patterns}
 
   mcp-builder:
     triggers:
@@ -264,6 +280,20 @@ skill_mappings:
       - "build.*integration"
       - "mcp.*tool"
       - "model.?context.?protocol"
+      - "external.*api.*integration"
+      - "third.?party.*service"
+    prompt_template: |
+      Build an MCP server for: {task_description}
+
+      Requirements:
+      - Use FastMCP (Python) or MCP SDK (TypeScript)
+      - Follow MCP server best practices
+      - Include proper error handling
+      - Add resource definitions for all operations
+
+      Integration details:
+      - External API: {external_api}
+      - Authentication: {auth_method}
 
   skill-creator:
     triggers:
@@ -271,6 +301,18 @@ skill_mappings:
       - "new.*agent.*skill"
       - "define.*agent"
       - "agent.*capability"
+      - "custom.*skill.*workflow"
+    prompt_template: |
+      Create a new agent skill for: {task_description}
+
+      Requirements:
+      - Follow skill-creator best practices
+      - Include clear usage examples
+      - Add skill metadata and documentation
+      - Define input/output schema
+
+      Skill purpose: {skill_purpose}
+      Target workflow: {workflow_context}
 
   webapp-testing:
     triggers:
@@ -279,13 +321,43 @@ skill_mappings:
       - "playwright"
       - "chrome.*devtool"
       - "browser.*test"
+      - "ui.*test|component.*test"
+      - "verify.*frontend"
+    prompt_template: |
+      Test web application: {task_description}
+
+      Requirements:
+      - Use Playwright for browser automation
+      - Test on multiple browsers (Chrome, Firefox, Safari)
+      - Include accessibility testing
+      - Generate test reports
+
+      Test environment:
+      - URL: {app_url}
+      - Test user flows: {test_scenarios}
 
   document-skills:
     triggers:
-      - "create.*pdf|docx|xlsx"
+      - "create.*pdf|docx|xlsx|pptx"
       - "generate.*document"
       - "export.*report"
       - "document.*template"
+      - "api.*documentation"
+      - "user.*guide"
+      - "technical.*spec"
+    prompt_template: |
+      Generate document: {task_description}
+
+      Requirements:
+      - Document type: {doc_type}
+      - Include tables/figures as appropriate
+      - Follow documentation best practices
+      - Export to specified format
+
+      Content sources:
+      - PRD: {prd_context}
+      - Code: {code_context}
+      - API endpoints: {api_spec}
 
 # Configuration for subagent type detection
 detection_config:
@@ -318,3 +390,45 @@ detection_config:
 
   # Maximum number of fallback agents to try
   max_fallback_attempts: 3
+
+# Skill Execution Configuration
+# Defines when and how skills are invoked in the workflow
+skill_execution_config:
+  # Skills are invoked BEFORE subagent execution
+  execution_order:
+    - frontend-design    # Apply first for UI tasks
+    - mcp-builder        # Apply for integration tasks
+    - webapp-testing     # Apply for testing tasks
+    - document-skills    # Apply for documentation tasks
+    - skill-creator      # Apply for custom skill creation
+
+  # Skill invocation modes
+  modes:
+    # Auto: Skills are invoked automatically based on task metadata
+    auto:
+      enabled: true
+      require_metadata: true  # Require applicable_skills in task metadata
+
+    # Manual: Skills require explicit invocation via Skill tool
+    manual:
+      enabled: true
+      allow_override: true  # Allow manual skill invocation even if auto mode applies
+
+    # Conditional: Skills are invoked based on task characteristics
+    conditional:
+      enabled: true
+      use_trigger_patterns: true  # Use skill_mappings trigger patterns
+
+  # Skill context passing
+  context_passing:
+    # Pass PRD context to skills
+    include_prd: true
+
+    # Pass existing code patterns to skills
+    include_patterns: true
+
+    # Pass task dependencies to skills
+    include_dependencies: true
+
+    # Pass subagent output back to skill for validation
+    feedback_loop: false  # Set to true to enable skill validation of subagent output
