@@ -210,6 +210,84 @@ When creating a new worktree, the AI must maintain state across the session:
 - Step 6 (Save PRD Draft) checks these variables to determine save location
 - Ensures PRD is saved in the correct worktree regardless of creation method
 
+2.85 **Codebase Context Discovery:** Use Explore agents to identify relevant files for implementation context.
+
+**Discovery Process:**
+
+1. **Analyze PRD Requirements:**
+   - Extract key features from user's clarifying responses
+   - Identify domain areas affected (e.g., auth, database, UI)
+   - Note technical patterns mentioned
+
+2. **Launch Explore Agents (1-3 parallel):**
+
+   **Agent 1: Existing Implementations**
+
+   Explore the codebase to find existing implementations related to: [FEATURE_NAME]
+
+   Search for:
+   1. Similar features or functionality
+   2. Established patterns in this codebase
+   3. Configuration files relevant to this domain
+   4. Type definitions or schemas
+
+   For each relevant file found, report:
+   - File path (relative to repo root)
+   - Specific line ranges (functions, classes, sections)
+   - Why it's relevant to the PRD
+
+   Use medium thoroughness.
+
+   **Agent 2: Integration Points**
+
+   Explore how this codebase handles: [DOMAIN_AREA]
+
+   Find:
+   1. API routes or endpoints related to [DOMAIN]
+   2. Service layer patterns
+   3. Database models or schemas
+   4. Middleware or hooks
+
+   Report file paths with line ranges and relevance.
+   Use medium thoroughness.
+
+   **Agent 3: Test Patterns** (optional)
+
+   Find testing patterns for: [FEATURE_TYPE]
+
+   Locate:
+   1. Test files for similar features
+   2. Test utilities and fixtures
+   3. Mock or stub patterns
+
+   Report with file paths, line ranges, and relevance.
+   Use quick thoroughness.
+
+3. **Store in PRD Frontmatter:**
+   ```yaml
+   code_references:
+     - path: "src/services/AuthService.ts"
+       lines: "45-120"
+       reason: "Existing authentication patterns to follow"
+     - path: "src/types/user.ts"
+       lines: "1-30"
+       reason: "User type definitions needed for feature"
+   ```
+
+4. **Add to PRD Structure:**
+   Add new section "Relevant Code References" after "Architecture Patterns":
+
+   ```markdown
+   18. **Relevant Code References:** List of relevant files with line ranges.
+
+       | File Path | Lines | Purpose |
+       |-----------|-------|---------|
+       | `src/services/AuthService.ts` | 45-120 | Auth patterns |
+       | `src/types/user.ts` | 1-30 | Type definitions |
+   ```
+
+**Fallback:** If no relevant files found, set `code_references: []` and note "New feature area".
+
 3.  **Receive Initial Prompt:** The user provides a brief description or request for a new feature or functionality.
 4.  **Ask Clarifying Questions:** Before writing the PRD, the AI _must_ ask clarifying questions using the AskUserQuestion tool. This provides an interactive UI where users can select options with keyboard navigation (arrow keys or number keys).
     - Ask **3-5 clarifying questions at a time** to avoid overwhelming the user. Prioritize the most critical unknowns first.
@@ -316,6 +394,7 @@ When creating a new worktree, the AI must maintain state across the session:
     beads:
       related_issues: []
       related_epics: []
+    code_references: []
     priorities:
       enabled: true
       default: P2
@@ -356,6 +435,7 @@ When creating a new worktree, the AI must maintain state across the session:
     beads:
       related_issues: []
       related_epics: []
+    code_references: []
     priorities:
       enabled: true
       default: P2
@@ -856,6 +936,15 @@ The generated PRD should include the following sections:
 15. **Open Questions:** List any remaining questions or areas needing further clarification.
 16. **Glossary (Optional):** Define domain-specific terms or project-specific conventions (assumes standard SE knowledge).
 17. **Changelog:** A table tracking all PRD versions with dates and change summaries.
+18. **Relevant Code References:** List of relevant files with line ranges for implementation context.
+
+    Format:
+    | File Path | Lines | Purpose |
+    |-----------|-------|---------|
+    | `src/services/AuthService.ts` | 45-120 | Existing auth patterns |
+    | `src/types/user.ts` | 1-30 | Type definitions |
+
+    This section is populated during Step 2.85 (Codebase Context Discovery) using Explore agents.
 
 ## Complexity Guidance
 

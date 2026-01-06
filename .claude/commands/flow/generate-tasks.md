@@ -211,6 +211,76 @@ This command intelligently detects whether a PRD has been previously processed a
 
 4. **Assess Current State:** Review the existing codebase to understand existing infrastructure, architectural patterns and conventions. Also, identify any existing components or features that already exist and could be relevant to the PRD requirements. Then, identify existing related files, components, and utilities that can be leveraged or need modification.
 
+4.5 **Context Discovery:** For each epic/sub-issue, identify and document relevant files with specific line ranges.
+
+**Discovery Process:**
+
+1. **Launch Explore Agents (1-2 parallel) to find relevant files:**
+
+   **Agent 1: Feature-Related Files**
+
+   Explore the codebase to find files relevant to: [EPIC/TASK_DESCRIPTION]
+
+   Search for:
+   1. Existing implementations of similar functionality
+   2. Configuration files (schemas, types, routes)
+   3. Service layer patterns
+   4. Utilities and helpers
+
+   For each relevant file found, report:
+   - File path (relative to repo root)
+   - Specific line ranges (e.g., "45-120" for a function)
+   - Why it's relevant to this task
+
+   Use medium thoroughness.
+
+   **Agent 2: Test Patterns** (optional, skip for test-related tasks)
+
+   Find testing patterns for: [FEATURE_TYPE]
+
+   Locate:
+   1. Test files for similar features
+   2. Test utilities and fixtures
+   3. Mock or stub patterns
+
+   Report with file paths, line ranges, and relevance.
+   Use quick thoroughness.
+
+2. **Organize findings per task:**
+
+   Create a mapping for each epic/sub-issue:
+   ```
+   proj-auth.1: Implement login endpoint
+     relevant_files:
+       - src/api/routes.ts:45-80 (existing route patterns)
+       - src/services/AuthService.ts:1-50 (auth interface to follow)
+       - src/types/user.ts:10-30 (User type definitions)
+       - tests/auth.test.ts:1-40 (test patterns to follow)
+   ```
+
+3. **Store in beads issue description:**
+
+   Add a "Relevant Files" section to each issue:
+   ```
+   ### Relevant Files
+
+   | File | Lines | Purpose |
+   |------|-------|---------|
+   | `src/api/routes.ts` | 45-80 | Existing route patterns to follow |
+   | `src/services/AuthService.ts` | 1-50 | Auth service interface |
+   | `src/types/user.ts` | 10-30 | User type definitions |
+   | `tests/auth.test.ts` | 1-40 | Test patterns |
+   ```
+
+**Benefits:**
+- `/flow:implement` can read only specific line ranges vs entire files
+- Reduces token usage by ~70% for typical implementations
+- Provides clear guidance on what code to review
+- Helps agents understand codebase patterns quickly
+
+**Fallback for new projects:**
+- If no relevant files found, use: `No existing files found (new feature area)`
+
 5. **Phase 1: Generate Parent Issues (Epics) - For New or Updated Requirements Only:**
    - If this is a fresh PRD (no existing tasks): Generate all parent epics
    - If this is an updated PRD: Only generate NEW or MODIFIED epics
@@ -281,7 +351,10 @@ This command intelligently detects whether a PRD has been previously processed a
    **For updated PRDs:** Only generate sub-issues for epics that are new or modified. Skip sub-issue generation for completed/unchanged epics.
 
 9. **Phase 3: Intelligent Parallel Issue Analysis and Dependencies**
-   - **Phase 3a - File Dependency Analysis:** For each sub-issue, identify all files that will be created, modified, or read. Include this in the issue description.
+   - **Phase 3a - File Dependency Analysis:** For each sub-issue, use the discovered relevant files from Step 4.5:
+     - Files already identified during Context Discovery
+     - Additional files for new/modified files
+     - Include line ranges where possible for precision
    - **Phase 3b - Conflict Detection:** Analyze the file dependency map to identify sub-issues that modify the same files (these cannot run in parallel and need blocking dependencies).
    - **Phase 3c - Dependency Assignment:**
      - Issues that can run in parallel (different files) = no blocking dependencies between them
@@ -310,7 +383,57 @@ This command intelligently detects whether a PRD has been previously processed a
     - **Exception 2:** Refactoring tasks default to P3 unless epic is P0
     - **User Override:** User can specify different priority if needed
 
-11. **Add Relevant Files to Issue Descriptions:** When creating issues, include the relevant files in the issue description.
+11. **Add Relevant Files to Issue Descriptions:** Attach discovered file context to each issue.
+
+   **Format for Issue Description:**
+
+   ```markdown
+   ## Task: [Task Title]
+
+   [Task description...]
+
+   ### Relevant Files
+
+   | File | Lines | Purpose |
+   |------|-------|---------|
+   | `path/to/file.ts` | 45-120 | Brief description |
+   | `path/to/other.ts` | 1-30 | Brief description |
+
+   ### Context Notes
+   - [Any additional context about file structure]
+   - [Patterns to follow or avoid]
+   ```
+
+   **With beads (`bd`) installed:**
+
+   When creating issues with `bd create`, include the relevant files table in the description:
+
+   ```bash
+   bd create --title "Implement login endpoint" \
+     --description "## Task: Implement login endpoint
+
+   Create a POST endpoint for user authentication.
+
+   ### Relevant Files
+
+   | File | Lines | Purpose |
+   |------|-------|---------|
+   | \`src/api/routes.ts\` | 45-80 | Existing route patterns |
+   | \`src/services/AuthService.ts\` | 1-50 | Auth interface |
+   | \`src/types/user.ts\` | 10-30 | User types |" \
+     --priority "P1" \
+     --labels "feature,auth"
+   ```
+
+   **Without beads (TodoWrite fallback):**
+
+   Include the same relevant files table in the task description stored in TodoWrite.
+
+   **Context Storage Strategy:**
+
+   - Store **file paths** and **line ranges** (not full file contents)
+   - Implement command will use these to read selective sections
+   - If line numbers change, store function/class names instead
 
 12. **Merge Updated Issues with Existing Issues:**
     - For updated PRDs: Merge newly created issues with existing kept issues
@@ -504,6 +627,56 @@ Epic: User Authentication System
 - Maintain the DRY (Don't Repeat Yourself) principle.
 - Do not overcomplicate the implementation, it makes it hard for the user to review the changes.
 - Include relevant files in issue descriptions for clarity.
+
+## Context Discovery Helper Functions
+
+### Function: extract_relevant_files
+
+Extracts relevant files with line ranges for a given task description.
+
+**Usage:**
+
+```bash
+# Pseudocode for the AI agent
+extract_relevant_files(task_description, codebase_context) {
+  results = []
+
+  # Use Explore agent to find files
+  explore(task_description) -> files_found
+
+  # For each file, identify relevant sections
+  for file in files_found:
+    if has_specific_function(file):
+      results.append({
+        path: file,
+        lines: find_function_range(file, function_name),
+        reason: "Contains pattern to follow"
+      })
+    else:
+      results.append({
+        path: file,
+        lines: "1-50",  # First 50 lines as preview
+        reason: "General context"
+      })
+
+  return results
+}
+```
+
+**Output Format:**
+
+```markdown
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/auth.ts` | 45-120 | Existing auth patterns |
+| `types/user.ts` | 1-30 | Type definitions |
+```
+
+**Fallback Strategies:**
+
+- **Line numbers unknown:** Use `1-50` (first 50 lines) or function name search
+- **New file type:** Note "New file, no existing reference"
+- **Multiple sections:** List multiple entries for same file with different ranges
 
 ## Interaction Model
 

@@ -221,10 +221,78 @@ fi
 
 - `draft` = 📝 draft (not yet approved)
 - `approved` = ✅ approved (ready for implementation)
+- `implementing` = 🔄 implementing (implementation in progress)
 - `implemented` = ✨ implemented (complete)
 
 **After PRD Validation:**
-Once you've discovered and validated the PRD, run `/flow:summary` to capture the initial state in the "Current Status" section above. This establishes your baseline context.
+Once you've discovered and validated the PRD:
+1. Run `/flow:summary` to capture the initial state in the "Current Status" section above. This establishes your baseline context.
+2. **Check for `code_references` in PRD frontmatter:**
+   - If present: Use these files for initial context (selective reading with line ranges)
+   - If absent: Fall back to broader exploration during implementation
+3. **Update PRD status** from `approved` to `implementing`:
+   - Update `prd.status` field in frontmatter
+   - Update `metadata.updated_at` timestamp
+   - Update `git.updated_at_commit` with current commit SHA
+   - Add changelog entry: "Implementation started"
+
+## Context-Optimized File Reading
+
+When implementing tasks, use selective reading based on `code_references` and issue descriptions to reduce token usage.
+
+### Reading Strategy
+
+1. **Check Issue Description First:**
+   - Read the "Relevant Files" table from the beads issue
+   - Extract file paths and line ranges
+
+2. **Use Selective Read Tool:**
+   - Instead of `Read("src/auth.ts")` (entire file)
+   - Use `Read("src/auth.ts", offset=45, limit=75)` (lines 45-120)
+
+3. **Fallback Conditions:**
+   - No relevant files in issue → Read full file
+   - Line range doesn't provide context → Expand range
+   - File modified since PRD → Read full file
+   - New file → Read similar files for patterns
+
+### Implementation Example
+
+```python
+# Before: Read entire file (500+ tokens)
+auth_service = Read("src/services/AuthService.ts")
+
+# After: Read only relevant section (100 tokens)
+auth_service = Read("src/services/AuthService.ts", offset=1, limit=50)
+
+# Token savings: ~80%
+```
+
+### Token Savings
+
+| Approach | Typical File Size | Tokens Used | Savings |
+|----------|------------------|-------------|---------|
+| Full file read | 500 lines | ~2,500 | 0% |
+| Selective read | 50 lines | ~250 | **90%** |
+| Multiple selective reads | 5 files × 30 lines | ~375 | **85%** |
+
+**Overall savings: ~70-85% for typical implementations**
+
+### Reading from PRD code_references
+
+When `code_references` exists in PRD frontmatter:
+
+```yaml
+code_references:
+  - path: "src/services/AuthService.ts"
+    lines: "45-120"
+    reason: "Existing authentication patterns to follow"
+```
+
+Read selectively using:
+```bash
+Read("src/services/AuthService.ts", offset=45, limit=75)  # Lines 45-120
+```
 
 ## Priority Display Format
 

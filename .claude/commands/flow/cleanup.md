@@ -11,7 +11,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 - Verifying all tasks are completed
 - Closing completed beads issues (if using beads)
 - Creating a summary commit grouping all implementation changes
-- Updating PRD status from `approved` to `implemented`
+- Updating PRD status from `implementing` to `implemented`
 - Adding changelog entry to PRD
 
 **Task Management Options:**
@@ -22,7 +22,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 ## Prerequisites
 
 - **Required:** All PRD tasks must be completed (all issues closed in beads, or all TodoWrite items marked completed)
-- **Required:** An approved PRD in `/.flow/` directory with `status: approved`
+- **Required:** A PRD in `/.flow/` directory with `status: implementing` or `status: approved`
 - **Optional:** beads (`bd`) - If installed, issues will be verified and committed
 - **Optional:** Clean working directory (no uncommitted changes) - required for worktree merge operation
 
@@ -295,7 +295,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 
    **Updates to PRD Frontmatter:**
    - **Increment version:** `version: N` → `version: N+1`
-   - **Update status:** `status: approved` → `status: implemented`
+   - **Update status:** `status: implementing` → `status: implemented`
    - **Update timestamp:** `updated_at: [current ISO 8601 timestamp]`
    - **Update commit SHA:** `updated_at_commit: [current commit SHA]`
    - **Add changelog entry:** Insert at top of changelog table
@@ -335,7 +335,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    🧹 Implementation Cleanup Complete!
 
    📋 PRD: prd-[feature]-vN.md
-      Status: approved → implemented
+      Status: implementing → implemented
       Version: N → N+1
 
    📊 Worktree: [worktree-name]
@@ -359,7 +359,7 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
    🧹 Implementation Cleanup Complete!
 
    📋 PRD: prd-[feature]-vN.md
-      Status: approved → implemented
+      Status: implementing → implemented
       Version: N → N+1
       Branch: [branch-name]
 
@@ -429,7 +429,7 @@ Task completion is verified through internal TodoWrite state. Note: Context may 
 
 Before performing cleanup, the following safety checks are performed:
 
-1. **PRD Status Check:** Verify PRD status is `approved` (not `draft` or already `implemented`)
+1. **PRD Status Check:** Verify PRD status is `implementing` or `approved` (not `draft` or already `implemented`)
 2. **Git Status Check:** Ensure there are uncommitted changes to commit
 3. **Branch Check:** Verify current branch matches PRD's git context
 4. **Task Completion Check:** Verify all tasks are marked as completed
@@ -503,14 +503,14 @@ Merge commit: def456ghi
 
 Updating PRD status...
 ✓ Version: 3 → 4
-✓ Status: approved → implemented
+✓ Status: implementing → implemented
 ✓ Updated: 2025-01-03T14:30:00Z
 ✓ Changelog entry added
 
 🧹 Implementation Cleanup Complete!
 
 📋 PRD: prd-authentication-v3.md
-   Status: approved → implemented
+   Status: implementing → implemented
    Version: 3 → 4
 
 📊 Worktree: feature-user-auth
@@ -575,14 +575,14 @@ Branch: feature/user-auth
 
 Updating PRD status...
 ✓ Version: 3 → 4
-✓ Status: approved → implemented
+✓ Status: implementing → implemented
 ✓ Updated: 2025-01-03T14:30:00Z
 ✓ Changelog entry added
 
 🧹 Implementation Cleanup Complete!
 
 📋 PRD: prd-authentication-v3.md
-   Status: approved → implemented
+   Status: implementing → implemented
    Version: 3 → 4
    Branch: feature/user-auth
 
