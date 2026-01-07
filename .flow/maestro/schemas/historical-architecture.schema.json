@@ -1,0 +1,245 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://maestro.flow.dev/schemas/historical-architecture.schema.json",
+  "title": "Historical Architecture Decisions",
+  "description": "Historical record of architecture and design pattern decisions for learning and consistency",
+  "type": "object",
+  "required": ["decisions"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version",
+      "default": "1.0"
+    },
+    "last_updated": {
+      "type": "string",
+      "description": "Last update timestamp",
+      "format": "date-time"
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Historical architecture decisions",
+      "items": {
+        "type": "object",
+        "required": [
+          "decision_id",
+          "session_id",
+          "timestamp",
+          "pattern_type",
+          "pattern_name",
+          "rationale"
+        ],
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "description": "Unique decision identifier"
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Session that made this decision",
+            "format": "uuid"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "When decision was made",
+            "format": "date-time"
+          },
+          "pattern_type": {
+            "type": "string",
+            "description": "Type of architectural pattern",
+            "enum": [
+              "creational",
+              "structural",
+              "behavioral",
+              "architectural",
+              "design_principle",
+              "data_flow",
+              "layering"
+            ]
+          },
+          "pattern_name": {
+            "type": "string",
+            "description": "Name of the pattern or principle"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of how pattern was applied"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this pattern was chosen"
+          },
+          "implementation_location": {
+            "type": "object",
+            "description": "Where pattern was implemented",
+            "properties": {
+              "files": {
+                "type": "array",
+                "description": "Files where pattern was applied",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "modules": {
+                "type": "array",
+                "description": "Modules affected",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "context": {
+            "type": "object",
+            "description": "Context for the decision",
+            "properties": {
+              "existing_patterns": {
+                "type": "boolean",
+                "description": "Did this pattern exist in codebase?"
+              },
+              "consistency_with_codebase": {
+                "type": "string",
+                "description": "How this aligns with existing codebase",
+                "enum": ["matches", "extends", "contradicts"]
+              },
+              "complexity_level": {
+                "type": "string",
+                "description": "Complexity of implementation",
+                "enum": ["simple", "moderate", "complex"]
+              },
+              "scalability_considerations": {
+                "type": "string",
+                "description": "Scalability implications"
+              }
+            }
+          },
+          "principles_applied": {
+            "type": "array",
+            "description": "SOLID or other principles applied",
+            "items": {
+              "type": "string",
+              "enum": [
+                "single_responsibility",
+                "open_closed",
+                "liskov_substitution",
+                "interface_segregation",
+                "dependency_inversion",
+                "dry",
+                "kiss",
+                "yagni",
+                "composition_over_inheritance",
+                "law_of_demeter",
+                "other"
+              ]
+            }
+          },
+          "alternatives_considered": {
+            "type": "array",
+            "description": "Alternative patterns considered",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string"
+                },
+                "reason_rejected": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "outcome": {
+            "type": "object",
+            "description": "Outcome of using this pattern",
+            "properties": {
+              "successful": {
+                "type": "boolean"
+              },
+              "maintainability_impact": {
+                "type": "string",
+                "enum": ["improved", "neutral", "degraded"]
+              },
+              "code_reuse": {
+                "type": "string",
+                "description": "Impact on code reuse",
+                "enum": ["increased", "neutral", "decreased"]
+              },
+              "lessons_learned": {
+                "type": "string",
+                "description": "Key lessons from this implementation"
+              }
+            }
+          }
+        }
+      }
+    },
+    "patterns": {
+      "type": "object",
+      "description": "Learned patterns from historical decisions",
+      "properties": {
+        "codebase_fingerprints": {
+          "type": "object",
+          "description": "Fingerprint of existing patterns in codebase",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "pattern_name": {
+                "type": "string"
+              },
+              "usage_frequency": {
+                "type": "integer",
+                "description": "How often this pattern is used",
+                "minimum": 0
+              },
+              "consistency_score": {
+                "type": "number",
+                "description": "How consistently applied (0-1)",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "preferred_by_scenario": {
+          "type": "object",
+          "description": "Preferred patterns by scenario",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string"
+                },
+                "success_rate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            }
+          }
+        },
+        "anti_patterns": {
+          "type": "array",
+          "description": "Patterns to avoid based on negative outcomes",
+          "items": {
+            "type": "object",
+            "properties": {
+              "pattern": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "context": {
+                "type": "string",
+                "description": "Context where this should be avoided"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

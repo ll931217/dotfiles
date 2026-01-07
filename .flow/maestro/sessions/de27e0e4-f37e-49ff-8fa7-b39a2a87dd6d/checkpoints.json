@@ -1,0 +1,54 @@
+{
+  "session_id": "de27e0e4-f37e-49ff-8fa7-b39a2a87dd6d",
+  "generated_at": "2026-01-07T13:08:21.773328Z",
+  "checkpoints": [
+    {
+      "checkpoint_id": "1840a339-f316-4dc5-a117-b9225ab57197",
+      "commit_sha": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+      "timestamp": "2026-01-07T13:08:21.770535Z",
+      "description": "Planning phase completed",
+      "phase": "plan",
+      "checkpoint_type": "phase_complete",
+      "tags": [
+        "checkpoint-1840a339-f316-4dc5-a117-b9225ab57197"
+      ],
+      "rollback_used": false,
+      "rollback_count": 0
+    },
+    {
+      "checkpoint_id": "3b4f4c36-50a2-4acd-b8e4-f510a5ee2cb4",
+      "commit_sha": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+      "timestamp": "2026-01-07T13:08:21.784605Z",
+      "description": "Core implementation done",
+      "phase": "implement",
+      "checkpoint_type": "phase_complete",
+      "tags": [
+        "checkpoint-3b4f4c36-50a2-4acd-b8e4-f510a5ee2cb4"
+      ],
+      "rollback_used": false,
+      "rollback_count": 0
+    },
+    {
+      "checkpoint_id": "a3cfd77c-a878-40a7-95cf-dbc1206eff00",
+      "commit_sha": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+      "timestamp": "2026-01-07T13:08:21.800762Z",
+      "description": "Validation tests passing",
+      "phase": "validate",
+      "checkpoint_type": "safe_state",
+      "tags": [
+        "checkpoint-a3cfd77c-a878-40a7-95cf-dbc1206eff00"
+      ],
+      "rollback_used": false,
+      "rollback_count": 0
+    }
+  ],
+  "summary": {
+    "total_checkpoints": 3,
+    "checkpoints_by_type": {
+      "phase_complete": 2,
+      "safe_state": 1
+    },
+    "checkpoints_used_for_rollback": 0,
+    "latest_checkpoint": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7"
+  }
+}

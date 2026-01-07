@@ -1,0 +1,124 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-01-07T13:02:32.176853+00:00",
+  "decisions": [
+    {
+      "decision_id": "decision-001",
+      "timestamp": "2026-01-07T13:02:32.174218+00:00",
+      "category": "tech_stack",
+      "decision": "Use FastAPI for REST API backend",
+      "rationale": "Modern async framework with automatic OpenAPI generation, built-in validation, and excellent performance",
+      "phase": "plan",
+      "alternatives_considered": [
+        {
+          "option": "Flask",
+          "reason_rejected": "Requires additional libraries for async and validation"
+        },
+        {
+          "option": "Django REST Framework",
+          "reason_rejected": "Heavier weight than needed for this service"
+        }
+      ],
+      "context": {
+        "confidence": "high",
+        "sources": [
+          "FastAPI documentation",
+          "Benchmark comparisons"
+        ],
+        "choice": "FastAPI",
+        "category": "framework",
+        "ecosystem_maturity": "stable",
+        "community_size": "large"
+      },
+      "impact": {
+        "scope": "codebase",
+        "risk_level": "low",
+        "reversibility": "moderate"
+      },
+      "session_id": "b74b3cd6-52e4-48dd-8e53-a4308592659e"
+    },
+    {
+      "decision_id": "decision-002",
+      "timestamp": "2026-01-07T13:02:32.174385+00:00",
+      "category": "tech_stack",
+      "decision": "Use PostgreSQL as primary database",
+      "rationale": "ACID compliance required for transactions, complex query support needed, and existing team expertise",
+      "phase": "plan",
+      "alternatives_considered": [
+        {
+          "option": "MongoDB",
+          "reason_rejected": "Relational data model\u66f4\u9002\u5408"
+        },
+        {
+          "option": "MySQL",
+          "reason_rejected": "PostgreSQL has better JSON support and advanced features"
+        }
+      ],
+      "context": {
+        "confidence": "high",
+        "choice": "PostgreSQL",
+        "category": "database",
+        "performance_requirements": "High"
+      },
+      "impact": {
+        "scope": "codebase",
+        "risk_level": "medium",
+        "reversibility": "difficult"
+      },
+      "session_id": "b74b3cd6-52e4-48dd-8e53-a4308592659e"
+    },
+    {
+      "decision_id": "decision-001",
+      "timestamp": "2026-01-07T13:02:32.176120+00:00",
+      "category": "tech_stack",
+      "decision": "Use FastAPI with WebSocket support",
+      "rationale": "Native async support for real-time features",
+      "phase": "plan",
+      "alternatives_considered": [],
+      "context": {
+        "confidence": "high",
+        "choice": "FastAPI",
+        "category": "framework"
+      },
+      "impact": {},
+      "session_id": "54ad730a-48a1-4c80-8ed5-85dd71cbe458"
+    },
+    {
+      "decision_id": "decision-002",
+      "timestamp": "2026-01-07T13:02:32.176241+00:00",
+      "category": "tech_stack",
+      "decision": "Use Redis as message broker",
+      "rationale": "Fast pub/sub for real-time notifications",
+      "phase": "plan",
+      "alternatives_considered": [],
+      "context": {
+        "confidence": "high",
+        "choice": "Redis",
+        "category": "database"
+      },
+      "impact": {},
+      "session_id": "54ad730a-48a1-4c80-8ed5-85dd71cbe458"
+    }
+  ],
+  "patterns": {
+    "preferred_by_category": {
+      "tech_stack": {
+        "technology": "unknown",
+        "success_rate": 0.0,
+        "usage_count": 2
+      }
+    },
+    "avoid_list": [
+      {
+        "technology": "unknown",
+        "reason": "Low success rate (0.0%)",
+        "failure_count": 2
+      },
+      {
+        "technology": "unknown",
+        "reason": "Low success rate (0.0%)",
+        "failure_count": 4
+      }
+    ]
+  }
+}

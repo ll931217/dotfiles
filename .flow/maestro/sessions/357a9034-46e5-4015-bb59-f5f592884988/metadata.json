@@ -1,0 +1,34 @@
+{
+  "session_id": "357a9034-46e5-4015-bb59-f5f592884988",
+  "feature_request": "E-commerce checkout flow",
+  "status": "initializing",
+  "created_at": "2026-01-07T13:02:57.178434Z",
+  "updated_at": "2026-01-07T13:02:57.186605Z",
+  "git_context": {
+    "branch": "feat-orchestrate-flow",
+    "commit": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+    "repo_root": "/home/ll931217/GitHub/dotfiles.feat-orchestrate-flow",
+    "is_worktree": true,
+    "worktree_name": "worktrees"
+  },
+  "prd_reference": {
+    "filename": "prd-ecommerce-checkout.md",
+    "path": "/home/ll931217/GitHub/dotfiles.feat-orchestrate-flow/.flow/maestro/prd-ecommerce-checkout.md",
+    "version": "1.2.0"
+  },
+  "statistics": {
+    "total_tasks": 0,
+    "completed_tasks": 0,
+    "failed_tasks": 0,
+    "decisions_made": 0,
+    "checkpoints_created": 0,
+    "error_recovery_count": 0,
+    "duration_seconds": 0.0
+  },
+  "configuration": {
+    "max_iterations": 3,
+    "timeout_minutes": 120,
+    "auto_checkpoint": true,
+    "error_recovery_enabled": true
+  }
+}

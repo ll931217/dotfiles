@@ -1,0 +1,30 @@
+{
+  "session_id": "b61f10f7-e23c-4bf2-b982-d5fadda23ccc",
+  "feature_request": "Complex data processing pipeline",
+  "status": "failed",
+  "created_at": "2026-01-07T13:02:57.167692Z",
+  "updated_at": "2026-01-07T13:02:57.178021Z",
+  "completed_at": "2026-01-07T13:02:57.177883Z",
+  "git_context": {
+    "branch": "feat-orchestrate-flow",
+    "commit": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+    "repo_root": "/home/ll931217/GitHub/dotfiles.feat-orchestrate-flow",
+    "is_worktree": true,
+    "worktree_name": "worktrees"
+  },
+  "statistics": {
+    "total_tasks": 5,
+    "completed_tasks": 2,
+    "failed_tasks": 1,
+    "decisions_made": 0,
+    "checkpoints_created": 0,
+    "error_recovery_count": 3,
+    "duration_seconds": 0.0
+  },
+  "configuration": {
+    "max_iterations": 3,
+    "timeout_minutes": 120,
+    "auto_checkpoint": true,
+    "error_recovery_enabled": true
+  }
+}

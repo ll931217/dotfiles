@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://maestro.flow.dev/schemas/decisions.schema.json",
+  "title": "Maestro Decision Log",
+  "description": "Complete log of all decisions made during a Maestro session with rationale and context",
+  "type": "object",
+  "required": ["session_id", "decisions"],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Reference to session ID",
+      "format": "uuid"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "When this decision log was generated",
+      "format": "date-time"
+    },
+    "decisions": {
+      "type": "array",
+      "description": "List of all decisions made during the session",
+      "items": {
+        "type": "object",
+        "required": [
+          "decision_id",
+          "category",
+          "timestamp",
+          "decision",
+          "rationale"
+        ],
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "description": "Unique decision identifier (e.g., decision-001)"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "When the decision was made",
+            "format": "date-time"
+          },
+          "category": {
+            "type": "string",
+            "description": "Decision category",
+            "enum": [
+              "tech_stack",
+              "architecture",
+              "task_ordering",
+              "error_recovery",
+              "subagent_delegation",
+              "validation",
+              "checkpoint"
+            ]
+          },
+          "phase": {
+            "type": "string",
+            "description": "Execution phase when decision was made",
+            "enum": ["plan", "generate_tasks", "implement", "validate", "cleanup"]
+          },
+          "decision": {
+            "type": "string",
+            "description": "The decision that was made"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Explanation of why this decision was made"
+          },
+          "alternatives_considered": {
+            "type": "array",
+            "description": "Alternative options that were evaluated",
+            "items": {
+              "type": "object",
+              "properties": {
+                "option": {
+                  "type": "string",
+                  "description": "Alternative option description"
+                },
+                "reason_rejected": {
+                  "type": "string",
+                  "description": "Why this alternative was not chosen"
+                }
+              }
+            }
+          },
+          "context": {
+            "type": "object",
+            "description": "Additional context for the decision",
+            "properties": {
+              "sources": {
+                "type": "array",
+                "description": "Data sources used for decision",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "analysis_results": {
+                "type": "object",
+                "description": "Analysis results that informed the decision"
+              },
+              "confidence": {
+                "type": "string",
+                "description": "Confidence level in the decision",
+                "enum": ["high", "medium", "low"]
+              }
+            }
+          },
+          "impact": {
+            "type": "object",
+            "description": "Expected impact of this decision",
+            "properties": {
+              "scope": {
+                "type": "string",
+                "description": "Scope of impact",
+                "enum": ["task", "session", "codebase"]
+              },
+              "risk_level": {
+                "type": "string",
+                "description": "Risk level of this decision",
+                "enum": ["low", "medium", "high"]
+              },
+              "reversibility": {
+                "type": "string",
+                "description": "How reversible this decision is",
+                "enum": ["easy", "moderate", "difficult"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Summary statistics for decisions",
+      "properties": {
+        "total_decisions": {
+          "type": "integer",
+          "description": "Total number of decisions"
+        },
+        "decisions_by_category": {
+          "type": "object",
+          "description": "Breakdown by category",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "high_confidence_decisions": {
+          "type": "integer",
+          "description": "Number of high-confidence decisions"
+        },
+        "high_risk_decisions": {
+          "type": "integer",
+          "description": "Number of high-risk decisions"
+        }
+      }
+    }
+  }
+}

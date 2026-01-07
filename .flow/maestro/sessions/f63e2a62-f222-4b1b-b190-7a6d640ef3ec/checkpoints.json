@@ -1,0 +1,27 @@
+{
+  "session_id": "f63e2a62-f222-4b1b-b190-7a6d640ef3ec",
+  "generated_at": "2026-01-07T13:08:21.883905Z",
+  "checkpoints": [
+    {
+      "checkpoint_id": "1c339922-eb85-4b67-9e29-67000a7a8dce",
+      "commit_sha": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+      "timestamp": "2026-01-07T13:08:21.881556Z",
+      "description": "Recovery point after validation error",
+      "phase": "validate",
+      "checkpoint_type": "error_recovery",
+      "tags": [
+        "checkpoint-1c339922-eb85-4b67-9e29-67000a7a8dce"
+      ],
+      "rollback_used": false,
+      "rollback_count": 0
+    }
+  ],
+  "summary": {
+    "total_checkpoints": 1,
+    "checkpoints_by_type": {
+      "error_recovery": 1
+    },
+    "checkpoints_used_for_rollback": 0,
+    "latest_checkpoint": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7"
+  }
+}

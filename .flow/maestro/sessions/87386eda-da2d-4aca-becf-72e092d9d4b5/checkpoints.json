@@ -1,0 +1,27 @@
+{
+  "session_id": "87386eda-da2d-4aca-becf-72e092d9d4b5",
+  "generated_at": "2026-01-07T13:08:21.841645Z",
+  "checkpoints": [
+    {
+      "checkpoint_id": "5d43304c-230f-4796-971a-0c5cb78e2f70",
+      "commit_sha": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+      "timestamp": "2026-01-07T13:08:21.839245Z",
+      "description": "Before database migration",
+      "phase": "implement",
+      "checkpoint_type": "pre_risky_operation",
+      "tags": [
+        "checkpoint-5d43304c-230f-4796-971a-0c5cb78e2f70"
+      ],
+      "rollback_used": false,
+      "rollback_count": 0
+    }
+  ],
+  "summary": {
+    "total_checkpoints": 1,
+    "checkpoints_by_type": {
+      "pre_risky_operation": 1
+    },
+    "checkpoints_used_for_rollback": 0,
+    "latest_checkpoint": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7"
+  }
+}

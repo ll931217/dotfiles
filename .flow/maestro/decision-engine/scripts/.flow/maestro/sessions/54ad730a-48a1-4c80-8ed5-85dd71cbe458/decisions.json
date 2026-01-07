@@ -1,0 +1,59 @@
+{
+  "session_id": "54ad730a-48a1-4c80-8ed5-85dd71cbe458",
+  "generated_at": "2026-01-07T13:02:32.176080+00:00",
+  "decisions": [
+    {
+      "decision_id": "decision-001",
+      "timestamp": "2026-01-07T13:02:32.176120+00:00",
+      "category": "tech_stack",
+      "decision": "Use FastAPI with WebSocket support",
+      "rationale": "Native async support for real-time features",
+      "phase": "plan",
+      "alternatives_considered": [],
+      "context": {
+        "confidence": "high",
+        "choice": "FastAPI",
+        "category": "framework"
+      },
+      "impact": {}
+    },
+    {
+      "decision_id": "decision-002",
+      "timestamp": "2026-01-07T13:02:32.176241+00:00",
+      "category": "tech_stack",
+      "decision": "Use Redis as message broker",
+      "rationale": "Fast pub/sub for real-time notifications",
+      "phase": "plan",
+      "alternatives_considered": [],
+      "context": {
+        "confidence": "high",
+        "choice": "Redis",
+        "category": "database"
+      },
+      "impact": {}
+    },
+    {
+      "decision_id": "decision-003",
+      "timestamp": "2026-01-07T13:02:32.176379+00:00",
+      "category": "architecture",
+      "decision": "Event-driven architecture with pub/sub",
+      "rationale": "Scales well for notification distribution",
+      "phase": "plan",
+      "alternatives_considered": [],
+      "context": {
+        "confidence": "medium",
+        "complexity_level": "moderate"
+      },
+      "impact": {}
+    }
+  ],
+  "summary": {
+    "total_decisions": 3,
+    "decisions_by_category": {
+      "tech_stack": 2,
+      "architecture": 1
+    },
+    "high_confidence_decisions": 2,
+    "high_risk_decisions": 0
+  }
+}

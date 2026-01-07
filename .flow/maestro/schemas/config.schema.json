@@ -1,0 +1,364 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://maestro.flow.dev/schemas/config.schema.json",
+  "title": "Maestro Configuration Schema",
+  "description": "Configuration schema for Maestro orchestrator (YAML format)",
+  "type": "object",
+  "required": ["version", "execution", "decision_engine"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "execution": {
+      "type": "object",
+      "description": "Execution configuration",
+      "properties": {
+        "max_iterations": {
+          "type": "integer",
+          "description": "Maximum refinement iterations",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10
+        },
+        "timeout_minutes": {
+          "type": "integer",
+          "description": "Session timeout in minutes",
+          "default": 120,
+          "minimum": 5,
+          "maximum": 480
+        },
+        "auto_checkpoint": {
+          "type": "boolean",
+          "description": "Automatically create checkpoints at safe points",
+          "default": true
+        },
+        "checkpoint_interval": {
+          "type": "string",
+          "description": "When to create checkpoints",
+          "enum": ["phase_complete", "task_group_complete", "every_task", "manual"],
+          "default": "task_group_complete"
+        },
+        "parallel_execution": {
+          "type": "boolean",
+          "description": "Enable parallel task execution",
+          "default": true
+        },
+        "max_parallel_tasks": {
+          "type": "integer",
+          "description": "Maximum parallel tasks",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20
+        },
+        "error_recovery_enabled": {
+          "type": "boolean",
+          "description": "Enable automatic error recovery",
+          "default": true
+        },
+        "pause_on_error": {
+          "type": "boolean",
+          "description": "Pause and ask for help on unrecoverable errors",
+          "default": true
+        },
+        "continuation_mode": {
+          "type": "string",
+          "description": "Behavior after pause",
+          "enum": ["resume_automatic", "resume_manual", "terminate"],
+          "default": "resume_manual"
+        }
+      }
+    },
+    "decision_engine": {
+      "type": "object",
+      "description": "Decision engine configuration",
+      "properties": {
+        "tech_stack_selection": {
+          "type": "object",
+          "description": "Technology stack selection strategy",
+          "properties": {
+            "sources": {
+              "type": "array",
+              "description": "Data sources for tech decisions",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "existing_dependencies",
+                  "codebase_patterns",
+                  "ecosystem_maturity",
+                  "performance_benchmarks"
+                ]
+              },
+              "default": ["existing_dependencies", "codebase_patterns"]
+            },
+            "strategy": {
+              "type": "string",
+              "description": "Selection strategy",
+              "enum": [
+                "prefer_existing",
+                "mature_new",
+                "experimental",
+                "balanced"
+              ],
+              "default": "prefer_existing"
+            },
+            "require_confidence": {
+              "type": "string",
+              "description": "Minimum confidence level",
+              "enum": ["high", "medium", "low"],
+              "default": "high"
+            }
+          }
+        },
+        "architecture_patterns": {
+          "type": "object",
+          "description": "Architecture pattern selection",
+          "properties": {
+            "sources": {
+              "type": "array",
+              "description": "Data sources for architecture decisions",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "codebase_analysis",
+                  "complexity_assessment",
+                  "scalability_requirements"
+                ]
+              },
+              "default": ["codebase_analysis"]
+            },
+            "strategy": {
+              "type": "string",
+              "description": "Selection strategy",
+              "enum": [
+                "match_existing",
+                "appropriate_new",
+                "minimal",
+                "balanced"
+              ],
+              "default": "match_existing"
+            },
+            "principle_adherence": {
+              "type": "number",
+              "description": "Importance of SOLID/clean code principles (0-1)",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.8
+            }
+          }
+        },
+        "task_ordering": {
+          "type": "object",
+          "description": "Task ordering strategy",
+          "properties": {
+            "sources": {
+              "type": "array",
+              "description": "Data sources for task ordering",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "dependency_analysis",
+                  "risk_assessment",
+                  "parallelization_opportunity"
+                ]
+              },
+              "default": ["dependency_analysis", "risk_assessment"]
+            },
+            "strategy": {
+              "type": "string",
+              "description": "Ordering strategy",
+              "enum": [
+                "foundational_first",
+                "risk_early",
+                "parallel_maximization",
+                "hybrid"
+              ],
+              "default": "foundational_first"
+            },
+            "max_group_size": {
+              "type": "integer",
+              "description": "Maximum tasks in a parallel group",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 5
+            }
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Validation and quality gates",
+      "properties": {
+        "test_suite": {
+          "type": "boolean",
+          "description": "Run test suite",
+          "default": true
+        },
+        "test_coverage_threshold": {
+          "type": "number",
+          "description": "Minimum test coverage (0-100)",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 80
+        },
+        "prd_validation": {
+          "type": "boolean",
+          "description": "Validate PRD requirements",
+          "default": true
+        },
+        "linting": {
+          "type": "boolean",
+          "description": "Run linting",
+          "default": true
+        },
+        "type_checking": {
+          "type": "boolean",
+          "description": "Run type checking",
+          "default": true
+        },
+        "security_scan": {
+          "type": "boolean",
+          "description": "Run security audit",
+          "default": true
+        },
+        "fail_on_error": {
+          "type": "boolean",
+          "description": "Fail validation on any error",
+          "default": false
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "description": "Logging configuration",
+      "properties": {
+        "level": {
+          "type": "string",
+          "description": "Log level",
+          "enum": ["minimal", "normal", "verbose", "debug"],
+          "default": "normal"
+        },
+        "include_rationale": {
+          "type": "boolean",
+          "description": "Include decision rationale in logs",
+          "default": true
+        },
+        "log_file": {
+          "type": "string",
+          "description": "Log file path (relative to session directory)",
+          "default": "execution-log.md"
+        },
+        "realtime_output": {
+          "type": "boolean",
+          "description": "Output logs in real-time",
+          "default": true
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "description": "State persistence configuration",
+      "properties": {
+        "state_directory": {
+          "type": "string",
+          "description": "Directory for state files",
+          "default": ".flow/maestro"
+        },
+        "auto_save": {
+          "type": "boolean",
+          "description": "Automatically save state",
+          "default": true
+        },
+        "save_interval": {
+          "type": "string",
+          "description": "When to save state",
+          "enum": ["every_decision", "every_task", "phase_complete"],
+          "default": "every_decision"
+        },
+        "compress_old_sessions": {
+          "type": "boolean",
+          "description": "Compress sessions older than 30 days",
+          "default": false
+        },
+        "retention_days": {
+          "type": "integer",
+          "description": "Days to keep session data",
+          "minimum": 1,
+          "default": 90
+        }
+      }
+    },
+    "subagents": {
+      "type": "object",
+      "description": "Subagent configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable subagent delegation",
+          "default": true
+        },
+        "auto_select": {
+          "type": "boolean",
+          "description": "Automatically select subagent based on task",
+          "default": true
+        },
+        "mapping": {
+          "type": "object",
+          "description": "Task category to subagent mapping",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "subagent": {
+                "type": "string",
+                "description": "Subagent name"
+              },
+              "skills": {
+                "type": "array",
+                "description": "Skills to invoke",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "triggers": {
+                "type": "array",
+                "description": "Keywords that trigger this subagent",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reporting": {
+      "type": "object",
+      "description": "Report generation configuration",
+      "properties": {
+        "generate_report": {
+          "type": "boolean",
+          "description": "Generate final report",
+          "default": true
+        },
+        "include_diffs": {
+          "type": "boolean",
+          "description": "Include code diffs in report",
+          "default": false
+        },
+        "include_test_results": {
+          "type": "boolean",
+          "description": "Include test results in report",
+          "default": true
+        },
+        "format": {
+          "type": "string",
+          "description": "Report format",
+          "enum": ["markdown", "json", "both"],
+          "default": "markdown"
+        }
+      }
+    }
+  }
+}

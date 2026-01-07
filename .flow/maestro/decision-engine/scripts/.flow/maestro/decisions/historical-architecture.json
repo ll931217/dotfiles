@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-01-07T13:02:32.177070+00:00",
+  "decisions": [
+    {
+      "decision_id": "decision-003",
+      "timestamp": "2026-01-07T13:02:32.174585+00:00",
+      "category": "architecture",
+      "decision": "Implement Repository pattern for data access",
+      "rationale": "Separates business logic from data access logic, makes testing easier, and provides flexibility for data sources",
+      "phase": "plan",
+      "alternatives_considered": [
+        {
+          "option": "Active Record pattern",
+          "reason_rejected": "Tight coupling between domain and data models"
+        },
+        {
+          "option": "Data Mapper pattern",
+          "reason_rejected": "Additional complexity not needed at this stage"
+        }
+      ],
+      "context": {
+        "confidence": "high",
+        "existing_patterns": true,
+        "consistency_with_codebase": "matches",
+        "complexity_level": "moderate"
+      },
+      "impact": {
+        "scope": "codebase",
+        "risk_level": "low",
+        "reversibility": "moderate"
+      },
+      "session_id": "b74b3cd6-52e4-48dd-8e53-a4308592659e"
+    },
+    {
+      "decision_id": "decision-003",
+      "timestamp": "2026-01-07T13:02:32.176379+00:00",
+      "category": "architecture",
+      "decision": "Event-driven architecture with pub/sub",
+      "rationale": "Scales well for notification distribution",
+      "phase": "plan",
+      "alternatives_considered": [],
+      "context": {
+        "confidence": "medium",
+        "complexity_level": "moderate"
+      },
+      "impact": {},
+      "session_id": "54ad730a-48a1-4c80-8ed5-85dd71cbe458"
+    }
+  ],
+  "patterns": {
+    "codebase_fingerprints": {
+      "unknown": {
+        "pattern_name": "unknown",
+        "usage_frequency": 3,
+        "consistency_score": 1.0
+      }
+    },
+    "preferred_by_scenario": {},
+    "anti_patterns": [
+      {
+        "pattern": "unknown",
+        "reason": "Failed in practice",
+        "context": ""
+      },
+      {
+        "pattern": "unknown",
+        "reason": "Failed in practice",
+        "context": ""
+      },
+      {
+        "pattern": "unknown",
+        "reason": "Failed in practice",
+        "context": ""
+      }
+    ]
+  }
+}

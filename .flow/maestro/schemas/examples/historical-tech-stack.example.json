@@ -1,0 +1,141 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-01-07T10:47:23Z",
+  "decisions": [
+    {
+      "decision_id": "tech-001",
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "timestamp": "2026-01-07T10:05:12Z",
+      "category": "library",
+      "choice": "Passport.js",
+      "version": "^0.7.0",
+      "rationale": "Already a dependency, excellent OAuth support, widely adopted",
+      "decision_factors": {
+        "existing_dependency": true,
+        "codebase_patterns": true,
+        "ecosystem_maturity": "mature",
+        "community_size": "large",
+        "performance_requirements": "Standard web app requirements",
+        "scalability_requirements": "Horizontal scaling via session store"
+      },
+      "alternatives": [
+        "Manual OAuth implementation",
+        "Auth0 SDK"
+      ],
+      "outcome": {
+        "successful": true,
+        "issues": [],
+        "would_choose_again": true
+      },
+      "context": {
+        "feature_description": "OAuth authentication",
+        "project_type": "Node.js web application",
+        "constraints": [
+          "Must support Google OAuth",
+          "Must integrate with existing Express app"
+        ]
+      }
+    },
+    {
+      "decision_id": "tech-002",
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "timestamp": "2026-01-07T10:05:45Z",
+      "category": "database",
+      "choice": "PostgreSQL with connect-pg-simple",
+      "version": "7.0",
+      "rationale": "Reuses existing database infrastructure, mature session store",
+      "decision_factors": {
+        "existing_dependency": true,
+        "codebase_patterns": true,
+        "ecosystem_maturity": "mature",
+        "community_size": "large"
+      },
+      "alternatives": [
+        "Redis",
+        "In-memory sessions"
+      ],
+      "outcome": {
+        "successful": true,
+        "issues": [],
+        "would_choose_again": true
+      },
+      "context": {
+        "feature_description": "Session storage for OAuth",
+        "project_type": "Node.js web application",
+        "constraints": [
+          "Must work with existing PostgreSQL",
+          "Must support multiple processes"
+        ]
+      }
+    },
+    {
+      "decision_id": "tech-003",
+      "session_id": "440e8400-e29b-41d4-a716-446655440001",
+      "timestamp": "2026-01-06T14:22:30Z",
+      "category": "framework",
+      "choice": "React",
+      "version": "18.2.0",
+      "rationale": "Existing framework in project, component-based architecture",
+      "decision_factors": {
+        "existing_dependency": true,
+        "codebase_patterns": true,
+        "ecosystem_maturity": "mature",
+        "community_size": "large"
+      },
+      "alternatives": [
+        "Vue.js",
+        "Svelte"
+      ],
+      "outcome": {
+        "successful": true,
+        "issues": [
+          "Required careful state management for complex forms"
+        ],
+        "would_choose_again": true
+      },
+      "context": {
+        "feature_description": "User profile management UI",
+        "project_type": "Single-page application",
+        "constraints": [
+          "Must integrate with existing React app"
+        ]
+      }
+    }
+  ],
+  "patterns": {
+    "preferred_by_category": {
+      "library": {
+        "technology": "Passport.js",
+        "success_rate": 1.0,
+        "usage_count": 5
+      },
+      "database": {
+        "technology": "PostgreSQL",
+        "success_rate": 0.95,
+        "usage_count": 12
+      },
+      "framework": {
+        "technology": "React",
+        "success_rate": 0.92,
+        "usage_count": 8
+      },
+      "testing_framework": {
+        "technology": "Jest",
+        "success_rate": 0.98,
+        "usage_count": 15
+      }
+    },
+    "avoid_list": [
+      {
+        "technology": "Custom authentication implementation",
+        "reason": "High maintenance burden, security risks",
+        "failure_count": 3
+      },
+      {
+        "technology": "In-memory session storage",
+        "reason": "Does not scale for production with multiple processes",
+        "failure_count": 2
+      }
+    ]
+  }
+}

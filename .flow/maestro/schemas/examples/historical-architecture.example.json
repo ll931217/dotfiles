@@ -1,0 +1,188 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-01-07T10:47:23Z",
+  "decisions": [
+    {
+      "decision_id": "arch-001",
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "timestamp": "2026-01-07T10:08:23Z",
+      "pattern_type": "architectural",
+      "pattern_name": "Middleware-based Authentication",
+      "description": "Authentication logic implemented as Express middleware chain for flexible route-level auth control",
+      "rationale": "Matches existing authentication patterns, allows composability, consistent with Express best practices",
+      "implementation_location": {
+        "files": [
+          "src/middleware/passport.ts",
+          "src/middleware/auth.ts",
+          "src/routes/auth.ts"
+        ],
+        "modules": ["authentication", "routes"]
+      },
+      "context": {
+        "existing_patterns": true,
+        "consistency_with_codebase": "matches",
+        "complexity_level": "moderate",
+        "scalability_considerations": "Middleware scales well, supports route-level variations"
+      },
+      "principles_applied": [
+        "single_responsibility",
+        "open_closed",
+        "dependency_inversion"
+      ],
+      "alternatives_considered": [
+        {
+          "pattern": "Controller-based auth",
+          "reason_rejected": "Would require refactoring existing patterns, less flexible"
+        }
+      ],
+      "outcome": {
+        "successful": true,
+        "maintainability_impact": "improved",
+        "code_reuse": "increased",
+        "lessons_learned": "Middleware composition provides excellent flexibility for different auth requirements across routes"
+      }
+    },
+    {
+      "decision_id": "arch-002",
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "timestamp": "2026-01-07T10:15:40Z",
+      "pattern_type": "creational",
+      "pattern_name": "Factory Pattern - Strategy Configuration",
+      "description": "OAuth strategies configured through factory functions for easy provider addition",
+      "rationale": "Open/Closed principle - new providers can be added without modifying existing code",
+      "implementation_location": {
+        "files": ["src/services/oauth-strategy-factory.ts"],
+        "modules": ["authentication"]
+      },
+      "context": {
+        "existing_patterns": false,
+        "consistency_with_codebase": "extends",
+        "complexity_level": "simple",
+        "scalability_considerations": "Adding new OAuth providers is trivial"
+      },
+      "principles_applied": [
+        "open_closed",
+        "dependency_inversion"
+      ],
+      "alternatives_considered": [
+        {
+          "pattern": "Direct configuration",
+          "reason_rejected": "Would require modifying code for each new provider"
+        }
+      ],
+      "outcome": {
+        "successful": true,
+        "maintainability_impact": "improved",
+        "code_reuse": "increased",
+        "lessons_learned": "Factory pattern ideal for multi-provider scenarios"
+      }
+    },
+    {
+      "decision_id": "arch-003",
+      "session_id": "440e8400-e29b-41d4-a716-446655440001",
+      "timestamp": "2026-01-06T15:30:00Z",
+      "pattern_type": "design_principle",
+      "pattern_name": "React Context Provider Pattern",
+      "description": "Global auth state managed through React Context with custom hooks for component access",
+      "rationale": "Prop drilling would be complex for auth state, Context provides clean API for components",
+      "implementation_location": {
+        "files": [
+          "src/contexts/AuthContext.tsx",
+          "src/hooks/useAuth.ts"
+        ],
+        "modules": ["frontend", "authentication"]
+      },
+      "context": {
+        "existing_patterns": true,
+        "consistency_with_codebase": "matches",
+        "complexity_level": "simple",
+        "scalability_considerations": "Scales well for moderate component depth"
+      },
+      "principles_applied": [
+        "single_responsibility",
+        "composition_over_inheritance"
+      ],
+      "alternatives_considered": [
+        {
+          "pattern": "State management library (Redux)",
+          "reason_rejected": "Overkill for auth state only, adds unnecessary complexity"
+        }
+      ],
+      "outcome": {
+        "successful": true,
+        "maintainability_impact": "improved",
+        "code_reuse": "increased",
+        "lessons_learned": "Context is ideal for cross-cutting concerns like authentication"
+      }
+    }
+  ],
+  "patterns": {
+    "codebase_fingerprints": {
+      "middleware_composition": {
+        "pattern_name": "Express Middleware Chain",
+        "usage_frequency": 15,
+        "consistency_score": 0.95
+      },
+      "context_provider": {
+        "pattern_name": "React Context for Global State",
+        "usage_frequency": 8,
+        "consistency_score": 0.92
+      },
+      "factory_pattern": {
+        "pattern_name": "Factory for Strategy Selection",
+        "usage_frequency": 5,
+        "consistency_score": 0.88
+      },
+      "repository_pattern": {
+        "pattern_name": "Repository for Data Access",
+        "usage_frequency": 12,
+        "consistency_score": 0.90
+      }
+    },
+    "preferred_by_scenario": {
+      "authentication": [
+        {
+          "pattern": "Middleware-based authentication",
+          "success_rate": 0.98
+        },
+        {
+          "pattern": "Strategy pattern for multi-provider",
+          "success_rate": 0.95
+        }
+      ],
+      "data_access": [
+        {
+          "pattern": "Repository pattern with dependency injection",
+          "success_rate": 0.94
+        }
+      ],
+      "frontend_state": [
+        {
+          "pattern": "React Context for global state",
+          "success_rate": 0.92
+        },
+        {
+          "pattern": "Local state for component-specific",
+          "success_rate": 0.96
+        }
+      ]
+    },
+    "anti_patterns": [
+      {
+        "pattern": "Prop drilling for global state",
+        "reason": "Difficult to maintain, tightly couples components",
+        "context": "More than 2-3 component levels"
+      },
+      {
+        "pattern": "God classes handling multiple concerns",
+        "reason": "Violates SRP, difficult to test and maintain",
+        "context": "Any scenario"
+      },
+      {
+        "pattern": "Tight coupling to concrete implementations",
+        "reason": "Makes testing and modification difficult",
+        "context": "Service layers, data access"
+      }
+    ]
+  }
+}

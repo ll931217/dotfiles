@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://maestro.flow.dev/schemas/checkpoints.schema.json",
+  "title": "Maestro Checkpoint Tracking",
+  "description": "Git commit checkpoints created during Maestro session for rollback capability",
+  "type": "object",
+  "required": ["session_id", "checkpoints"],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Reference to session ID",
+      "format": "uuid"
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "When this checkpoint log was generated",
+      "format": "date-time"
+    },
+    "checkpoints": {
+      "type": "array",
+      "description": "List of all git checkpoints created",
+      "items": {
+        "type": "object",
+        "required": [
+          "checkpoint_id",
+          "commit_sha",
+          "timestamp",
+          "description",
+          "phase"
+        ],
+        "properties": {
+          "checkpoint_id": {
+            "type": "string",
+            "description": "Checkpoint identifier"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "When checkpoint was created",
+            "format": "date-time"
+          },
+          "commit_sha": {
+            "type": "string",
+            "description": "Git commit SHA",
+            "pattern": "^[0-9a-f]{7,40}$"
+          },
+          "commit_message": {
+            "type": "string",
+            "description": "Git commit message"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of checkpoint state"
+          },
+          "phase": {
+            "type": "string",
+            "description": "Execution phase when checkpoint was created",
+            "enum": ["plan", "generate_tasks", "implement", "validate", "cleanup"]
+          },
+          "checkpoint_type": {
+            "type": "string",
+            "description": "Type of checkpoint",
+            "enum": [
+              "phase_complete",
+              "task_group_complete",
+              "safe_state",
+              "pre_risky_operation",
+              "error_recovery",
+              "manual"
+            ]
+          },
+          "state_snapshot": {
+            "type": "object",
+            "description": "Snapshot of session state at checkpoint",
+            "properties": {
+              "tasks_completed": {
+                "type": "integer",
+                "description": "Number of tasks completed at checkpoint"
+              },
+              "decisions_made": {
+                "type": "integer",
+                "description": "Number of decisions made at checkpoint"
+              },
+              "files_modified": {
+                "type": "integer",
+                "description": "Number of files modified at checkpoint"
+              },
+              "files_created": {
+                "type": "integer",
+                "description": "Number of files created at checkpoint"
+              },
+              "tests_passing": {
+                "type": "integer",
+                "description": "Number of passing tests at checkpoint"
+              },
+              "tests_failing": {
+                "type": "integer",
+                "description": "Number of failing tests at checkpoint"
+              }
+            }
+          },
+          "tags": {
+            "type": "array",
+            "description": "Git tags associated with checkpoint",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rollback_used": {
+            "type": "boolean",
+            "description": "Whether this checkpoint was used for rollback"
+          },
+          "rollback_count": {
+            "type": "integer",
+            "description": "Number of times this checkpoint was used for rollback",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Checkpoint summary statistics",
+      "properties": {
+        "total_checkpoints": {
+          "type": "integer",
+          "description": "Total number of checkpoints created"
+        },
+        "checkpoints_by_type": {
+          "type": "object",
+          "description": "Breakdown by checkpoint type",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "checkpoints_used_for_rollback": {
+          "type": "integer",
+          "description": "Number of checkpoints used for rollback"
+        },
+        "latest_checkpoint": {
+          "type": "string",
+          "description": "SHA of latest checkpoint"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "session_id": "test-cli-session",
+  "generated_at": "2026-01-07T13:09:42.582453Z",
+  "checkpoints": [
+    {
+      "checkpoint_id": "cp-1767762582",
+      "timestamp": "2026-01-07T13:09:42.582351Z",
+      "commit_sha": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7",
+      "commit_message": "added last-tpuch to gitignore",
+      "description": "Test checkpoint via CLI",
+      "phase": "implement",
+      "checkpoint_type": "manual",
+      "state_snapshot": {},
+      "tags": [],
+      "rollback_used": false,
+      "rollback_count": 0
+    }
+  ],
+  "summary": {
+    "total_checkpoints": 1,
+    "checkpoints_by_type": {
+      "manual": 1
+    },
+    "checkpoints_used_for_rollback": 0,
+    "latest_checkpoint": "b9dc8fd35ba862a6b43a7fb1f681f09eba00b4d7"
+  }
+}

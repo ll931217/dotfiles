@@ -4,6 +4,12 @@ A comprehensive workflow system for managing Product Requirements Documents (PRD
 
 ## Quick Start
 
+**Autonomous Mode (Recommended):**
+```
+/flow:autonomous "Implement user authentication"    # End-to-end autonomous implementation
+```
+
+**Manual Mode:**
 ```
 1. Plan your feature    → /flow:plan       (Generate PRD from requirements)
 2. Generate tasks       → /flow:generate-tasks  (Create implementation tasks)
@@ -56,6 +62,7 @@ Iteration: implemented ──(new changes)──> draft
 
 | Command | Purpose | PRD Status Required | Output |
 |---------|---------|---------------------|--------|
+| `/flow:autonomous` | **End-to-end autonomous implementation** | N/A | Complete feature |
 | `/flow:plan` | Create/update PRD | Any | PRD markdown file |
 | `/flow:generate-tasks` | Generate tasks | `approved` | Epics + sub-tasks |
 | `/flow:implement` | Execute tasks with skills | `approved` → `implementing` | Code + commits |
@@ -68,7 +75,8 @@ Iteration: implemented ──(new changes)──> draft
 
 | Goal | Command |
 |------|---------|
-| Start a new feature | `/flow:plan` |
+| **Implement feature autonomously** | `/flow:autonomous "feature description"` |
+| Start a new feature manually | `/flow:plan` |
 | Break down work into tasks | `/flow:generate-tasks` |
 | Start implementing | `/flow:implement` |
 | Check what's left to do | `/flow:summary` |
@@ -125,6 +133,7 @@ The flow system is organized into modular components:
 ```
 flow/
 ├── README.md (this file)
+├── autonomous.md        # Maestro autonomous orchestrator
 ├── plan.md              # PRD generation workflow
 ├── generate-tasks.md    # Task generation from PRD
 ├── implement.md         # Task execution workflow
@@ -143,6 +152,36 @@ flow/
         ├── session-implement.md
         └── testing-strategies.md
 ```
+
+### Maestro Orchestrator
+
+`/flow:autonomous` is the autonomous orchestrator that combines all flow commands into a single end-to-end workflow:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Maestro Core                          │
+│  - Session lifecycle management                              │
+│  - Phase orchestration                                       │
+│  - Iterative refinement loop                                 │
+└─────────────────────────────────────────────────────────────┘
+           │                    │                    │
+           ▼                    ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│ Decision Engine  │  │ State Manager    │  │ Error Handler    │
+│ - Tech stack     │  │ - Session track  │  │ - Recovery       │
+│ - Architecture   │  │ - Decision log   │  │ - Checkpoints    │
+│ - Task ordering  │  │ - Persistence    │  │ - Fallback       │
+└──────────────────┘  └──────────────────┘  └──────────────────┘
+```
+
+**Key capabilities:**
+- End-to-end autonomy (no human intervention required)
+- Autonomous technical decision-making (tech stack, architecture, task ordering)
+- Smart error recovery with rollback capability
+- Full transparency and logging
+- Quality gates and validation
+
+See `autonomous.md` for complete Maestro documentation.
 
 ## Optional Tools
 

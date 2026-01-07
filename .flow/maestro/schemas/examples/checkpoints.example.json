@@ -1,0 +1,61 @@
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "generated_at": "2026-01-07T10:47:23Z",
+  "checkpoints": [
+    {
+      "checkpoint_id": "checkpoint-001",
+      "timestamp": "2026-01-07T10:28:15Z",
+      "commit_sha": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b",
+      "commit_message": "feat(maestro): OAuth authentication backend implementation",
+      "description": "Backend OAuth implementation complete with database schema, API routes, and middleware. All unit and integration tests passing.",
+      "phase": "implement",
+      "checkpoint_type": "task_group_complete",
+      "state_snapshot": {
+        "tasks_completed": 7,
+        "decisions_made": 5,
+        "files_modified": 3,
+        "files_created": 2,
+        "tests_passing": 89,
+        "tests_failing": 0
+      },
+      "tags": [
+        "maestro-checkpoint-1",
+        "oauth-backend"
+      ],
+      "rollback_used": false,
+      "rollback_count": 0
+    },
+    {
+      "checkpoint_id": "checkpoint-002",
+      "timestamp": "2026-01-07T10:45:30Z",
+      "commit_sha": "9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e",
+      "commit_message": "feat(maestro): OAuth authentication complete with frontend integration",
+      "description": "Complete OAuth implementation including frontend UI, React Context integration, and end-to-end testing. All quality gates passed.",
+      "phase": "implement",
+      "checkpoint_type": "phase_complete",
+      "state_snapshot": {
+        "tasks_completed": 12,
+        "decisions_made": 8,
+        "files_modified": 8,
+        "files_created": 5,
+        "tests_passing": 127,
+        "tests_failing": 0
+      },
+      "tags": [
+        "maestro-checkpoint-2",
+        "oauth-complete"
+      ],
+      "rollback_used": false,
+      "rollback_count": 0
+    }
+  ],
+  "summary": {
+    "total_checkpoints": 2,
+    "checkpoints_by_type": {
+      "task_group_complete": 1,
+      "phase_complete": 1
+    },
+    "checkpoints_used_for_rollback": 0,
+    "latest_checkpoint": "9s8r7q6o5p4n3m2l1k0j9i8h7g6f5e4d3c2b1a0z"
+  }
+}
