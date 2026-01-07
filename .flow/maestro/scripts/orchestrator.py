@@ -31,10 +31,10 @@ scripts_dir = maestro_root / "scripts"
 sys.path.insert(0, str(scripts_dir))
 
 try:
-    from session_manager import SessionManager, SessionState
-    from decision_logger import DecisionLogger, DecisionCategory
+    from session_manager import SessionManager, SessionStatus
+    from decision_logger import DecisionLogger
     from error_handler import ErrorHandler, ErrorCategory
-    from checkpoint_manager import CheckpointManager, CheckpointType
+    from checkpoint_manager import CheckpointManager, CheckpointType, CheckpointPhase, StateSnapshot
     from subagent_factory import SubagentFactory
     from skill_orchestrator import SkillOrchestrator
     from parallel_coordinator import ParallelCoordinator
@@ -75,7 +75,7 @@ class MaestroOrchestrator:
         self.decision_logger = DecisionLogger(self.project_root)
         self.error_handler = ErrorHandler(self.project_root)
         self.checkpoint_manager = CheckpointManager(self.project_root)
-        self.subagent_factory = SubagentFactory(self.project_root)
+        self.subagent_factory = SubagentFactory()
         self.skill_orchestrator = SkillOrchestrator(self.project_root)
         self.parallel_coordinator = ParallelCoordinator(self.project_root)
 
@@ -182,27 +182,26 @@ class MaestroOrchestrator:
         else:
             # Create new session
             self.session_id = str(uuid.uuid4())
-            self.logger.info(f"Starting new session: {self.session_id}")
+            self.logger.info(f"Starting new session")
 
             # Initialize session
             session = self.session_manager.create_session(
-                session_id=self.session_id,
                 feature_request=feature_request,
             )
+            self.session_id = session.session_id
 
         try:
             # Create initial checkpoint
             initial_checkpoint = self.checkpoint_manager.create_checkpoint(
                 session_id=self.session_id,
+                phase=CheckpointPhase.PLAN,
                 checkpoint_type=CheckpointType.PRE_RISKY_OPERATION,
                 description="Initial checkpoint before autonomous implementation",
-                state_snapshot={
-                    "phase": "initialization",
-                    "tasks_completed": 0,
-                    "git_branch": self._get_git_branch(),
-                }
+                state_snapshot=StateSnapshot(
+                    tasks_completed=0,
+                )
             )
-            self.logger.info(f"Initial checkpoint: {initial_checkpoint['commit_sha'][:8]}")
+            self.logger.info(f"Initial checkpoint: {initial_checkpoint.commit_sha[:8]}")
 
             # Execute workflow phases
             result = self._execute_workflow_phases(feature_request)
@@ -213,7 +212,7 @@ class MaestroOrchestrator:
             # Update session to completed
             self.session_manager.transition_state(
                 session_id=self.session_id,
-                new_state=SessionState.COMPLETED,
+                new_state=SessionStatus.COMPLETED,
             )
 
             return {
@@ -227,7 +226,7 @@ class MaestroOrchestrator:
             self.logger.error(f"Workflow failed: {e}")
             self.session_manager.transition_state(
                 session_id=self.session_id,
-                new_state=SessionState.FAILED,
+                new_state=SessionStatus.FAILED,
             )
             raise
 
@@ -288,7 +287,7 @@ class MaestroOrchestrator:
         # Update session state
         self.session_manager.transition_state(
             session_id=self.session_id,
-            new_state=SessionState.PLANNING,
+            new_state=SessionStatus.PLANNING,
         )
 
         # TODO: Invoke /flow:plan in autonomous mode
@@ -318,7 +317,7 @@ class MaestroOrchestrator:
         # Update session state
         self.session_manager.transition_state(
             session_id=self.session_id,
-            new_state=SessionState.GENERATING_TASKS,
+            new_state=SessionStatus.GENERATING_TASKS,
         )
 
         # TODO: Invoke /flow:generate-tasks with decision engine
@@ -347,7 +346,7 @@ class MaestroOrchestrator:
         # Update session state
         self.session_manager.transition_state(
             session_id=self.session_id,
-            new_state=SessionState.IMPLEMENTING,
+            new_state=SessionStatus.IMPLEMENTING,
         )
 
         # TODO: Execute tasks with parallel coordinator
@@ -358,16 +357,16 @@ class MaestroOrchestrator:
         # Create checkpoint after implementation
         checkpoint = self.checkpoint_manager.create_checkpoint(
             session_id=self.session_id,
+            phase=CheckpointPhase.IMPLEMENT,
             checkpoint_type=CheckpointType.PHASE_COMPLETE,
             description="Implementation phase complete",
-            state_snapshot={
-                "phase": "implementation",
-                "tasks_completed": len(tasks),
-            }
+            state_snapshot=StateSnapshot(
+                tasks_completed=len(tasks),
+            )
         )
         result["checkpoints"].append(checkpoint)
 
-        self.logger.info(f"  ✓ Checkpoint: {checkpoint['commit_sha'][:8]}")
+        self.logger.info(f"  ✓ Checkpoint: {checkpoint.commit_sha[:8]}")
 
         return {"tasks_executed": len(tasks), "errors_recovered": 0}
 
@@ -378,7 +377,7 @@ class MaestroOrchestrator:
         # Update session state
         self.session_manager.transition_state(
             session_id=self.session_id,
-            new_state=SessionState.VALIDATING,
+            new_state=SessionStatus.VALIDATING,
         )
 
         validation_results = {}
@@ -433,7 +432,7 @@ class MaestroOrchestrator:
         # Update session state
         self.session_manager.transition_state(
             session_id=self.session_id,
-            new_state=SessionState.GENERATING_REPORT,
+            new_state=SessionStatus.GENERATING_REPORT,
         )
 
         report_lines = [
@@ -478,7 +477,7 @@ class MaestroOrchestrator:
 
         for checkpoint in result["checkpoints"]:
             report_lines.extend([
-                f"- {checkpoint['commit_sha'][:8]}: {checkpoint['description']}",
+                f"- {checkpoint.commit_sha[:8]}: {checkpoint.description}",
             ])
 
         report = "\n".join(report_lines)
