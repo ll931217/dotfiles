@@ -43,6 +43,62 @@ This file provides general guidance to Claude Code (claude.ai/code) when working
 - Always use multiple sub-agents when doing research and forming a plan for code implementation
 - We are mostly inside the company's internal network without access to the internet, unless using a proxy which only allows certain access mainly to github
 
+## Context-Efficient Code Exploration
+
+**Core Principle**: "做減法" — Provide *relevant* information, not *comprehensive* information. Minimize context usage through targeted search.
+
+### Grep-First Strategy
+
+**ALWAYS prefer Grep over Read for code discovery:**
+
+1. **Find first, read later**: Use `Grep` to locate patterns, then `Read` with `offset`/`limit` for relevant sections only
+2. **Priority-based searching**: Start narrow (specific pattern), expand only if needed
+3. **Early termination**: Stop searching once you find what you need
+4. **Batch operations**: Combine multiple independent searches in parallel
+
+### Grep Tool Usage
+
+| Parameter | Usage |
+|-----------|-------|
+| `output_mode: "files_with_matches"` | Find which files contain the pattern (default, lowest token cost) |
+| `output_mode: "content"` | Get matching lines (use with context flags) |
+| `output_mode: "count"` | Quick check of match frequency |
+| `-C 5` / `-A 3` / `-B 3` | Context lines (usually 3-5 is sufficient) |
+| `glob: "*.ts"` or `type: "py"` | Filter by file type (reduces search scope) |
+| `head_limit: 20` | Limit results to prevent context overflow |
+
+### Search Strategy by Task
+
+| Task | Approach |
+|------|----------|
+| Find function/class | `Grep` pattern: `"(function\|def\|class)\s+Name"` with `-C 3` |
+| Find usages | `Grep` pattern: `"functionName\("` with `output_mode: "content"` |
+| Explore structure | `Grep` for exports/class definitions, NOT full file read |
+| Debug errors | `Grep` for error message or stack trace pattern |
+
+### Token Budget Guidelines
+
+| Complexity | Target Context |
+|------------|----------------|
+| Simple lookup | < 500 tokens (grep with limited results) |
+| Function understanding | < 1,500 tokens (grep + targeted read) |
+| Module understanding | < 3,000 tokens (structure first, then details) |
+
+### When Full File Read is Appropriate
+
+- File is small (< 100 lines)
+- Making edits requiring full context (imports, class hierarchy)
+- Understanding a complete module after initial grep exploration
+
+### Anti-Patterns
+
+- ❌ Reading 500+ line files to find one function
+- ❌ Using `Read` to search across multiple files
+- ❌ Reading entire files when you only need a section
+- ❌ Sequential file reads when parallel grep would work
+- ✅ Grep → identify files → Read with offset/limit
+- ✅ Use `head_limit` to cap grep results
+
 ## Universal Code Quality Principles
 
 Apply these principles consistently across all languages and projects. Focus on intent, clarity, and maintainability.
