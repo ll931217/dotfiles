@@ -146,3 +146,22 @@ function pwcp() {
   fi
   rbw get "$(rbw list | rg -i $1 | fzf)" | wl-copy -n
 }
+
+function uwt() {
+  local latest_version
+  local install_url
+
+  # Fetch latest release tag from GitHub API
+  latest_version=$(curl -s https://api.github.com/repos/max-sixty/worktrunk/releases/latest | jq -r '.tag_name')
+
+  if [ -z "$latest_version" ] || [ "$latest_version" = "null" ]; then
+    echo "Error: Failed to fetch latest worktrunk version"
+    return 1
+  fi
+
+  echo "Installing worktrunk $latest_version..."
+
+  install_url="https://github.com/max-sixty/worktrunk/releases/download/${latest_version}/worktrunk-installer.sh"
+
+  curl --proto '=https' --tlsv1.2 -LsSf "$install_url" | sh
+}
