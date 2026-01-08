@@ -78,6 +78,12 @@ class MaestroOrchestrator:
         # Load configuration
         self.config = self._load_config(config_path)
 
+        # Initialize resource monitor
+        self.resource_monitor: Optional[ResourceMonitor] = None
+
+        # Setup logging FIRST (before auto-recovery callbacks that use logger)
+        self._setup_logging()
+
         # Initialize components
         self.session_manager = SessionManager(self.project_root)
         self.decision_logger = DecisionLogger(self.project_root)
@@ -88,7 +94,7 @@ class MaestroOrchestrator:
         self.skill_orchestrator = SkillOrchestrator(self.project_root)
         self.parallel_coordinator = ParallelCoordinator(self.project_root)
 
-        # Initialize auto-recovery manager
+        # Initialize auto-recovery manager (after logger is set up)
         self.auto_recovery_manager = AutoRecoveryManager(
             max_attempts=self.config["error_recovery"]["max_retry_attempts"],
             enable_fix_generation=True,
@@ -96,12 +102,6 @@ class MaestroOrchestrator:
             enable_rollback=self.config["error_recovery"]["enable_rollback"],
         )
         self._setup_auto_recovery_callbacks()
-
-        # Initialize resource monitor
-        self.resource_monitor: Optional[ResourceMonitor] = None
-
-        # Setup logging
-        self._setup_logging()
 
         self.session_id: Optional[str] = None
         self.logger.info(f"Maestro Orchestrator initialized for {self.project_root}")
@@ -162,9 +162,11 @@ class MaestroOrchestrator:
                         else:
                             default_config[section] = user_config[section]
             except ImportError:
-                self.logger.warning("PyYAML not installed, using default configuration")
+                # Logger not yet initialized, use print
+                print("Warning: PyYAML not installed, using default configuration")
             except Exception as e:
-                self.logger.warning(f"Error loading config: {e}, using defaults")
+                # Logger not yet initialized, use print
+                print(f"Warning: Error loading config: {e}, using defaults")
 
         return default_config
 
@@ -1242,23 +1244,193 @@ class MaestroOrchestrator:
         }
 
     def _phase_review(self, validation_result: Dict[str, Any]) -> bool:
-        """Phase 5: Review completion criteria and decide whether to continue."""
+        """Phase 5: Review completion criteria and decide whether to continue.
+
+        This phase implements autonomous continuation without human approval:
+        - Reviews validation results against PRD acceptance criteria
+        - Proceeds to next iteration autonomously if validation fails
+        - Completes session if all acceptance criteria are met
+        - Generates final report and transitions session to COMPLETED state
+        - Creates completion checkpoint for successful sessions
+
+        Args:
+            validation_result: Dict containing validation results from Phase 4
+                - tests: Test execution results
+                - prd: PRD requirement validation
+                - gate_*: Quality gate results
+
+        Returns:
+            bool: True if workflow should continue to next iteration, False if complete
+        """
         self.logger.info("Phase 5: Review")
 
-        completion_criteria = [
-            validation_result.get("tests", {}).get("status") == "passed",
-            validation_result.get("prd", {}).get("status") == "passed",
-            all(v.get("status") == "passed" for k, v in validation_result.items() if k.startswith("gate_")),
-        ]
+        # Log the review phase decision
+        review_decision_id = self.decision_logger.log_decision(
+            decision_type="review",
+            decision={
+                "decision": "Review validation results against acceptance criteria",
+                "rationale": "Review phase evaluates all validation results to determine "
+                           "whether the implementation meets all PRD acceptance criteria. "
+                           "This decision is made autonomously without human input - "
+                           "the system either completes the session or triggers another iteration.",
+                "phase": "review",
+                "context": {
+                    "autonomous_mode": True,
+                    "enable_human_interaction": False,
+                    "validation_results": validation_result,
+                },
+                "impact": {
+                    "continuation": "If criteria not met, autonomous refinement iteration begins",
+                    "completion": "If all criteria met, session completes with final report",
+                },
+            },
+        )
+        self.logger.info(f"  → Review decision logged: {review_decision_id}")
 
-        all_passed = all(completion_criteria)
+        # Define completion criteria based on validation results
+        completion_criteria = {
+            "tests_passed": validation_result.get("tests", {}).get("status") == "passed",
+            "prd_validated": validation_result.get("prd", {}).get("status") == "passed",
+            "quality_gates_passed": all(
+                v.get("status") == "passed"
+                for k, v in validation_result.items()
+                if k.startswith("gate_")
+            ),
+        }
+
+        # Check if all criteria are met
+        all_passed = all(completion_criteria.values())
+
+        # Log completion criteria check
+        self.logger.info("  → Completion criteria check:")
+        for criterion, passed in completion_criteria.items():
+            status = "✓" if passed else "✗"
+            self.logger.info(f"    {status} {criterion}: {passed}")
 
         if all_passed:
-            self.logger.info("  ✓ All completion criteria met")
-            return False  # Don't continue
+            # All acceptance criteria met - complete the session
+            self.logger.info("  ✓ All completion criteria met - completing session")
+
+            # Generate final report using ReportGenerator
+            self.logger.info("  → Generating final report...")
+            try:
+                from report_generator import ReportGenerator, ReportData, ReportFormat
+
+                # Create report generator instance
+                report_generator = ReportGenerator(
+                    project_root=self.project_root,
+                    session_id=self.session_id
+                )
+
+                # Collect report data from validation results
+                report_data = report_generator.collect_report_data(
+                    validation_results=validation_result,
+                )
+
+                # Generate markdown report
+                report_path = self.sessions_dir / self.session_id / "final-report.md"
+                report = report_generator.generate_report(
+                    report_data=report_data,
+                    output_format=ReportFormat.MARKDOWN,
+                    output_path=report_path,
+                )
+
+                self.logger.info(f"  ✓ Final report generated: {report_path}")
+
+            except Exception as e:
+                self.logger.warning(f"  ⚠ Report generation failed: {e}")
+                # Continue anyway - report is not critical for completion
+
+            # Create completion checkpoint
+            self.logger.info("  → Creating completion checkpoint...")
+            try:
+                completion_checkpoint = self.checkpoint_manager.create_checkpoint(
+                    session_id=self.session_id,
+                    phase=CheckpointPhase.REVIEW,
+                    checkpoint_type=CheckpointType.PHASE_COMPLETE,
+                    description="Session completed successfully - all acceptance criteria met",
+                    state_snapshot=StateSnapshot(
+                        tasks_completed=validation_result.get("tests", {}).get("count", 0),
+                    )
+                )
+                self.logger.info(f"  ✓ Completion checkpoint: {completion_checkpoint.commit_sha[:8]}")
+
+            except Exception as e:
+                self.logger.warning(f"  ⚠ Could not create completion checkpoint: {e}")
+
+            # Transition session to COMPLETED state
+            self.logger.info("  → Transitioning session to COMPLETED state...")
+            self.session_manager.transition_state(
+                session_id=self.session_id,
+                new_state=SessionStatus.COMPLETED,
+            )
+            self.logger.info("  ✓ Session completed successfully")
+
+            # Log the completion decision
+            completion_decision_id = self.decision_logger.log_decision(
+                decision_type="completion",
+                decision={
+                    "decision": "Session completed - all acceptance criteria met",
+                    "rationale": f"All validation checks passed successfully. "
+                               f"Tests: {completion_criteria['tests_passed']}, "
+                               f"PRD: {completion_criteria['prd_validated']}, "
+                               f"Quality gates: {completion_criteria['quality_gates_passed']}. "
+                               f"Session marked as COMPLETED and final report generated.",
+                    "phase": "review",
+                    "context": {
+                        "validation_results": validation_result,
+                        "completion_criteria": completion_criteria,
+                        "report_generated": True,
+                    },
+                    "impact": {
+                        "session_state": "COMPLETED",
+                        "next_action": "Workflow terminates successfully",
+                    },
+                },
+            )
+            self.logger.info(f"  → Completion decision logged: {completion_decision_id}")
+
+            # Return False to signal workflow completion
+            return False
+
         else:
-            self.logger.info("  → Some criteria not met, planning refinement...")
-            return True  # Continue to next iteration
+            # Some criteria not met - trigger next iteration autonomously
+            self.logger.info("  → Some criteria not met - planning autonomous refinement...")
+
+            # Determine which criteria failed
+            failed_criteria = [
+                criterion for criterion, passed in completion_criteria.items()
+                if not passed
+            ]
+
+            self.logger.info(f"  → Failed criteria: {', '.join(failed_criteria)}")
+
+            # Log the continuation decision
+            continuation_decision_id = self.decision_logger.log_decision(
+                decision_type="continuation",
+                decision={
+                    "decision": "Continue to next iteration for refinement",
+                    "rationale": f"Validation results show {len(failed_criteria)} acceptance criteria not met: "
+                               f"{', '.join(failed_criteria)}. "
+                               f"System will autonomously proceed to next iteration to address these issues. "
+                               f"No human intervention required - autonomous refinement will attempt to fix failures.",
+                    "phase": "review",
+                    "context": {
+                        "failed_criteria": failed_criteria,
+                        "validation_results": validation_result,
+                        "autonomous_mode": True,
+                        "enable_human_interaction": False,
+                    },
+                    "impact": {
+                        "next_action": "Next iteration will address failed criteria",
+                        "session_state": "Remains in VALIDATING until all criteria met",
+                    },
+                },
+            )
+            self.logger.info(f"  → Continuation decision logged: {continuation_decision_id}")
+
+            # Return True to signal workflow should continue to next iteration
+            return True
 
     def _generate_final_report(self, result: Dict[str, Any]) -> str:
         """Generate comprehensive implementation report."""

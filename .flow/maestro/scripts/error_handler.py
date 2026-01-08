@@ -13,8 +13,10 @@ import tempfile
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict, field
+
+from retry_manager import RetryManager
 
 
 class ErrorCategory(str, Enum):
@@ -180,6 +182,14 @@ class ErrorHandler:
         self.max_retries = 3
         self.base_delay = 1.0  # seconds
         self.max_delay = 60.0  # seconds
+
+        # Initialize retry manager
+        self.retry_manager = RetryManager(
+            max_retries=self.max_retries,
+            backoff_base=2.0,
+            initial_delay=self.base_delay,
+            max_delay=self.max_delay,
+        )
 
         # Compile regex patterns for efficiency
         self._transient_regex = re.compile(
@@ -475,20 +485,27 @@ class ErrorHandler:
         Execute retry with exponential backoff.
 
         Calculates delay and provides next action for retry.
+        Uses RetryManager for consistent backoff calculation.
         """
-        # Calculate exponential backoff delay
-        delay = min(
-            self.base_delay * (2 ** retry_count),
-            self.max_delay
-        )
+        # Use RetryManager for backoff calculation
+        delay = self.retry_manager.calculate_delay(retry_count)
 
         command = context.get("command")
+        operation_name = context.get("operation_name", command or "unknown_operation")
         next_action = "retry"
 
         if command:
             message = f"Retry {retry_count + 1}/{self.max_retries} after {delay:.1f}s delay for command: {command}"
         else:
             message = f"Retry {retry_count + 1}/{self.max_retries} after {delay:.1f}s delay"
+
+        # Track retry attempt in manager
+        retry_attempt = {
+            "attempt_number": retry_count + 1,
+            "delay_seconds": delay,
+            "success": False,  # Will be updated after retry
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
 
         return RecoveryResult(
             strategy=RecoveryStrategy.RETRY_WITH_BACKOFF,
@@ -497,6 +514,69 @@ class ErrorHandler:
             retry_count=retry_count + 1,
             next_action=next_action,
         )
+
+    def execute_with_retry(
+        self,
+        func: Callable,
+        context: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """
+        Execute a function with retry logic using RetryManager.
+
+        Args:
+            func: Function to execute
+            context: Context dictionary containing operation_name and other params
+            *args: Positional arguments to pass to the function
+            **kwargs: Keyword arguments to pass to the function
+
+        Returns:
+            Result of the function call
+
+        Raises:
+            Exception if all retries are exhausted
+        """
+        operation_name = context.get("operation_name", "unknown_operation")
+
+        # Add retry history to context for decision logging
+        try:
+            result = self.retry_manager.execute_with_retry(
+                func,
+                context=context,
+                *args,
+                **kwargs,
+            )
+
+            # Add retry history to context
+            retry_history = self.retry_manager.get_retry_history(operation_name)
+            context["retry_history"] = retry_history
+
+            return result
+
+        except Exception as e:
+            # Add retry history to context even on failure
+            retry_history = self.retry_manager.get_retry_history(operation_name)
+            context["retry_history"] = retry_history
+            raise
+
+    def get_retry_statistics(self) -> Dict[str, Any]:
+        """
+        Get retry statistics from the retry manager.
+
+        Returns:
+            Dictionary containing retry statistics for all operations
+        """
+        return self.retry_manager.get_retry_statistics()
+
+    def get_retry_history(self) -> Dict[str, Any]:
+        """
+        Get retry history from the retry manager.
+
+        Returns:
+            Dictionary containing retry history for all operations
+        """
+        return self.retry_manager.get_retry_history()
 
     def _execute_alternative_approach(
         self,

@@ -5,7 +5,7 @@ This module provides autonomous recovery strategies for validation failures,
 enabling the system to self-heal without human intervention.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from enum import Enum
 from logging import getLogger
@@ -14,6 +14,8 @@ from pathlib import Path
 import time
 import json
 import re
+import uuid
+from collections import defaultdict
 
 
 class RecoveryStrategyType(str, Enum):
@@ -78,6 +80,357 @@ class RecoveryAttempt:
 
 
 @dataclass
+class RecoveryAuditEntry:
+    """Single entry in recovery audit trail."""
+    entry_id: str
+    timestamp: str
+    session_id: str
+    error_type: str
+    strategy: str
+    attempt_number: int
+    success: bool
+    changes_made: List[str]
+    files_modified: List[str]
+    rollback_performed: bool
+    next_action: str
+    duration_seconds: float
+    error_message: str
+    recovery_message: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return asdict(self)
+
+    def to_json(self) -> str:
+        """Convert to JSON string."""
+        return json.dumps(self.to_dict(), indent=2)
+
+
+class RecoveryAuditLogger:
+    """
+    Logs all recovery operations with full audit trail.
+
+    Provides comprehensive logging of recovery attempts including:
+    - Detailed attempt logging with timestamps
+    - Session-based recovery history
+    - Audit trail export to JSON
+    - Recovery statistics and summaries
+    """
+
+    def __init__(self, audit_dir: Optional[Path] = None):
+        """
+        Initialize the RecoveryAuditLogger.
+
+        Args:
+            audit_dir: Directory to store audit trail files. If None, uses temp dir.
+        """
+        self.audit_dir = audit_dir or Path("/tmp/maestro_audit")
+        self.audit_dir.mkdir(parents=True, exist_ok=True)
+
+        # In-memory audit storage
+        self._audit_entries: Dict[str, List[RecoveryAuditEntry]] = defaultdict(list)
+        self._session_start_times: Dict[str, str] = {}
+
+        self.logger = getLogger("maestro.recovery_audit")
+
+    def _generate_entry_id(self) -> str:
+        """Generate unique entry ID."""
+        return f"entry_{uuid.uuid4().hex[:12]}"
+
+    def start_session(self, session_id: Optional[str] = None) -> str:
+        """
+        Start a new recovery session.
+
+        Args:
+            session_id: Optional session ID. If None, generates one.
+
+        Returns:
+            The session ID
+        """
+        if session_id is None:
+            session_id = f"session_{uuid.uuid4().hex[:8]}"
+
+        self._session_start_times[session_id] = datetime.now(timezone.utc).isoformat()
+        self.logger.info(f"Started recovery session: {session_id}")
+        return session_id
+
+    def log_recovery_attempt(
+        self,
+        attempt: RecoveryAttempt,
+        session_id: str,
+        files_modified: Optional[List[str]] = None,
+        rollback_performed: bool = False,
+        next_action: str = "continue",
+    ) -> str:
+        """
+        Log a recovery attempt to the audit trail.
+
+        Args:
+            attempt: The recovery attempt to log
+            session_id: The session ID for this recovery
+            files_modified: List of files that were modified
+            rollback_performed: Whether a rollback was performed
+            next_action: Next action to take (continue, retry, escalate, etc.)
+
+        Returns:
+            The entry ID for this log entry
+        """
+        entry_id = self._generate_entry_id()
+
+        error_type = attempt.error_before.error_type if attempt.error_before else "unknown"
+        error_message = attempt.error_before.message if attempt.error_before else ""
+
+        entry = RecoveryAuditEntry(
+            entry_id=entry_id,
+            timestamp=attempt.timestamp,
+            session_id=session_id,
+            error_type=error_type,
+            strategy=attempt.strategy,
+            attempt_number=attempt.attempt_number,
+            success=attempt.success,
+            changes_made=attempt.changes_made,
+            files_modified=files_modified or [],
+            rollback_performed=rollback_performed,
+            next_action=next_action,
+            duration_seconds=attempt.duration_seconds,
+            error_message=error_message,
+            recovery_message=attempt.message,
+        )
+
+        self._audit_entries[session_id].append(entry)
+
+        # Log to file immediately for persistence
+        self._write_entry_to_file(entry)
+
+        self.logger.info(
+            f"Logged recovery attempt {entry_id}: "
+            f"strategy={attempt.strategy}, success={attempt.success}"
+        )
+
+        return entry_id
+
+    def _write_entry_to_file(self, entry: RecoveryAuditEntry) -> None:
+        """
+        Write audit entry to session-specific file.
+
+        Args:
+            entry: The audit entry to write
+        """
+        session_file = self.audit_dir / f"{entry.session_id}_audit.jsonl"
+
+        with open(session_file, "a") as f:
+            f.write(entry.to_json() + "\n")
+
+    def get_recovery_history(
+        self, session_id: str
+    ) -> List[RecoveryAuditEntry]:
+        """
+        Get recovery history for a specific session.
+
+        Args:
+            session_id: The session ID to retrieve history for
+
+        Returns:
+            List of audit entries for the session
+        """
+        return self._audit_entries.get(session_id, [])
+
+    def get_all_session_ids(self) -> List[str]:
+        """
+        Get all session IDs with audit entries.
+
+        Returns:
+            List of session IDs
+        """
+        # Return unique session IDs from both entries and session start times
+        all_sessions = set(self._audit_entries.keys())
+        all_sessions.update(self._session_start_times.keys())
+        return list(all_sessions)
+
+    def export_audit_trail(
+        self, session_id: str, format: str = "json"
+    ) -> str:
+        """
+        Export audit trail for a session.
+
+        Args:
+            session_id: The session ID to export
+            format: Export format (json or csv)
+
+        Returns:
+            Path to the exported file
+        """
+        entries = self.get_recovery_history(session_id)
+
+        if not entries:
+            raise ValueError(f"No audit entries found for session: {session_id}")
+
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+        if format.lower() == "json":
+            output_path = self.audit_dir / f"{session_id}_audit_{timestamp}.json"
+            data = {
+                "session_id": session_id,
+                "session_start": self._session_start_times.get(session_id, "unknown"),
+                "export_timestamp": datetime.now(timezone.utc).isoformat(),
+                "total_entries": len(entries),
+                "entries": [entry.to_dict() for entry in entries],
+            }
+
+            with open(output_path, "w") as f:
+                json.dump(data, f, indent=2)
+
+        elif format.lower() == "csv":
+            output_path = self.audit_dir / f"{session_id}_audit_{timestamp}.csv"
+            import csv
+
+            if entries:
+                with open(output_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=entries[0].to_dict().keys())
+                    writer.writeheader()
+                    for entry in entries:
+                        writer.writerow(entry.to_dict())
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+
+        self.logger.info(f"Exported audit trail to {output_path}")
+        return str(output_path)
+
+    def get_recovery_statistics(self, session_id: str) -> Dict[str, Any]:
+        """
+        Calculate recovery statistics for a session.
+
+        Args:
+            session_id: The session ID to calculate statistics for
+
+        Returns:
+            Dictionary with recovery statistics
+        """
+        entries = self.get_recovery_history(session_id)
+
+        if not entries:
+            return {
+                "session_id": session_id,
+                "total_attempts": 0,
+                "successful_attempts": 0,
+                "failed_attempts": 0,
+                "success_rate": 0.0,
+                "strategies_used": {},
+                "total_duration_seconds": 0.0,
+                "average_duration_seconds": 0.0,
+            }
+
+        # Calculate statistics
+        total_attempts = len(entries)
+        successful_attempts = sum(1 for e in entries if e.success)
+        failed_attempts = total_attempts - successful_attempts
+        success_rate = successful_attempts / total_attempts if total_attempts > 0 else 0.0
+
+        # Strategy usage
+        strategies_used = defaultdict(int)
+        for entry in entries:
+            strategies_used[entry.strategy] += 1
+
+        # Duration statistics
+        total_duration = sum(e.duration_seconds for e in entries)
+        average_duration = total_duration / total_attempts if total_attempts > 0 else 0.0
+
+        # Error type distribution
+        error_types = defaultdict(int)
+        for entry in entries:
+            error_types[entry.error_type] += 1
+
+        # Files modified
+        all_files_modified = set()
+        for entry in entries:
+            all_files_modified.update(entry.files_modified)
+
+        # Rollback statistics
+        rollback_count = sum(1 for e in entries if e.rollback_performed)
+
+        return {
+            "session_id": session_id,
+            "session_start": self._session_start_times.get(session_id, "unknown"),
+            "total_attempts": total_attempts,
+            "successful_attempts": successful_attempts,
+            "failed_attempts": failed_attempts,
+            "success_rate": round(success_rate * 100, 2),
+            "strategies_used": dict(strategies_used),
+            "error_type_distribution": dict(error_types),
+            "total_duration_seconds": round(total_duration, 3),
+            "average_duration_seconds": round(average_duration, 3),
+            "files_modified_count": len(all_files_modified),
+            "files_modified": list(all_files_modified),
+            "rollback_count": rollback_count,
+            "first_attempt_timestamp": entries[0].timestamp if entries else None,
+            "last_attempt_timestamp": entries[-1].timestamp if entries else None,
+        }
+
+    def generate_recovery_report(
+        self, session_id: str, output_path: Optional[Path] = None
+    ) -> str:
+        """
+        Generate a comprehensive recovery report for a session.
+
+        Args:
+            session_id: The session ID to generate report for
+            output_path: Optional path to save report. If None, uses default.
+
+        Returns:
+            Path to the generated report
+        """
+        stats = self.get_recovery_statistics(session_id)
+        entries = self.get_recovery_history(session_id)
+
+        if output_path is None:
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            output_path = self.audit_dir / f"{session_id}_report_{timestamp}.json"
+
+        report = {
+            "report_metadata": {
+                "session_id": session_id,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "session_start": stats["session_start"],
+                "report_type": "recovery_audit_report",
+            },
+            "summary": {
+                "total_attempts": stats["total_attempts"],
+                "success_rate": f"{stats['success_rate']}%",
+                "total_duration_seconds": stats["total_duration_seconds"],
+                "files_modified": stats["files_modified_count"],
+            },
+            "statistics": stats,
+            "detailed_entries": [entry.to_dict() for entry in entries],
+        }
+
+        with open(output_path, "w") as f:
+            json.dump(report, f, indent=2)
+
+        self.logger.info(f"Generated recovery report: {output_path}")
+        return str(output_path)
+
+    def clear_session(self, session_id: str) -> None:
+        """
+        Clear audit entries for a specific session.
+
+        Args:
+            session_id: The session ID to clear
+        """
+        if session_id in self._audit_entries:
+            del self._audit_entries[session_id]
+        if session_id in self._session_start_times:
+            del self._session_start_times[session_id]
+
+        self.logger.info(f"Cleared audit entries for session: {session_id}")
+
+    def clear_all_sessions(self) -> None:
+        """Clear all audit entries."""
+        self._audit_entries.clear()
+        self._session_start_times.clear()
+        self.logger.info("Cleared all audit entries")
+
+
+@dataclass
 class RecoveryResult:
     """Result of a recovery operation."""
     success: bool
@@ -121,6 +474,8 @@ class AutoRecoveryManager:
         enable_fix_generation: bool = True,
         enable_alternatives: bool = True,
         enable_rollback: bool = True,
+        audit_dir: Optional[Path] = None,
+        enable_audit_logging: bool = True,
     ):
         """
         Initialize the AutoRecoveryManager.
@@ -132,6 +487,8 @@ class AutoRecoveryManager:
             enable_fix_generation: Whether to enable AI-powered fix generation
             enable_alternatives: Whether to enable alternative approach selection
             enable_rollback: Whether to enable rollback to checkpoints
+            audit_dir: Directory to store audit trail files
+            enable_audit_logging: Whether to enable comprehensive audit logging
         """
         self.max_attempts = max_attempts
         self.base_delay = base_delay
@@ -147,6 +504,11 @@ class AutoRecoveryManager:
         self.alternative_selector: Optional[Callable[[Error], str]] = None
         self.rollback_handler: Optional[Callable[[], bool]] = None
 
+        # Audit logging
+        self.enable_audit_logging = enable_audit_logging
+        self.audit_logger = RecoveryAuditLogger(audit_dir=audit_dir) if enable_audit_logging else None
+        self.current_session_id: Optional[str] = None
+
         self.logger = getLogger("maestro.auto_recovery")
 
     def attempt_recovery(self, error: Error, context: Dict[str, Any]) -> RecoveryResult:
@@ -161,6 +523,10 @@ class AutoRecoveryManager:
             RecoveryResult with details of the recovery attempt
         """
         self.logger.info(f"Starting recovery for error: {error.message}")
+
+        # Start audit session if enabled
+        if self.audit_logger and self.current_session_id is None:
+            self.current_session_id = self.audit_logger.start_session()
 
         attempts: List[RecoveryAttempt] = []
         strategies = self._select_recovery_strategies(error, context)
@@ -187,6 +553,20 @@ class AutoRecoveryManager:
                     message=attempt_result.get("message", ""),
                 )
                 attempts.append(attempt)
+
+                # Log to audit trail
+                if self.audit_logger and self.current_session_id:
+                    files_modified = attempt_result.get("files_modified", [])
+                    rollback_performed = strategy_type == RecoveryStrategyType.ROLLBACK and attempt_result["success"]
+                    next_action = "complete" if attempt_result["success"] else "retry"
+
+                    self.audit_logger.log_recovery_attempt(
+                        attempt=attempt,
+                        session_id=self.current_session_id,
+                        files_modified=files_modified,
+                        rollback_performed=rollback_performed,
+                        next_action=next_action,
+                    )
 
                 if attempt_result["success"]:
                     self.logger.info(
@@ -612,7 +992,135 @@ class AutoRecoveryManager:
             json.dump(history, f, indent=2)
         self.logger.info(f"Saved recovery history to {file_path}")
 
+    def get_audit_trail(self, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get audit trail entries.
+
+        Args:
+            session_id: Optional session ID. If None, uses current session.
+
+        Returns:
+            List of audit entry dictionaries
+        """
+        if not self.audit_logger:
+            return []
+
+        session = session_id or self.current_session_id
+        if not session:
+            return []
+
+        entries = self.audit_logger.get_recovery_history(session)
+        return [entry.to_dict() for entry in entries]
+
+    def export_audit_trail(
+        self, session_id: Optional[str] = None, format: str = "json"
+    ) -> Optional[str]:
+        """
+        Export audit trail to file.
+
+        Args:
+            session_id: Optional session ID. If None, uses current session.
+            format: Export format (json or csv)
+
+        Returns:
+            Path to exported file, or None if audit logging is disabled
+        """
+        if not self.audit_logger:
+            self.logger.warning("Audit logging is disabled")
+            return None
+
+        session = session_id or self.current_session_id
+        if not session:
+            self.logger.warning("No session ID available for audit export")
+            return None
+
+        try:
+            return self.audit_logger.export_audit_trail(session, format)
+        except ValueError as e:
+            self.logger.error(f"Failed to export audit trail: {e}")
+            return None
+
+    def get_recovery_statistics(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get recovery statistics for a session.
+
+        Args:
+            session_id: Optional session ID. If None, uses current session.
+
+        Returns:
+            Dictionary with recovery statistics
+        """
+        if not self.audit_logger:
+            return {}
+
+        session = session_id or self.current_session_id
+        if not session:
+            return {}
+
+        return self.audit_logger.get_recovery_statistics(session)
+
+    def generate_recovery_report(
+        self, session_id: Optional[str] = None, output_path: Optional[Path] = None
+    ) -> Optional[str]:
+        """
+        Generate comprehensive recovery report.
+
+        Args:
+            session_id: Optional session ID. If None, uses current session.
+            output_path: Optional path to save report
+
+        Returns:
+            Path to generated report, or None if audit logging is disabled
+        """
+        if not self.audit_logger:
+            self.logger.warning("Audit logging is disabled")
+            return None
+
+        session = session_id or self.current_session_id
+        if not session:
+            self.logger.warning("No session ID available for report generation")
+            return None
+
+        try:
+            return self.audit_logger.generate_recovery_report(session, output_path)
+        except ValueError as e:
+            self.logger.error(f"Failed to generate recovery report: {e}")
+            return None
+
+    def start_new_session(self, session_id: Optional[str] = None) -> Optional[str]:
+        """
+        Start a new audit session.
+
+        Args:
+            session_id: Optional session ID. If None, generates one.
+
+        Returns:
+            The new session ID, or None if audit logging is disabled
+        """
+        if not self.audit_logger:
+            self.logger.warning("Audit logging is disabled")
+            return None
+
+        self.current_session_id = self.audit_logger.start_session(session_id)
+        return self.current_session_id
+
     def clear_recovery_history(self) -> None:
         """Clear the recovery history."""
         self.recovery_history.clear()
         self.logger.info("Cleared recovery history")
+
+    def clear_audit_history(self, session_id: Optional[str] = None) -> None:
+        """
+        Clear audit history.
+
+        Args:
+            session_id: Optional session ID to clear. If None, clears current session.
+        """
+        if not self.audit_logger:
+            return
+
+        session = session_id or self.current_session_id
+        if session:
+            self.audit_logger.clear_session(session)
+            if session == self.current_session_id:
+                self.current_session_id = None
