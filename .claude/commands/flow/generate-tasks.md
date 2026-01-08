@@ -10,11 +10,25 @@ description: Generate tasks from a PRD (using beads if available, otherwise Todo
 2. **Check existing tasks** - Detects if PRD was previously processed
 3. **Generate epics** - 5-7 high-level parent issues
 4. **Generate sub-tasks** - Detailed tasks with dependencies
-5. **Wait for "Go"** - User confirmation before generation begins
+5. **Wait for "Go"** - User confirmation before generation begins (SKIP in autonomous mode)
 
 **Requirements:** PRD must exist and be `approved` status.
 
 **Full workflow:** See `README.md` for complete flow command usage.
+
+## Autonomous Mode Detection
+
+**CRITICAL:** Before executing, check if this command is running in autonomous mode:
+
+- This command is running autonomously if invoked from `/flow:autonomous`
+- When autonomous, **SKIP all AskUserQuestion checkpoints**
+- When autonomous, **SKIP all "Wait for Go" confirmations**
+- Continue execution through all phases without stopping
+
+**Detection method:**
+- Check if the current conversation context indicates autonomous execution
+- Look for `[Maestro]` log format or explicit autonomous mode flags
+- If uncertain, assume interactive mode (safer default)
 
 ## Goal
 
@@ -329,7 +343,15 @@ If automatic detection fails:
      - If no matching epic exists: Create new epic
    - Present both existing (kept) and new epics to user for review
 
-   Based on the PRD analysis and current state assessment, create the main, high-level issues required to implement the feature. Use your judgement on how many high-level issues to use. It's likely to be about 5. These parent issues should each be full features that can be tested where the user will only proceed to next parent issue until satisfied. Present these issues to the user. Inform the user (Using AskUserQuestion tool): "I have generated the high-level issues based on the PRD. Ready to generate the sub-issues? Respond with 'Go' to proceed."
+   Based on the PRD analysis and current state assessment, create the main, high-level issues required to implement the feature. Use your judgement on how many high-level issues to use. It's likely to be about 5. These parent issues should each be full features that can be tested where the user will only proceed to next parent issue until satisfied. Present these issues to the user.
+
+   **AUTONOMOUS MODE CHECK:**
+   - If this command was invoked from `/flow:autonomous`, **SKIP the confirmation checkpoint**
+   - Proceed directly to Phase 2 (sub-issue generation) without waiting
+   - Detect autonomous mode by checking if the parent workflow is autonomous
+
+   **INTERACTIVE MODE (default):**
+   - Inform the user (Using AskUserQuestion tool): "I have generated the high-level issues based on the PRD. Ready to generate the sub-issues? Respond with 'Go' to proceed."
 
 6. **Phase 1.5: Assign Priorities to Epics:**
    - Read priorities from PRD frontmatter `priorities.requirements` array
@@ -357,7 +379,11 @@ If automatic detection fails:
    └────────────────────────────┴─────────────┴──────────────────────┘
    ```
 
-7. **Wait for Confirmation:** Pause and wait for the user to respond with "Go".
+7. **Wait for Confirmation (INTERACTIVE MODE ONLY):**
+
+   **AUTONOMOUS MODE:** Skip this checkpoint entirely - proceed directly to Phase 2.
+
+   **INTERACTIVE MODE:** Pause and wait for the user to respond with "Go".
 
 8. **Phase 2: Generate Sub-Issues - For New or Updated Epics Only:** Once the user confirms, break down each parent issue into smaller, actionable sub-issues necessary to complete the parent issue.
 

@@ -6,13 +6,29 @@ Guidelines for managing task lists to track progress on completing a PRD.
 
 1. **Discover PRD** - Auto-detected from git context (branch/worktree)
 2. **Verify status** - Must be `approved` or `implementing`
-3. **Execute tasks** - Autonomous with specialized subagents
+3. **Execute tasks** - Autonomous with specialized subagents (NO checkpoints in autonomous mode)
 4. **Track progress** - Execute `/flow:summary` every 5 tasks or 30 minutes
 5. **Complete PRD** - Run `/flow:cleanup` when all tasks are done
 
 **Pre-implementation:** PRD must be `approved` or `implementing` status.
 
 **Full workflow:** See `README.md` for complete flow command usage.
+
+## Autonomous Mode Detection
+
+**CRITICAL:** Before executing, check if this command is running in autonomous mode:
+
+- This command is running autonomously if invoked from `/flow:autonomous`
+- When autonomous, **DO NOT pause for confirmations between tasks**
+- When autonomous, **DO NOT pause at phase boundaries**
+- When autonomous, **DO NOT use AskUserQuestion tool**
+- Continue execution through all tasks without stopping
+- Only stop for critical errors that absolutely require human intervention
+
+**Detection method:**
+- Check if the current conversation context indicates autonomous execution
+- Look for `[Maestro]` log format or explicit autonomous mode flags
+- If uncertain, assume interactive mode (safer default)
 
 **Task Management Options:**
 
@@ -449,6 +465,8 @@ All task context is stored in beads' SQLite database. Task management is handled
 ## Task Implementation
 
 - **Autonomous Execution Strategy:**
+
+  **INTERACTIVE MODE (default):**
   - Execute tasks continuously without asking for permission
   - Only stop to ask the user when you discover something that needs clarification:
     - Ambiguous requirements not covered by the PRD
@@ -456,6 +474,17 @@ All task context is stored in beads' SQLite database. Task management is handled
     - Missing information or dependencies
     - Conflicting requirements discovered during implementation
   - When stopping for clarification, clearly explain the issue and provide options
+
+  **AUTONOMOUS MODE (when invoked from /flow:autonomous):**
+  - Execute ALL tasks continuously without ANY pauses
+  - DO NOT stop for clarification - make reasonable decisions based on:
+    - Best practices for the language/framework
+    - Existing patterns in the codebase
+    - Simplest viable solution
+    - Industry standards
+  - DO NOT use AskUserQuestion tool
+  - DO NOT pause between tasks or groups
+  - Continue until all tasks are complete or critical error occurs
 
 **Periodic Context Refresh:**
 Every 5 completed tasks or 30 minutes of work, execute `/flow:summary` to refresh your context. Update the "Current Status" section with the latest output.
@@ -1115,32 +1144,38 @@ Use beads labels to persist parallel group membership in the database (not in-me
 
 When working with task lists, the AI must:
 
-1. **Autonomous Execution (no permission needed):**
-    - Execute tasks continuously without stopping for permission
-    - Only pause when clarification is needed (ambiguous requirements, missing info, conflicting specs)
-    -
+1. **Detect Execution Mode:**
+   - Check if invoked from `/flow:autonomous` (look for [Maestro] context)
+   - If autonomous: DO NOT pause for anything except critical errors
+   - If interactive: May pause for clarification when needed
 
-2. **Pre-execution Checks:**
+2. **Autonomous Execution (no permission needed):**
+    - Execute tasks continuously without stopping for permission
+    - In autonomous mode: Never pause for clarification
+    - In interactive mode: Only pause when clarification is needed (ambiguous requirements, missing info, conflicting specs)
+    - In autonomous mode: Make reasonable decisions based on best practices and existing patterns
+
+3. **Pre-execution Checks:**
     - Check which tasks are unblocked
     - Verify no blocking dependencies
     - Check task details and blockers
 
-3. **During Execution:**
+4. **During Execution:**
     - Update task status to in_progress
     - Monitor progress via in-progress status
     - Use beads database for coordination between parallel tasks
 
-4. **Completion Protocol:**
+5. **Completion Protocol:**
     - Mark each finished **sub‑task** `[x]` immediately
     - Close task in beads
     - Mark **parent task** `[x]` once **ALL** subtasks are `[x]`
     - Run full test suite before committing group changes
 
-5. **File Management:**
+6. **File Management:**
     - Keep "Relevant Files" section accurate and up to date
     - Add newly discovered tasks
 
-6. **Error Handling:**
+7. **Error Handling:**
     - Use test-automator and language-specific subagents for failing tests
     - **DO NOT** proceed to next task/group until all tests pass
 

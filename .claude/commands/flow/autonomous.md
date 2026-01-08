@@ -8,11 +8,17 @@ End-to-end autonomous implementation workflow that executes plan → generate-ta
 /flow:autonomous "Implement user authentication with OAuth support"
 ```
 
+**CRITICAL: Autonomous Execution Mode**
+- This command runs completely autonomously - NO checkpoints, NO pauses, NO confirmations
+- Execution continues from planning through completion without stopping
+- All child commands run with `autonomous_mode=true` to skip interactive prompts
+- Only stops for critical errors that require human intervention
+
 Maestro will:
 1. Generate PRD autonomously (no clarifying questions)
-2. Create implementation tasks with dependencies
-3. Execute tasks with specialized subagents
-4. Validate implementation quality
+2. Create implementation tasks with dependencies (no "Go" confirmation)
+3. Execute tasks with specialized subagents (no task-by-task confirmations)
+4. Validate implementation quality (auto-recover on failures)
 5. Generate comprehensive report
 
 **No human interaction required** until final handoff.
@@ -613,6 +619,95 @@ git checkout <checkpoint-sha>
 - [ ] Advanced code review integration
 - [ ] Performance optimization for large codebases
 - [ ] Custom workflow definition DSL
+
+## AI Execution Instructions
+
+When this command is invoked, execute the following workflow completely autonomously:
+
+### CRITICAL EXECUTION RULES
+
+**AUTONOMOUS MODE ENABLED:**
+- DO NOT pause for any confirmations
+- DO NOT use AskUserQuestion tool
+- DO NOT wait for "Go" signals
+- DO NOT stop at checkpoints
+- Continue execution from start to finish without interruption
+- Only stop for critical errors that absolutely require human intervention
+
+**EXECUTION PHASES:**
+
+### Phase 1: Planning (Autonomous)
+1. Analyze the user's feature request
+2. Explore codebase to understand existing patterns
+3. Invoke decision-engine skill for technical decisions
+4. Generate PRD with `status: approved` (skip clarifying questions)
+5. Save PRD to `.flow/prd-{feature}-v1.md`
+
+### Phase 2: Task Generation (Autonomous)
+1. Read the generated PRD
+2. Generate 5-7 epics based on requirements
+3. Generate sub-tasks with dependencies
+4. **SKIP the "Wait for Go" checkpoint** - proceed directly to sub-task generation
+5. Assign priorities based on PRD frontmatter
+6. Create tasks in beads (or TodoWrite fallback)
+7. Update PRD frontmatter with related_issues
+
+### Phase 3: Implementation (Autonomous)
+1. Execute tasks continuously without pausing
+2. Use specialized subagents via Task tool
+3. Execute parallel groups via concurrent Task invocations
+4. **DO NOT pause** between tasks for permission
+5. **DO NOT pause** at phase boundaries
+6. Continue until all tasks are complete
+7. Auto-recover from failures using alternative approaches
+
+### Phase 4: Validation (Autonomous)
+1. Run test suite
+2. Validate PRD requirements are met
+3. Run quality gates (lint, typecheck, security)
+4. If gates fail, attempt auto-recovery:
+   - Fix linting errors
+   - Fix type errors
+   - Fix test failures
+   - Retry up to 3 times
+5. Only pause if all recovery strategies exhausted
+
+### Phase 5: Handoff
+1. Generate implementation report
+2. Run `/flow:cleanup` to finalize
+3. Present final report to user
+4. Mark PRD status as `implemented`
+
+**ERROR HANDLING:**
+- On transient errors: Retry with backoff
+- On implementation failures: Try alternative approach
+- On critical errors: Rollback to checkpoint, log failure, notify user
+
+**LOGGING FORMAT:**
+```
+[Maestro] Phase N: {phase_name}
+[Maestro]   → {action_description}
+[Maestro] ✓ {completion_status}
+```
+
+**EXECUTION CONTINUES UNTIL:**
+- All tasks complete successfully
+- OR critical error with no recovery options
+- OR resource limits exceeded
+
+**DO NOT STOP FOR:**
+- Task confirmations
+- Phase boundaries
+- Checkpoint reviews
+- Progress updates
+- Go signals
+- User approvals
+
+**ONLY STOP FOR:**
+- Critical unrecoverable errors
+- Resource exhaustion
+- Ambiguous requirements not covered by PRD
+- Conflicting specifications
 
 ## See Also
 
