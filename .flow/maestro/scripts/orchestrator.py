@@ -35,7 +35,7 @@ sys.path.insert(0, str(decision_engine_dir))
 try:
     from session_manager import SessionManager, SessionStatus
     from decision_logger import DecisionLogger
-    from error_handler import ErrorHandler, ErrorCategory
+    from error_handler import ErrorHandler, ErrorCategory, RecoveryStrategy
     from checkpoint_manager import CheckpointManager, CheckpointType, CheckpointPhase, StateSnapshot
     from risky_operations import RiskyOperationDetector, OperationRisk
     from subagent_factory import SubagentFactory
@@ -634,35 +634,338 @@ class MaestroOrchestrator:
         return ordered_tasks
 
     def _phase_implementation(self, tasks: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Phase 3: Execute implementation with subagent coordination."""
-        self.logger.info("Phase 3: Implementation")
+        """Phase 3: Execute implementation with subagent coordination.
 
-        # Update session state
+        This phase:
+        - Detects parallel task groups from [P:Group-name] markers
+        - Executes tasks using ParallelCoordinator for parallel execution
+        - Tracks progress via checkpoints at phase milestones
+        - Handles failures autonomously using error handler (no human input)
+        - Transitions session to VALIDATING state
+
+        Args:
+            tasks: List of task dictionaries with dependencies
+
+        Returns:
+            Dict containing execution results with task completion status
+        """
+        self.logger.info("Phase 3: Implementation")
+        self.logger.info(f"  Tasks to execute: {len(tasks)}")
+
+        # Update session state to IMPLEMENTING
         self.session_manager.transition_state(
             session_id=self.session_id,
             new_state=SessionStatus.IMPLEMENTING,
         )
 
-        # TODO: Execute tasks with parallel coordinator
+        # Initialize result tracking
+        result = {
+            "tasks_executed": 0,
+            "tasks_failed": 0,
+            "errors_recovered": 0,
+            "parallel_groups_executed": 0,
+            "checkpoints_created": [],
+        }
+
+        # Step 1: Detect parallel groups from task markers
         self.logger.info("  → Detecting parallel task groups...")
-        self.logger.info("  → Delegating to specialized subagents...")
-        self.logger.info("  → Creating checkpoints at safe points...")
+        groups = self.parallel_coordinator.detect_groups(tasks)
 
-        # Create checkpoint after implementation
-        checkpoint = self.checkpoint_manager.create_checkpoint(
-            session_id=self.session_id,
-            phase=CheckpointPhase.IMPLEMENT,
-            checkpoint_type=CheckpointType.PHASE_COMPLETE,
-            description="Implementation phase complete",
-            state_snapshot=StateSnapshot(
-                tasks_completed=len(tasks),
-            )
+        parallel_group_count = len([g for g in groups.keys() if g != "_sequential"])
+        self.logger.info(f"  • Found {parallel_group_count} parallel groups")
+        self.logger.info(f"  • Sequential tasks: {len(groups.get('_sequential', []))}")
+
+        # Log the parallel group detection decision
+        self.decision_logger.log_decision(
+            decision_type="parallel_group_detection",
+            decision={
+                "decision": f"Detected {parallel_group_count} parallel groups for execution",
+                "rationale": "Tasks marked with [P:Group-name] can execute in parallel, "
+                           "reducing total implementation time while maintaining dependency safety.",
+                "phase": "implementation",
+                "context": {
+                    "total_tasks": len(tasks),
+                    "parallel_groups": parallel_group_count,
+                    "sequential_tasks": len(groups.get("_sequential", [])),
+                    "group_names": list(groups.keys()),
+                },
+                "impact": {
+                    "execution_strategy": "Parallel groups execute concurrently, sequential tasks run in order",
+                    "time_savings": f"Estimated {parallel_group_count}x speedup for parallelizable work",
+                },
+            },
         )
-        result["checkpoints"].append(checkpoint)
 
-        self.logger.info(f"  ✓ Checkpoint: {checkpoint.commit_sha[:8]}")
+        # Step 2: Execute each group (parallel or sequential)
+        for group_id, group_tasks in groups.items():
+            if group_id == "_sequential":
+                # Execute sequential tasks one by one
+                self.logger.info(f"  → Executing {len(group_tasks)} sequential tasks...")
+                for task in group_tasks:
+                    execution_result = self._execute_single_task(task)
+                    result["tasks_executed"] += execution_result.get("completed", 0)
+                    result["tasks_failed"] += execution_result.get("failed", 0)
+                    result["errors_recovered"] += execution_result.get("recovered", 0)
+            else:
+                # Execute parallel group as a unit
+                self.logger.info(f"  → Executing parallel group: {group_id} ({len(group_tasks)} tasks)")
+                group_result = self._execute_parallel_group(group_id, group_tasks)
+                result["parallel_groups_executed"] += 1
+                result["tasks_executed"] += group_result.get("completed", 0)
+                result["tasks_failed"] += group_result.get("failed", 0)
+                result["errors_recovered"] += group_result.get("recovered", 0)
+                result["checkpoints_created"].extend(group_result.get("checkpoints", []))
 
-        return {"tasks_executed": len(tasks), "errors_recovered": 0}
+                # Create checkpoint after each parallel group completion
+                try:
+                    group_checkpoint = self.checkpoint_manager.create_checkpoint(
+                        session_id=self.session_id,
+                        phase=CheckpointPhase.IMPLEMENT,
+                        checkpoint_type=CheckpointType.TASK_GROUP_COMPLETE,
+                        description=f"Parallel group {group_id} completed",
+                        state_snapshot=StateSnapshot(
+                            tasks_completed=result["tasks_executed"],
+                        )
+                    )
+                    result["checkpoints_created"].append(group_checkpoint.checkpoint_id)
+                    self.logger.info(f"  ✓ Checkpoint: {group_checkpoint.commit_sha[:8]}")
+                except Exception as e:
+                    self.logger.warning(f"  ⚠ Could not create checkpoint: {e}")
+
+        # Step 3: Create final phase completion checkpoint
+        self.logger.info("  → Creating phase completion checkpoint...")
+        try:
+            phase_checkpoint = self.checkpoint_manager.create_checkpoint(
+                session_id=self.session_id,
+                phase=CheckpointPhase.IMPLEMENT,
+                checkpoint_type=CheckpointType.PHASE_COMPLETE,
+                description="Implementation phase complete",
+                state_snapshot=StateSnapshot(
+                    tasks_completed=result["tasks_executed"],
+                )
+            )
+            result["checkpoints_created"].append(phase_checkpoint.checkpoint_id)
+            self.logger.info(f"  ✓ Checkpoint: {phase_checkpoint.commit_sha[:8]}")
+        except Exception as e:
+            self.logger.warning(f"  ⚠ Could not create phase checkpoint: {e}")
+
+        # Step 4: Transition session to VALIDATING state
+        self.session_manager.transition_state(
+            session_id=self.session_id,
+            new_state=SessionStatus.VALIDATING,
+        )
+
+        self.logger.info("  ✓ Implementation phase complete")
+        self.logger.info(f"  • Tasks executed: {result['tasks_executed']}")
+        self.logger.info(f"  • Tasks failed: {result['tasks_failed']}")
+        self.logger.info(f"  • Errors recovered: {result['errors_recovered']}")
+        self.logger.info(f"  • Checkpoints created: {len(result['checkpoints_created'])}")
+        self.logger.info(f"  → Session transitioned to VALIDATING state")
+
+        return result
+
+    def _execute_single_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a single sequential task with error handling.
+
+        Args:
+            task: Task dictionary with task metadata
+
+        Returns:
+            Dict with execution results (completed, failed, recovered)
+        """
+        task_id = task.get("id", "unknown")
+        self.logger.info(f"    → Executing task: {task_id}")
+
+        result = {
+            "completed": 0,
+            "failed": 0,
+            "recovered": 0,
+        }
+
+        # In production, this would delegate to the appropriate subagent
+        # For now, we simulate successful execution
+        try:
+            # Simulate task execution
+            # In production: subagent = self.subagent_factory.create_subagent_for_task(task)
+            # In production: execution_result = subagent.execute(task)
+
+            # Simulate potential error and recovery
+            import random
+            if random.random() < 0.1:  # 10% chance of simulated error
+                raise Exception(f"Simulated execution error for task {task_id}")
+
+            result["completed"] = 1
+            self.logger.info(f"    ✓ Task {task_id} completed")
+
+        except Exception as e:
+            self.logger.warning(f"    ✗ Task {task_id} failed: {e}")
+
+            # Try to recover using error handler
+            recovery_result = self._attempt_task_recovery(task, e)
+
+            if recovery_result.get("success"):
+                result["recovered"] = 1
+                result["completed"] = 1
+                self.logger.info(f"    ✓ Task {task_id} recovered")
+            else:
+                result["failed"] = 1
+                self.logger.error(f"    ✗ Task {task_id} could not be recovered")
+
+        return result
+
+    def _execute_parallel_group(
+        self,
+        group_id: str,
+        group_tasks: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """
+        Execute a parallel task group using ParallelCoordinator.
+
+        Args:
+            group_id: Group identifier
+            group_tasks: List of tasks in the group
+
+        Returns:
+            Dict with execution results and checkpoint IDs
+        """
+        result = {
+            "completed": 0,
+            "failed": 0,
+            "recovered": 0,
+            "checkpoints": [],
+        }
+
+        try:
+            # Execute the parallel group through the coordinator
+            group_metadata = self.parallel_coordinator.execute_parallel_group(
+                group_tasks=group_tasks,
+                group_id=group_id,
+            )
+
+            # Process results
+            completed_count = sum(
+                1 for r in group_metadata.results
+                if r.get("status") == "completed"
+            )
+            failed_count = len(group_metadata.results) - completed_count
+
+            result["completed"] = completed_count
+            result["failed"] = failed_count
+
+            self.logger.info(f"    • Group {group_id}: {completed_count} completed, {failed_count} failed")
+
+            # Handle any errors in the group
+            if group_metadata.errors:
+                self.logger.warning(f"    • Group {group_id} had {len(group_metadata.errors)} errors")
+                for error in group_metadata.errors:
+                    # Attempt recovery for each error
+                    recovery_result = self._attempt_task_recovery(
+                        task={"id": f"{group_id}-error"},  # Placeholder
+                        error=Exception(error)
+                    )
+                    if recovery_result.get("success"):
+                        result["recovered"] += 1
+
+        except Exception as e:
+            self.logger.error(f"    ✗ Parallel group {group_id} execution failed: {e}")
+
+            # Attempt recovery for the entire group
+            recovery_result = self._attempt_task_recovery(
+                task={"id": group_id, "group": True},
+                error=e
+            )
+
+            if recovery_result.get("success"):
+                result["recovered"] = len(group_tasks)
+                result["completed"] = len(group_tasks)
+            else:
+                result["failed"] = len(group_tasks)
+
+        return result
+
+    def _attempt_task_recovery(
+        self,
+        task: Dict[str, Any],
+        error: Exception,
+    ) -> Dict[str, Any]:
+        """
+        Attempt to recover from a task execution error using the error handler.
+
+        This method implements autonomous error recovery without human input:
+        - Detects error type
+        - Selects recovery strategy (retry, alternative approach, rollback)
+        - Executes recovery strategy
+        - Returns recovery result
+
+        Args:
+            task: Task dictionary being executed
+            error: Exception that occurred during execution
+
+        Returns:
+            Dict with recovery results (success, message)
+        """
+        recovery_context = {
+            "task_id": task.get("id", "unknown"),
+            "is_group": task.get("group", False),
+            "retry_count": 0,
+            "has_checkpoint": True,  # We have checkpoints in implementation phase
+            "can_skip": False,  # Don't skip implementation tasks
+        }
+
+        try:
+            # Detect and classify the error
+            detected_error = self.error_handler.detect_error(
+                output=str(error),
+                source="implementation_phase",
+                exit_code=1,
+                context=recovery_context,
+            )
+
+            if not detected_error:
+                self.logger.warning("Could not detect error type")
+                return {"success": False, "message": "Error detection failed"}
+
+            # Select recovery strategy (no human input in implementation phase)
+            strategy = self.error_handler.select_recovery_strategy(
+                error=detected_error,
+                context=recovery_context,
+            )
+
+            self.logger.info(f"    → Recovery strategy: {strategy.value}")
+
+            # For autonomous implementation, avoid human_input strategies
+            if strategy.value == "request_human_input":
+                self.logger.warning("    → Skipping human input request, using alternative approach")
+                strategy = RecoveryStrategy.ALTERNATIVE_APPROACH
+
+            # Execute the recovery strategy
+            recovery_result = self.error_handler.execute_recovery(
+                strategy=strategy,
+                context={
+                    **recovery_context,
+                    "error": detected_error,
+                },
+            )
+
+            if recovery_result.success:
+                self.logger.info(f"    ✓ Recovery successful: {recovery_result.message}")
+                return {
+                    "success": True,
+                    "message": recovery_result.message,
+                    "strategy": strategy.value,
+                }
+            else:
+                self.logger.warning(f"    ✗ Recovery failed: {recovery_result.message}")
+                return {
+                    "success": False,
+                    "message": recovery_result.message,
+                    "strategy": strategy.value,
+                }
+
+        except Exception as e:
+            self.logger.error(f"    ✗ Error during recovery attempt: {e}")
+            return {"success": False, "message": f"Recovery failed: {str(e)}"}
 
     def _phase_validation(self, prd_path: Path) -> Dict[str, Any]:
         """Phase 4: Validate implementation quality."""
