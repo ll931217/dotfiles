@@ -28,7 +28,9 @@ from typing import Any, Dict, List, Optional, Tuple
 # Add maestro scripts to path
 maestro_root = Path(__file__).parent.parent
 scripts_dir = maestro_root / "scripts"
+decision_engine_dir = maestro_root / "decision-engine" / "scripts"
 sys.path.insert(0, str(scripts_dir))
+sys.path.insert(0, str(decision_engine_dir))
 
 try:
     from session_manager import SessionManager, SessionStatus
@@ -40,7 +42,9 @@ try:
     from parallel_coordinator import ParallelCoordinator
 except ImportError as e:
     print(f"Error importing Maestro modules: {e}")
-    print("Please ensure all Maestro scripts are available in {scripts_dir}")
+    print(f"Scripts directory: {scripts_dir}")
+    print(f"Decision engine directory: {decision_engine_dir}")
+    print("Please ensure all Maestro scripts are available")
     sys.exit(1)
 
 
@@ -280,35 +284,90 @@ class MaestroOrchestrator:
         return result
 
     def _phase_planning(self, feature_request: str) -> Path:
-        """Phase 1: Generate PRD autonomously."""
+        """Phase 1: Generate PRD with one-time human input.
+
+        This is the ONLY phase where human input is requested. The /flow:plan
+        skill will be invoked with human interaction enabled. After planning
+        completes, all subsequent phases proceed autonomously without human input.
+
+        Args:
+            feature_request: User's feature request description
+
+        Returns:
+            Path to the generated PRD file
+        """
         self.logger.info("Phase 1: Planning")
         self.logger.info(f"  Feature request: {feature_request}")
 
-        # Update session state
+        # Update session state to PLANNING
         self.session_manager.transition_state(
             session_id=self.session_id,
             new_state=SessionStatus.PLANNING,
         )
 
-        # TODO: Invoke /flow:plan in autonomous mode
-        # For now, create placeholder
+        # Prepare the planning skill invocation
+        # The /flow:plan skill will be invoked with human interaction enabled
+        # This is the ONLY time human input is requested in the entire workflow
+        self.logger.info("  → Invoking /flow:plan skill (one-time human interaction)")
         self.logger.info("  → Analyzing codebase for context...")
-        self.logger.info("  → Making technical decisions...")
+        self.logger.info("  → Gathering technical requirements...")
 
-        # Log tech stack decision
-        tech_decision = self.decision_logger.log_decision(
-            session_id=self.session_id,
-            category=DecisionCategory.TECH_STACK,
-            decision="Autonomous PRD generation",
-            rationale="Orchestrator will generate PRD without clarifying questions",
-            context={"phase": "planning"},
+        # Prepare skill context for flow:plan invocation
+        plan_skill_context = {
+            "feature_request": feature_request,
+            "autonomous_mode": True,  # Indicate this is part of autonomous workflow
+            "session_id": self.session_id,
+            "enable_human_interaction": True,  # Allow human input during planning
+        }
+
+        # Invoke the /flow:plan skill
+        # Note: This will be executed by Claude Code's Skill tool
+        # The skill will prompt the human exactly once for clarifying information
+        plan_invocation = self.skill_orchestrator.invoke_skill(
+            skill_name="flow:plan",
+            context=plan_skill_context,
         )
-        result["decisions"].append(tech_decision)
 
-        self.logger.info("  ✓ PRD would be generated here (integrating with /flow:plan)")
+        self.logger.info(f"  → Skill invocation prepared: {plan_invocation.skill_name}")
 
-        # Return placeholder path
-        return self.project_root / ".flow" / "prd-placeholder.md"
+        # Log the planning decision
+        planning_decision_id = self.decision_logger.log_decision(
+            decision_type="planning",
+            decision={
+                "decision": "Invoke /flow:plan for PRD generation",
+                "rationale": "Planning phase requires one-time human input to clarify requirements. "
+                           "After planning completes, all subsequent phases are fully autonomous.",
+                "phase": "planning",
+                "context": {
+                    "feature_request": feature_request,
+                    "session_id": self.session_id,
+                    "skill_invocation": plan_invocation.skill_name,
+                },
+                "impact": {
+                    "autonomous_after_planning": "All subsequent phases will proceed without human input",
+                    "human_interaction_count": "Exactly one interaction during planning",
+                },
+            },
+        )
+
+        self.logger.info(f"  → Planning decision logged: {planning_decision_id}")
+
+        # For now, create a placeholder PRD path
+        # In production, the /flow:plan skill would create the actual PRD file
+        # and return its path. The orchestrator would then read this file
+        # and pass it to subsequent phases.
+        prd_filename = f"prd-{self.session_id[:8]}.md"
+        prd_path = self.project_root / ".flow" / prd_filename
+
+        # Log PRD creation intent
+        self.logger.info(f"  → PRD will be saved to: {prd_path}")
+        self.logger.info("  ✓ Planning phase prepared - /flow:plan will be executed with human interaction")
+
+        # Transition session state to GENERATING_TASKS for next phase
+        # This happens AFTER /flow:plan completes (which includes human interaction)
+        # The transition will be called by the execute_phase wrapper, not here
+
+        return prd_path
 
     def _phase_task_generation(self, prd_path: Path) -> List[Dict[str, Any]]:
         """Phase 2: Generate implementation tasks."""

@@ -253,6 +253,32 @@ task_categories:
 # Skill-specific trigger patterns
 # These trigger the use of specific Agent Skills via the Skill tool
 skill_mappings:
+  flow:plan:
+    triggers:
+      - "generate.*prd"
+      - "create.*prd"
+      - "plan.*feature"
+      - "requirements.*doc"
+      - "product.*requirements"
+    prompt_template: |
+      Generate a Product Requirements Document (PRD) for: {task_description}
+
+      Autonomous Mode: {autonomous_mode}
+      Session ID: {session_id}
+      Enable Human Interaction: {enable_human_interaction}
+
+      Requirements:
+      - Generate comprehensive PRD with functional requirements
+      - Include technical considerations and constraints
+      - Define acceptance criteria
+      - If enable_human_interaction is True, ask clarifying questions exactly once
+      - If autonomous_mode is True, proceed with sensible defaults for ambiguous decisions
+
+      Output:
+      - PRD should be saved to .flow/prd-{session_id}.md
+      - Return the path to the generated PRD file
+    description: "PRD generation skill for planning phase with one-time human interaction"
+
   frontend-design:
     triggers:
       - "create.*ui"

@@ -8,6 +8,7 @@ recovery points throughout the development lifecycle.
 """
 
 import json
+import logging
 import subprocess
 from datetime import datetime
 from enum import Enum
@@ -15,6 +16,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field, asdict
 from uuid import uuid4
+
+# Setup logger
+logger = logging.getLogger("maestro.checkpoint")
 
 
 class CheckpointType(str, Enum):
@@ -122,6 +126,33 @@ class ValidationResult:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
+
+
+@dataclass
+class RollbackOperation:
+    """Details of a rollback operation for logging and tracking."""
+    operation_id: str
+    timestamp: str
+    session_id: str
+    checkpoint_id: str
+    checkpoint_description: str
+    checkpoint_sha: str
+    rollback_mode: str  # "hard" or "mixed"
+    pre_rollback_head: str
+    post_rollback_head: str
+    validation_passed: bool
+    state_snapshot_restored: Optional[StateSnapshot] = None
+    validation_errors: List[str] = field(default_factory=list)
+    validation_warnings: List[str] = field(default_factory=list)
+    success: bool = True
+    error_message: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        data = asdict(self)
+        if self.state_snapshot_restored:
+            data["state_snapshot_restored"] = self.state_snapshot_restored.to_dict()
+        return data
 
 
 class CheckpointManager:
@@ -471,64 +502,267 @@ class CheckpointManager:
         session_id: str,
         checkpoint_id: str,
         hard_reset: bool = False,
-    ) -> bool:
+        log_rollback: bool = True,
+    ) -> RollbackOperation:
         """
-        Rollback repository to a previous checkpoint.
+        Rollback repository to a previous checkpoint with comprehensive logging and validation.
+
+        This critical safeguard method restores the repository to a known good state,
+        validates the rollback was successful, and logs all operations for audit trail.
 
         Args:
             session_id: Session UUID
             checkpoint_id: Checkpoint UUID to rollback to
-            hard_reset: If True, use --hard; otherwise use --mixed
+            hard_reset: If True, use --hard reset (discard all changes); otherwise use --mixed
+            log_rollback: Whether to log the rollback operation to session history
 
         Returns:
-            True if rollback succeeded
+            RollbackOperation object with detailed rollback information
 
         Raises:
             FileNotFoundError: If checkpoint not found
-            ValueError: If validation fails
+            ValueError: If validation fails or uncommitted changes present
             subprocess.SubprocessError: If git commands fail
         """
-        # Get checkpoint
-        checkpoint = self.get_checkpoint(session_id, checkpoint_id)
+        operation_id = str(uuid4())
+        timestamp = self._current_timestamp()
 
-        # Validate current state
-        validation = self.validate_checkpoint_state()
-        if validation.has_uncommitted_changes:
-            raise ValueError(
-                "Cannot rollback with uncommitted changes. "
-                "Commit or stash changes first."
-            )
-
-        # Perform git reset
-        reset_mode = "--hard" if hard_reset else "--mixed"
-        reset_result = self._run_git_command(
-            ["reset", reset_mode, checkpoint.commit_sha]
+        logger.info(
+            f"Starting rollback operation {operation_id} to checkpoint {checkpoint_id}"
         )
 
-        if reset_result.returncode != 0:
-            raise ValueError(f"Git reset failed: {reset_result.stderr}")
+        try:
+            # Get checkpoint details
+            checkpoint = self.get_checkpoint(session_id, checkpoint_id)
+            logger.info(
+                f"Rolling back to checkpoint: {checkpoint.description} "
+                f"(SHA: {checkpoint.commit_sha[:8]})"
+            )
 
-        # Update checkpoint metadata
-        checkpoint.rollback_used = True
-        checkpoint.rollback_count += 1
+            # Capture pre-rollback state
+            pre_rollback_result = self._run_git_command(["rev-parse", "HEAD"])
+            pre_rollback_head = pre_rollback_result.stdout.strip()
+            logger.info(f"Pre-rollback HEAD: {pre_rollback_head[:8]}")
 
-        # Update checkpoint log
-        log_data = self._load_checkpoint_log(session_id)
-        for i, cp_data in enumerate(log_data["checkpoints"]):
-            if cp_data["checkpoint_id"] == checkpoint_id:
-                log_data["checkpoints"][i]["rollback_used"] = True
-                log_data["checkpoints"][i]["rollback_count"] = checkpoint.rollback_count
-                break
+            # Validate current state before rollback
+            validation = self.validate_checkpoint_state()
+            if validation.has_uncommitted_changes:
+                error_msg = (
+                    "Cannot rollback with uncommitted changes. "
+                    "Commit or stash changes first."
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
-        # Update summary
-        log_data["summary"]["checkpoints_used_for_rollback"] += 1
+            # Perform git reset
+            reset_mode = "hard" if hard_reset else "mixed"
+            logger.info(f"Executing git reset --{reset_mode} {checkpoint.commit_sha[:8]}")
 
-        # Save updated log
-        log_path = self._get_checkpoint_log_path(session_id)
-        with open(log_path, "w") as f:
+            reset_result = self._run_git_command(
+                ["reset", f"--{reset_mode}", checkpoint.commit_sha]
+            )
+
+            if reset_result.returncode != 0:
+                error_msg = f"Git reset failed: {reset_result.stderr}"
+                logger.error(error_msg)
+                # Create failed rollback operation record
+                failed_op = RollbackOperation(
+                    operation_id=operation_id,
+                    timestamp=timestamp,
+                    session_id=session_id,
+                    checkpoint_id=checkpoint_id,
+                    checkpoint_description=checkpoint.description,
+                    checkpoint_sha=checkpoint.commit_sha,
+                    rollback_mode=reset_mode,
+                    pre_rollback_head=pre_rollback_head,
+                    post_rollback_head=pre_rollback_head,
+                    validation_passed=False,
+                    success=False,
+                    error_message=error_msg,
+                )
+                if log_rollback:
+                    self._log_rollback_operation(failed_op)
+                raise ValueError(error_msg)
+
+            # Capture post-rollback state
+            post_rollback_result = self._run_git_command(["rev-parse", "HEAD"])
+            post_rollback_head = post_rollback_result.stdout.strip()
+            logger.info(f"Post-rollback HEAD: {post_rollback_head[:8]}")
+
+            # Post-rollback validation: Verify HEAD matches checkpoint SHA
+            validation_errors = []
+            validation_warnings = []
+            validation_passed = True
+
+            if post_rollback_head != checkpoint.commit_sha:
+                validation_passed = False
+                error_msg = (
+                    f"Post-rollback validation failed: HEAD {post_rollback_head[:8]} "
+                    f"does not match checkpoint SHA {checkpoint.commit_sha[:8]}"
+                )
+                validation_errors.append(error_msg)
+                logger.error(error_msg)
+
+            # Validate working directory state
+            post_validation = self.validate_checkpoint_state()
+            if post_validation.has_uncommitted_changes:
+                validation_warnings.append(
+                    "Working directory has uncommitted changes after rollback"
+                )
+                logger.warning("Uncommitted changes detected after rollback")
+
+            if not post_validation.tests_passing:
+                validation_warnings.append(
+                    "Tests were failing at rollback point"
+                )
+                logger.warning("Rolling back to a state with failing tests")
+
+            # Update checkpoint metadata
+            checkpoint.rollback_used = True
+            checkpoint.rollback_count += 1
+
+            # Update checkpoint log
+            log_data = self._load_checkpoint_log(session_id)
+            for i, cp_data in enumerate(log_data["checkpoints"]):
+                if cp_data["checkpoint_id"] == checkpoint_id:
+                    log_data["checkpoints"][i]["rollback_used"] = True
+                    log_data["checkpoints"][i]["rollback_count"] = checkpoint.rollback_count
+                    break
+
+            # Update summary
+            log_data["summary"]["checkpoints_used_for_rollback"] += 1
+
+            # Save updated log
+            log_path = self._get_checkpoint_log_path(session_id)
+            with open(log_path, "w") as f:
+                json.dump(log_data, f, indent=2)
+
+            # Create rollback operation record
+            rollback_op = RollbackOperation(
+                operation_id=operation_id,
+                timestamp=timestamp,
+                session_id=session_id,
+                checkpoint_id=checkpoint_id,
+                checkpoint_description=checkpoint.description,
+                checkpoint_sha=checkpoint.commit_sha,
+                rollback_mode=reset_mode,
+                pre_rollback_head=pre_rollback_head,
+                post_rollback_head=post_rollback_head,
+                validation_passed=validation_passed,
+                state_snapshot_restored=checkpoint.state_snapshot,
+                validation_errors=validation_errors,
+                validation_warnings=validation_warnings,
+                success=validation_passed,
+            )
+
+            # Log rollback operation
+            if log_rollback:
+                self._log_rollback_operation(rollback_op)
+
+            if validation_passed:
+                logger.info(
+                    f"Rollback operation {operation_id} completed successfully. "
+                    f"Repository restored to checkpoint: {checkpoint.description}"
+                )
+            else:
+                logger.warning(
+                    f"Rollback operation {operation_id} completed with validation warnings"
+                )
+
+            return rollback_op
+
+        except Exception as e:
+            logger.exception(f"Rollback operation {operation_id} failed with exception")
+            raise
+
+    def _log_rollback_operation(self, rollback_op: RollbackOperation) -> None:
+        """
+        Log rollback operation to session history for audit trail.
+
+        Args:
+            rollback_op: RollbackOperation object to log
+        """
+        session_dir = self.checkpoints_dir / rollback_op.session_id
+        session_dir.mkdir(exist_ok=True)
+
+        rollback_log_path = session_dir / "rollback_history.json"
+
+        # Load existing log or create new
+        if rollback_log_path.exists():
+            with open(rollback_log_path) as f:
+                log_data = json.load(f)
+        else:
+            log_data = {
+                "session_id": rollback_op.session_id,
+                "generated_at": self._current_timestamp(),
+                "rollback_operations": [],
+            }
+
+        # Add rollback operation
+        log_data["rollback_operations"].append(rollback_op.to_dict())
+        log_data["last_updated"] = self._current_timestamp()
+
+        # Save to disk
+        with open(rollback_log_path, "w") as f:
             json.dump(log_data, f, indent=2)
 
-        return True
+        logger.info(
+            f"Rollback operation {rollback_op.operation_id} logged to "
+            f"{rollback_log_path}"
+        )
+
+    def get_rollback_history(self, session_id: str) -> List[RollbackOperation]:
+        """
+        Retrieve rollback history for a session.
+
+        Args:
+            session_id: Session UUID
+
+        Returns:
+            List of RollbackOperation objects, sorted by timestamp (newest first)
+
+        Raises:
+            FileNotFoundError: If no rollback history exists for session
+        """
+        session_dir = self.checkpoints_dir / session_id
+        rollback_log_path = session_dir / "rollback_history.json"
+
+        if not rollback_log_path.exists():
+            return []
+
+        with open(rollback_log_path) as f:
+            log_data = json.load(f)
+
+        rollback_ops = []
+        for op_data in log_data.get("rollback_operations", []):
+            # Reconstruct StateSnapshot if present
+            snapshot = None
+            if op_data.get("state_snapshot_restored"):
+                snapshot = StateSnapshot(**op_data["state_snapshot_restored"])
+
+            rollback_ops.append(
+                RollbackOperation(
+                    operation_id=op_data["operation_id"],
+                    timestamp=op_data["timestamp"],
+                    session_id=op_data["session_id"],
+                    checkpoint_id=op_data["checkpoint_id"],
+                    checkpoint_description=op_data["checkpoint_description"],
+                    checkpoint_sha=op_data["checkpoint_sha"],
+                    rollback_mode=op_data["rollback_mode"],
+                    pre_rollback_head=op_data["pre_rollback_head"],
+                    post_rollback_head=op_data["post_rollback_head"],
+                    validation_passed=op_data["validation_passed"],
+                    state_snapshot_restored=snapshot,
+                    validation_errors=op_data.get("validation_errors", []),
+                    validation_warnings=op_data.get("validation_warnings", []),
+                    success=op_data.get("success", True),
+                    error_message=op_data.get("error_message"),
+                )
+            )
+
+        # Sort by timestamp descending (newest first)
+        rollback_ops.sort(key=lambda op: op.timestamp, reverse=True)
+        return rollback_ops
 
     def get_checkpoint_summary(self, session_id: str) -> CheckpointSummary:
         """
@@ -624,7 +858,7 @@ def main():
     )
     parser.add_argument(
         "action",
-        choices=["create", "list", "get", "rollback", "delete", "validate"],
+        choices=["create", "list", "get", "rollback", "rollback_history", "delete", "validate"],
         help="Action to perform",
     )
     parser.add_argument("--session-id", required=True, help="Session ID")
@@ -693,15 +927,16 @@ def main():
         if not args.checkpoint_id:
             parser.error("--checkpoint-id required for rollback action")
 
-        success = manager.rollback_to_checkpoint(
+        rollback_op = manager.rollback_to_checkpoint(
             args.session_id,
             args.checkpoint_id,
             hard_reset=args.hard_reset,
         )
-        output = {
-            "success": success,
-            "rolled_back_to": args.checkpoint_id,
-        }
+        output = rollback_op.to_dict()
+
+    elif args.action == "rollback_history":
+        rollback_history = manager.get_rollback_history(args.session_id)
+        output = [op.to_dict() for op in rollback_history]
 
     elif args.action == "delete":
         if not args.checkpoint_id:

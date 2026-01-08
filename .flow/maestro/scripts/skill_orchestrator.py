@@ -107,6 +107,34 @@ class SkillOrchestrator:
 
     # Default skill mappings from subagent-types.yaml
     DEFAULT_SKILL_MAPPINGS: Dict[str, SkillMapping] = {
+        "flow:plan": SkillMapping(
+            skill_name="flow:plan",
+            triggers=[
+                r"generate.*prd",
+                r"create.*prd",
+                r"plan.*feature",
+                r"requirements.*doc",
+                r"product.*requirements",
+            ],
+            prompt_template="""Generate a Product Requirements Document (PRD) for: {task_description}
+
+Autonomous Mode: {autonomous_mode}
+Session ID: {session_id}
+Enable Human Interaction: {enable_human_interaction}
+
+Requirements:
+- Generate comprehensive PRD with functional requirements
+- Include technical considerations and constraints
+- Define acceptance criteria
+- If enable_human_interaction is True, ask clarifying questions exactly once
+- If autonomous_mode is True, proceed with sensible defaults for ambiguous decisions
+
+Output:
+- PRD should be saved to .flow/prd-{session_id}.md
+- Return the path to the generated PRD file
+""",
+            description="PRD generation skill for planning phase with one-time human interaction"
+        ),
         "frontend-design": SkillMapping(
             skill_name="frontend-design",
             triggers=[
