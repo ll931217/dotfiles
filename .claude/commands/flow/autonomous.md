@@ -9,19 +9,19 @@ End-to-end autonomous implementation workflow that executes plan → generate-ta
 ```
 
 **CRITICAL: Autonomous Execution Mode**
-- This command runs completely autonomously - NO checkpoints, NO pauses, NO confirmations
-- Execution continues from planning through completion without stopping
-- All child commands run with `autonomous_mode=true` to skip interactive prompts
+- Phase 1 (Planning) requires human interaction - clarifying questions are asked
+- Phases 2-5 run completely autonomously - NO checkpoints, NO pauses, NO confirmations
+- After planning is approved, execution continues through completion without stopping
 - Only stops for critical errors that require human intervention
 
 Maestro will:
-1. Generate PRD autonomously (no clarifying questions)
-2. Create implementation tasks with dependencies (no "Go" confirmation)
-3. Execute tasks with specialized subagents (no task-by-task confirmations)
-4. Validate implementation quality (auto-recover on failures)
-5. Generate comprehensive report
+1. **Planning phase**: Interactive - ask clarifying questions, refine requirements
+2. **Task Generation**: Autonomous (no "Go" confirmation)
+3. **Implementation**: Autonomous (no task-by-task confirmations)
+4. **Validation**: Autonomous (auto-recover on failures)
+5. **Handoff**: Present final report
 
-**No human interaction required** until final handoff.
+**Human interaction required ONLY during Phase 1 (Planning).**
 
 ## Overview
 
@@ -98,22 +98,27 @@ mkdir -p .flow/maestro/sessions/<session-id>
 # Initial git checkpoint created
 ```
 
-### Phase 2: Planning
+### Phase 2: Planning (INTERACTIVE)
 
 1. **Auto-discovery** - Analyze codebase for context
-2. **Make decisions** - Decision engine selects tech/architecture
-3. **Generate PRD** - Create PRD without clarifying questions
-4. **Log decisions** - Record all decisions with rationale
+2. **Ask questions** - Use AskUserQuestion for clarifying requirements
+3. **Make decisions** - Decision engine selects tech/architecture (with human input)
+4. **Generate PRD** - Create PRD with requirements gathered interactively
+5. **Get approval** - Wait for user to approve the PRD
+6. **Log decisions** - Record all decisions with rationale
 
 ```bash
-[Maestro] Phase 1: Planning
+[Maestro] Phase 1: Planning (INTERACTIVE)
 [Maestro]   → Analyzing codebase...
+[Maestro]   → Question: Which OAuth providers should be supported?
 [Maestro]   → Decision: Tech stack - React + TypeScript (existing)
 [Maestro]   → Decision: Architecture - Service layer pattern
-[Maestro]   ✓ PRD generated: prd-feature-v1.md
+[Maestro]   → Generating PRD...
+[Maestro]   ✓ PRD approved by user: prd-feature-v1.md
+[Maestro] → Switching to autonomous mode for remaining phases...
 ```
 
-### Phase 3: Task Generation
+### Phase 3: Task Generation (AUTONOMOUS)
 
 1. **Read PRD** - Parse requirements and priorities
 2. **Generate epics** - 5-7 high-level epics
@@ -127,7 +132,7 @@ mkdir -p .flow/maestro/sessions/<session-id>
 [Maestro]   ✓ Tasks ready for execution
 ```
 
-### Phase 4: Implementation
+### Phase 4: Implementation (AUTONOMOUS)
 
 1. **Execute parallel groups** - [P:Group-X] markers
 2. **Delegate to subagents** - Auto-detect specialized agents
@@ -144,7 +149,7 @@ mkdir -p .flow/maestro/sessions/<session-id>
 [Maestro]   → [P:Group-2] Executing 4 tasks...
 ```
 
-### Phase 5: Validation
+### Phase 5: Validation (AUTONOMOUS)
 
 1. **Run test suite** - Verify all tests pass
 2. **Validate PRD** - Check all requirements met
@@ -622,29 +627,41 @@ git checkout <checkpoint-sha>
 
 ## AI Execution Instructions
 
-When this command is invoked, execute the following workflow completely autonomously:
+When this command is invoked, execute the following workflow:
 
 ### CRITICAL EXECUTION RULES
 
-**AUTONOMOUS MODE ENABLED:**
+**MODE SWITCH:**
+- **Phase 1 (Planning)**: INTERACTIVE - Ask clarifying questions, use AskUserQuestion
+- **Phases 2-5**: AUTONOMOUS - NO checkpoints, NO pauses, NO confirmations
+
+**AFTER PLANNING IS APPROVED:**
 - DO NOT pause for any confirmations
-- DO NOT use AskUserQuestion tool
+- DO NOT use AskUserQuestion tool (except for critical errors)
 - DO NOT wait for "Go" signals
 - DO NOT stop at checkpoints
-- Continue execution from start to finish without interruption
+- Continue execution from task generation through completion without interruption
 - Only stop for critical errors that absolutely require human intervention
 
 **EXECUTION PHASES:**
 
-### Phase 1: Planning (Autonomous)
+### Phase 1: Planning (INTERACTIVE)
 1. Analyze the user's feature request
 2. Explore codebase to understand existing patterns
-3. Invoke decision-engine skill for technical decisions
-4. Generate PRD with `status: approved` (skip clarifying questions)
-5. Save PRD to `.flow/prd-{feature}-v1.md`
+3. **ASK clarifying questions** - Use AskUserQuestion for:
+   - Ambiguous requirements
+   - Multiple valid approaches where user preference matters
+   - Missing information
+   - Conflicting specifications
+4. Invoke decision-engine skill for technical decisions (with human review)
+5. Generate PRD with `status: approved`
+6. **WAIT for user approval** of the PRD before proceeding
+7. Save PRD to `.flow/prd-{feature}-v1.md`
 
-### Phase 2: Task Generation (Autonomous)
-1. Read the generated PRD
+**Transition to Autonomous:** Once PRD is approved, switch to autonomous mode for remaining phases.
+
+### Phase 2: Task Generation (AUTONOMOUS)
+1. Read the approved PRD
 2. Generate 5-7 epics based on requirements
 3. Generate sub-tasks with dependencies
 4. **SKIP the "Wait for Go" checkpoint** - proceed directly to sub-task generation
@@ -652,7 +669,7 @@ When this command is invoked, execute the following workflow completely autonomo
 6. Create tasks in beads (or TodoWrite fallback)
 7. Update PRD frontmatter with related_issues
 
-### Phase 3: Implementation (Autonomous)
+### Phase 3: Implementation (AUTONOMOUS)
 1. Execute tasks continuously without pausing
 2. Use specialized subagents via Task tool
 3. Execute parallel groups via concurrent Task invocations
@@ -661,7 +678,7 @@ When this command is invoked, execute the following workflow completely autonomo
 6. Continue until all tasks are complete
 7. Auto-recover from failures using alternative approaches
 
-### Phase 4: Validation (Autonomous)
+### Phase 4: Validation (AUTONOMOUS)
 1. Run test suite
 2. Validate PRD requirements are met
 3. Run quality gates (lint, typecheck, security)
@@ -695,19 +712,24 @@ When this command is invoked, execute the following workflow completely autonomo
 - OR critical error with no recovery options
 - OR resource limits exceeded
 
-**DO NOT STOP FOR:**
-- Task confirmations
-- Phase boundaries
-- Checkpoint reviews
-- Progress updates
-- Go signals
-- User approvals
+**PHASE 1 (PLANNING) - INTERACTIVE:**
+- Use AskUserQuestion for clarifications
+- Wait for PRD approval before proceeding
+- Get human input on technical decisions
 
-**ONLY STOP FOR:**
+**PHASES 2-5 - AUTONOMOUS:**
+- DO NOT stop for task confirmations
+- DO NOT pause at phase boundaries
+- DO NOT pause for checkpoint reviews
+- DO NOT wait for progress updates
+- DO NOT wait for Go signals
+- DO NOT wait for user approvals
+
+**ONLY STOP FOR (after Phase 1):**
 - Critical unrecoverable errors
 - Resource exhaustion
-- Ambiguous requirements not covered by PRD
-- Conflicting specifications
+- Ambiguous requirements not covered by approved PRD
+- Conflicting specifications discovered during implementation
 
 ## See Also
 
