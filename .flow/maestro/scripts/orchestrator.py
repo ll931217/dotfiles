@@ -37,9 +37,12 @@ try:
     from decision_logger import DecisionLogger
     from error_handler import ErrorHandler, ErrorCategory
     from checkpoint_manager import CheckpointManager, CheckpointType, CheckpointPhase, StateSnapshot
+    from risky_operations import RiskyOperationDetector, OperationRisk
     from subagent_factory import SubagentFactory
     from skill_orchestrator import SkillOrchestrator
     from parallel_coordinator import ParallelCoordinator
+    from task_ordering import TaskOrderingEngine
+    from resource_monitor import ResourceMonitor, ResourceLimits
 except ImportError as e:
     print(f"Error importing Maestro modules: {e}")
     print(f"Scripts directory: {scripts_dir}")
@@ -79,9 +82,13 @@ class MaestroOrchestrator:
         self.decision_logger = DecisionLogger(self.project_root)
         self.error_handler = ErrorHandler(self.project_root)
         self.checkpoint_manager = CheckpointManager(self.project_root)
+        self.risky_operation_detector = RiskyOperationDetector()
         self.subagent_factory = SubagentFactory()
         self.skill_orchestrator = SkillOrchestrator(self.project_root)
         self.parallel_coordinator = ParallelCoordinator(self.project_root)
+
+        # Initialize resource monitor
+        self.resource_monitor: Optional[ResourceMonitor] = None
 
         # Setup logging
         self._setup_logging()
@@ -120,6 +127,16 @@ class MaestroOrchestrator:
                 "validate_prd": True,
                 "quality_gates": ["lint", "typecheck", "security"],
                 "fail_on_gate_violation": True,
+            },
+            "resource_limits": {
+                "max_duration_seconds": 3600,
+                "max_tokens": 1000000,
+                "max_api_calls": 1000,
+                "checkpoint_interval": 300,
+                "duration_warning_threshold": 0.80,
+                "token_warning_threshold": 0.80,
+                "api_call_warning_threshold": 0.80,
+                "completion_threshold": 0.80,
             },
         }
 
@@ -166,6 +183,75 @@ class MaestroOrchestrator:
             ))
             self.logger.addHandler(file_handler)
 
+    def _initialize_resource_monitor(self, session_id: str):
+        """
+        Initialize resource monitor with configured limits.
+
+        Args:
+            session_id: Current session ID
+        """
+        limits_config = self.config.get("resource_limits", {})
+
+        limits = ResourceLimits(
+            max_duration_seconds=limits_config.get("max_duration_seconds", 3600),
+            max_tokens=limits_config.get("max_tokens", 1000000),
+            max_api_calls=limits_config.get("max_api_calls", 1000),
+            checkpoint_interval=limits_config.get("checkpoint_interval", 300),
+            duration_warning_threshold=limits_config.get("duration_warning_threshold", 0.80),
+            token_warning_threshold=limits_config.get("token_warning_threshold", 0.80),
+            api_call_warning_threshold=limits_config.get("api_call_warning_threshold", 0.80),
+            completion_threshold=limits_config.get("completion_threshold", 0.80),
+        )
+
+        self.resource_monitor = ResourceMonitor(limits, session_id, self.project_root)
+        self.logger.info(f"Resource monitor initialized for session {session_id}")
+
+    def _check_resource_limits_before_phase(self, phase_name: str, progress_estimate: float) -> bool:
+        """
+        Check resource limits before executing a phase.
+
+        Args:
+            phase_name: Name of the phase about to execute
+            progress_estimate: Estimated completion (0.0 to 1.0)
+
+        Returns:
+            True if execution should continue, False otherwise
+        """
+        if not self.resource_monitor:
+            return True
+
+        # Check current limits
+        limit_check = self.resource_monitor.check_limits()
+
+        # Log status
+        self.resource_monitor.log_status()
+
+        # Check if we should continue
+        should_continue = self.resource_monitor.should_continue(progress_estimate)
+
+        if not should_continue:
+            self.logger.warning(
+                f"Cannot continue phase '{phase_name}': {limit_check.reason}"
+            )
+            self.logger.warning(
+                f"Progress: {progress_estimate*100:.1f}%, "
+                f"Saving partial results"
+            )
+            return False
+
+        return True
+
+    def _record_operation(self, tokens: int, api_call: bool = True):
+        """
+        Record an operation's resource usage.
+
+        Args:
+            tokens: Number of tokens used
+            api_call: Whether this was an API call
+        """
+        if self.resource_monitor:
+            self.resource_monitor.record_operation(tokens, api_call)
+
     def execute(self, feature_request: str, resume_session: Optional[str] = None) -> Dict[str, Any]:
         """
         Execute autonomous implementation workflow.
@@ -193,6 +279,9 @@ class MaestroOrchestrator:
                 feature_request=feature_request,
             )
             self.session_id = session.session_id
+
+        # Initialize resource monitor
+        self._initialize_resource_monitor(self.session_id)
 
         try:
             # Create initial checkpoint
@@ -243,11 +332,25 @@ class MaestroOrchestrator:
             "decisions": [],
             "tasks_completed": [],
             "checkpoints": [],
+            "resource_usage": None,  # Will be populated at end
         }
 
         while iteration < max_iterations:
             iteration += 1
             self.logger.info(f"=== Iteration {iteration} ===")
+
+            # Calculate progress estimate for this iteration
+            progress_estimate = iteration / max_iterations
+
+            # Check resource limits before starting iteration
+            if not self._check_resource_limits_before_phase(
+                f"Iteration {iteration}",
+                progress_estimate
+            ):
+                self.logger.warning(f"Stopping workflow at iteration {iteration} due to resource limits")
+                result["stopped_early"] = True
+                result["stop_reason"] = "resource_limits_exceeded"
+                break
 
             iteration_result = {
                 "iteration": iteration,
@@ -255,23 +358,38 @@ class MaestroOrchestrator:
             }
 
             # Phase 1: Planning
+            if not self._check_resource_limits_before_phase("Planning", progress_estimate):
+                break
             prd_path = self._phase_planning(feature_request)
             iteration_result["phases"]["planning"] = {"prd_path": str(prd_path)}
+            self._record_operation(tokens=5000, api_call=True)  # Estimate
 
             # Phase 2: Task Generation
+            if not self._check_resource_limits_before_phase("Task Generation", progress_estimate + 0.1):
+                break
             tasks = self._phase_task_generation(prd_path)
             iteration_result["phases"]["task_generation"] = {"task_count": len(tasks)}
+            self._record_operation(tokens=3000, api_call=True)  # Estimate
 
             # Phase 3: Implementation
+            if not self._check_resource_limits_before_phase("Implementation", progress_estimate + 0.3):
+                break
             implementation_result = self._phase_implementation(tasks)
             iteration_result["phases"]["implementation"] = implementation_result
+            self._record_operation(tokens=10000, api_call=True)  # Estimate
 
             # Phase 4: Validation
+            if not self._check_resource_limits_before_phase("Validation", progress_estimate + 0.5):
+                break
             validation_result = self._phase_validation(prd_path)
             iteration_result["phases"]["validation"] = validation_result
+            self._record_operation(tokens=2000, api_call=True)  # Estimate
 
             # Phase 5: Review
+            if not self._check_resource_limits_before_phase("Review", progress_estimate + 0.7):
+                break
             should_continue = self._phase_review(validation_result)
+            self._record_operation(tokens=1000, api_call=True)  # Estimate
 
             result["iterations"].append(iteration_result)
 
@@ -280,6 +398,10 @@ class MaestroOrchestrator:
                 break
             else:
                 self.logger.info(f"Completion criteria not met, starting iteration {iteration + 1}")
+
+        # Capture final resource usage
+        if self.resource_monitor:
+            result["resource_usage"] = self.resource_monitor.get_usage_summary()
 
         return result
 
@@ -370,33 +492,146 @@ class MaestroOrchestrator:
         return prd_path
 
     def _phase_task_generation(self, prd_path: Path) -> List[Dict[str, Any]]:
-        """Phase 2: Generate implementation tasks."""
-        self.logger.info("Phase 2: Task Generation")
+        """Phase 2: Generate implementation tasks with decision engine.
 
-        # Update session state
+        This phase:
+        - Invokes /flow:generate-tasks skill in autonomous mode
+        - Uses decision engine (TaskOrderingEngine) to order tasks for parallel execution
+        - Stores the generated task list with dependencies
+        - Transitions session to IMPLEMENTING state
+        - Logs all decisions with comprehensive rationale
+
+        Args:
+            prd_path: Path to the PRD file generated in planning phase
+
+        Returns:
+            List of ordered task dictionaries with dependencies
+        """
+        self.logger.info("Phase 2: Task Generation")
+        self.logger.info(f"  PRD: {prd_path}")
+
+        # Update session state to GENERATING_TASKS
         self.session_manager.transition_state(
             session_id=self.session_id,
             new_state=SessionStatus.GENERATING_TASKS,
         )
 
-        # TODO: Invoke /flow:generate-tasks with decision engine
+        # Prepare skill context for flow:generate-tasks invocation
+        generate_tasks_skill_context = {
+            "prd_path": str(prd_path),
+            "autonomous_mode": True,
+            "session_id": self.session_id,
+            "enable_human_interaction": False,  # No human input in this phase
+        }
+
+        self.logger.info("  → Invoking /flow:generate-tasks skill (autonomous mode)")
         self.logger.info("  → Reading PRD requirements...")
         self.logger.info("  → Generating epics and sub-tasks...")
-        self.logger.info("  → Optimizing task ordering with decision engine...")
+
+        # Invoke the /flow:generate-tasks skill
+        generate_tasks_invocation = self.skill_orchestrator.invoke_skill(
+            skill_name="flow:generate-tasks",
+            context=generate_tasks_skill_context,
+        )
+
+        self.logger.info(f"  → Skill invocation prepared: {generate_tasks_invocation.skill_name}")
+
+        # Log the task generation decision
+        task_generation_decision_id = self.decision_logger.log_decision(
+            decision_type="task_generation",
+            decision={
+                "decision": "Invoke /flow:generate-tasks for autonomous task breakdown",
+                "rationale": "Task generation phase proceeds autonomously without human input. "
+                           "The /flow:generate-tasks skill analyzes the PRD and generates "
+                           "epics and sub-tasks with clear dependencies.",
+                "phase": "task_generation",
+                "context": {
+                    "prd_path": str(prd_path),
+                    "session_id": self.session_id,
+                    "skill_invocation": generate_tasks_invocation.skill_name,
+                    "autonomous_mode": True,
+                    "human_interaction": False,
+                },
+                "impact": {
+                    "parallel_execution": "Tasks will be ordered to maximize parallel execution",
+                    "dependency_tracking": "Dependencies will be tracked in beads",
+                },
+            },
+        )
+
+        self.logger.info(f"  → Task generation decision logged: {task_generation_decision_id}")
+
+        # Parse generated tasks and create task dependency graph
+        # In production, this would read the actual output from the skill invocation
+        # For now, we'll create a placeholder structure
+        self.logger.info("  → Building task dependency graph...")
+
+        # Initialize task ordering engine with parallel-maximizing strategy
+        task_ordering_engine = TaskOrderingEngine(strategy="parallel_maximizing")
+
+        # Load tasks from beads (in production, skills would have created these)
+        # For now, we'll use a placeholder
+        try:
+            task_ordering_engine.load_from_beads()
+        except Exception as e:
+            self.logger.warning(f"  → Could not load tasks from beads: {e}")
+            self.logger.info("  → Using empty task list (skills will populate in production)")
+
+        # Compute optimal task ordering
+        self.logger.info("  → Computing optimal task ordering for parallel execution...")
+
+        ordering_result = task_ordering_engine.compute_ordering(detect_conflicts=True)
+
+        ordered_tasks = []
+        total_groups = ordering_result.get("total_groups", 0)
+        parallel_groups = ordering_result.get("parallel_groups", [])
+
+        # Convert parallel groups to task list
+        for group_idx, group in enumerate(parallel_groups):
+            for task_id in group:
+                ordered_tasks.append({
+                    "id": task_id,
+                    "group": group_idx,
+                    "can_run_in_parallel": len(group) > 1,
+                })
+
+        self.logger.info(f"  → Generated {len(ordered_tasks)} tasks in {total_groups} parallel groups")
 
         # Log task ordering decision
-        ordering_decision = self.decision_logger.log_decision(
-            session_id=self.session_id,
-            category=DecisionCategory.TASK_ORDERING,
-            decision="Parallel-maximizing ordering strategy",
-            rationale="Maximize parallel execution while respecting dependencies",
-            context={"phase": "task_generation"},
+        task_ordering_decision_id = self.decision_logger.log_decision(
+            decision_type="task_ordering",
+            decision={
+                "decision": f"Parallel-maximizing ordering with {total_groups} groups",
+                "rationale": f"Maximize parallel execution while respecting {len(task_ordering_engine.graph['edges'])} dependencies. "
+                           f"Tasks organized into {total_groups} groups where tasks within each group can execute in parallel.",
+                "phase": "task_generation",
+                "context": {
+                    "total_tasks": len(ordered_tasks),
+                    "total_groups": total_groups,
+                    "strategy": "parallel_maximizing",
+                    "dependencies_detected": len(task_ordering_engine.graph["edges"]),
+                },
+                "impact": {
+                    "parallelization": f"{total_groups} groups enable concurrent execution",
+                    "execution_time": "Reduced through parallelization",
+                    "dependency_safety": "Dependencies respected to avoid conflicts",
+                },
+            },
         )
-        result["decisions"].append(ordering_decision)
 
-        self.logger.info("  ✓ Tasks would be generated here (integrating with /flow:generate-tasks)")
+        self.logger.info(f"  → Task ordering decision logged: {task_ordering_decision_id}")
 
-        return []
+        # Transition session state to IMPLEMENTING for next phase
+        self.session_manager.transition_state(
+            session_id=self.session_id,
+            new_state=SessionStatus.IMPLEMENTING,
+        )
+
+        self.logger.info("  ✓ Task generation complete")
+        self.logger.info(f"  → {len(ordered_tasks)} tasks ready for implementation")
+        self.logger.info(f"  → Session transitioned to IMPLEMENTING state")
+
+        return ordered_tasks
 
     def _phase_implementation(self, tasks: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Phase 3: Execute implementation with subagent coordination."""
@@ -563,6 +798,163 @@ class MaestroOrchestrator:
             return result.stdout.strip()
         except Exception:
             return "unknown"
+
+    def execute_with_checkpoint(
+        self,
+        operation: str,
+        operation_func: callable,
+        phase: CheckpointPhase,
+        max_recovery_attempts: int = 3,
+    ) -> Dict[str, Any]:
+        """
+        Execute an operation with automatic checkpoint creation and rollback handling.
+
+        This wrapper method:
+        1. Detects if the operation is risky
+        2. Creates a pre-operation checkpoint if needed
+        3. Executes the operation
+        4. Handles errors and automatic rollback
+
+        Args:
+            operation: Human-readable description of the operation
+            operation_func: Callable that executes the actual operation
+            phase: Current execution phase
+            max_recovery_attempts: Maximum recovery attempts before rollback
+
+        Returns:
+            Dict containing:
+                - success: bool
+                - result: operation return value
+                - checkpoint_created: bool
+                - checkpoint_id: Optional[str]
+                - rollback_performed: bool
+                - error: Optional[str]
+
+        Example:
+            >>> result = orchestrator.execute_with_checkpoint(
+            ...     operation="git push origin master",
+            ...     operation_func=lambda: subprocess.run(["git", "push", "origin", "master"]),
+            ...     phase=CheckpointPhase.IMPLEMENT,
+            ... )
+        """
+        result = {
+            "success": False,
+            "result": None,
+            "checkpoint_created": False,
+            "checkpoint_id": None,
+            "rollback_performed": False,
+            "error": None,
+        }
+
+        # Check if operation is risky
+        risk_assessment = self.risky_operation_detector.classify_operation(operation)
+
+        if risk_assessment.is_risky:
+            self.logger.warning(
+                f"[{risk_assessment.risk_level.value.upper()}] Risky operation detected: {operation}"
+            )
+            self.logger.info(f"Description: {risk_assessment.description}")
+            if risk_assessment.suggested_mitigation:
+                self.logger.info(f"Mitigation: {risk_assessment.suggested_mitigation}")
+
+            # Create pre-operation checkpoint
+            try:
+                checkpoint = self.checkpoint_manager.create_pre_operation_checkpoint(
+                    session_id=self.session_id,
+                    operation_type=risk_assessment.operation_type,
+                    operation_description=operation,
+                    phase=phase,
+                )
+                result["checkpoint_created"] = True
+                result["checkpoint_id"] = checkpoint.checkpoint_id
+                self.logger.info(
+                    f"Pre-operation checkpoint created: {checkpoint.checkpoint_id[:8]}"
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to create checkpoint: {e}")
+                result["error"] = f"Checkpoint creation failed: {str(e)}"
+                return result
+
+        # Attempt operation execution with recovery
+        attempts = 0
+        last_error = None
+
+        while attempts < max_recovery_attempts:
+            attempts += 1
+            self.logger.info(f"Executing operation (attempt {attempts}/{max_recovery_attempts})")
+
+            try:
+                # Execute the operation
+                operation_result = operation_func()
+                result["success"] = True
+                result["result"] = operation_result
+                self.logger.info("Operation completed successfully")
+                return result
+
+            except Exception as e:
+                last_error = e
+                error_context = {
+                    "error_category": getattr(e, "category", "unknown"),
+                    "error_type": type(e).__name__,
+                    "has_partial_progress": getattr(e, "partial_progress", False),
+                    "resource_exhausted": getattr(e, "resource_exhausted", False),
+                    "validation_failed": getattr(e, "validation_failed", False),
+                }
+
+                self.logger.error(f"Operation failed (attempt {attempts}): {str(e)}")
+
+                # Check if we should trigger rollback
+                if self.checkpoint_manager.should_trigger_rollback(
+                    error_context=error_context,
+                    attempts=attempts,
+                    max_attempts=max_recovery_attempts,
+                ):
+                    if result["checkpoint_created"]:
+                        self.logger.warning("Triggering rollback to pre-operation checkpoint")
+                        try:
+                            rollback_op = self.checkpoint_manager.rollback_to_checkpoint(
+                                session_id=self.session_id,
+                                checkpoint_id=result["checkpoint_id"],
+                                hard_reset=False,  # Use mixed reset for safety
+                            )
+                            result["rollback_performed"] = True
+                            result["error"] = f"Operation failed, rolled back: {str(e)}"
+                            self.logger.info(
+                                f"Rollback completed: {rollback_op.operation_id[:8]}"
+                            )
+                        except Exception as rollback_error:
+                            self.logger.error(f"Rollback failed: {rollback_error}")
+                            result["error"] = (
+                                f"Operation failed and rollback failed: "
+                                f"{str(e)} | Rollback error: {str(rollback_error)}"
+                            )
+                    else:
+                        result["error"] = f"Operation failed: {str(e)}"
+
+                    return result
+
+                # Try to recover
+                self.logger.info("Attempting recovery...")
+                try:
+                    # Use error handler for recovery
+                    recovery_result = self.error_handler.attempt_recovery(
+                        error=e,
+                        context={"operation": operation, "attempt": attempts},
+                    )
+                    if recovery_result.get("success"):
+                        self.logger.info("Recovery successful, retrying operation")
+                        continue
+                    else:
+                        self.logger.warning(f"Recovery failed: {recovery_result.get('message')}")
+                except Exception as recovery_error:
+                    self.logger.error(f"Recovery attempt failed: {recovery_error}")
+
+        # All attempts exhausted
+        result["error"] = (
+            f"Operation failed after {max_recovery_attempts} attempts: "
+            f"{str(last_error)}"
+        )
+        return result
 
 
 def main():

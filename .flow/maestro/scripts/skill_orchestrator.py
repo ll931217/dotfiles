@@ -135,6 +135,34 @@ Output:
 """,
             description="PRD generation skill for planning phase with one-time human interaction"
         ),
+        "flow:generate-tasks": SkillMapping(
+            skill_name="flow:generate-tasks",
+            triggers=[
+                r"generate.*tasks",
+                r"create.*tasks",
+                r"breakdown.*work",
+                r"task.*generation",
+                r"implementation.*tasks",
+            ],
+            prompt_template="""Generate implementation tasks for PRD at: {prd_path}
+
+Autonomous Mode: {autonomous_mode}
+Session ID: {session_id}
+Enable Human Interaction: {enable_human_interaction}
+
+Requirements:
+- Read and analyze the PRD file
+- Generate epics and sub-tasks with clear dependencies
+- Order tasks to maximize parallel execution
+- Use beads (bd) for task tracking
+- Return list of tasks with dependencies
+
+Context:
+- PRD Path: {prd_path}
+- This is autonomous mode - proceed without human input
+""",
+            description="Task generation skill for breaking down PRD into actionable tasks"
+        ),
         "frontend-design": SkillMapping(
             skill_name="frontend-design",
             triggers=[

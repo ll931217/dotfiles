@@ -544,15 +544,16 @@ class CheckpointManager:
             pre_rollback_head = pre_rollback_result.stdout.strip()
             logger.info(f"Pre-rollback HEAD: {pre_rollback_head[:8]}")
 
-            # Validate current state before rollback
-            validation = self.validate_checkpoint_state()
-            if validation.has_uncommitted_changes:
-                error_msg = (
-                    "Cannot rollback with uncommitted changes. "
-                    "Commit or stash changes first."
-                )
-                logger.error(error_msg)
-                raise ValueError(error_msg)
+            # Validate current state before rollback (skip for hard reset)
+            if not hard_reset:
+                validation = self.validate_checkpoint_state()
+                if validation.has_uncommitted_changes:
+                    error_msg = (
+                        "Cannot rollback with uncommitted changes. "
+                        "Commit or stash changes first."
+                    )
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
 
             # Perform git reset
             reset_mode = "hard" if hard_reset else "mixed"
@@ -788,6 +789,191 @@ class CheckpointManager:
             ),
             latest_checkpoint=summary_data.get("latest_checkpoint"),
         )
+
+    def create_pre_operation_checkpoint(
+        self,
+        session_id: str,
+        operation_type: str,
+        operation_description: str,
+        phase: Optional[CheckpointPhase] = None,
+        state_snapshot: Optional[StateSnapshot] = None,
+    ) -> Checkpoint:
+        """
+        Create a checkpoint before executing a risky operation.
+
+        This specialized checkpoint method captures the repository state before
+        potentially dangerous operations, ensuring safe rollback capability.
+
+        Args:
+            session_id: Session UUID
+            operation_type: Type of operation (e.g., 'git_push', 'file_deletion')
+            operation_description: Human-readable description of the operation
+            phase: Optional execution phase (defaults to IMPLEMENT)
+            state_snapshot: Optional snapshot of current session state
+
+        Returns:
+            Created Checkpoint object with PRE_RISKY_OPERATION type
+
+        Raises:
+            ValueError: If validation fails
+            subprocess.SubprocessError: If git commands fail
+        """
+        if phase is None:
+            phase = CheckpointPhase.IMPLEMENT
+
+        # Enhanced description with operation context
+        full_description = (
+            f"Pre-operation checkpoint before {operation_type}: "
+            f"{operation_description}"
+        )
+
+        logger.info(
+            f"Creating pre-operation checkpoint for {operation_type}: "
+            f"{operation_description}"
+        )
+
+        # For pre-operation checkpoints, always commit uncommitted changes first
+        # to ensure a clean rollback point
+        validation = self.validate_checkpoint_state()
+
+        if validation.has_uncommitted_changes:
+            logger.info("Committing uncommitted changes before creating checkpoint")
+            commit_message = f"checkpoint: Auto-commit before {operation_type}"
+            commit_result = self._run_git_command(
+                ["commit", "-am", commit_message]
+            )
+            if commit_result.returncode != 0:
+                logger.warning(f"Failed to auto-commit: {commit_result.stderr}")
+                # Continue anyway - we'll use current HEAD
+
+        # Get current HEAD SHA
+        rev_parse_result = self._run_git_command(["rev-parse", "HEAD"])
+        if rev_parse_result.returncode != 0:
+            raise ValueError("Failed to get current commit SHA")
+        commit_sha = rev_parse_result.stdout.strip()
+
+        # Create checkpoint object
+        checkpoint_id = self._generate_checkpoint_id()
+        timestamp = self._current_timestamp()
+
+        checkpoint = Checkpoint(
+            checkpoint_id=checkpoint_id,
+            commit_sha=commit_sha,
+            timestamp=timestamp,
+            description=full_description,
+            phase=phase,
+            checkpoint_type=CheckpointType.PRE_RISKY_OPERATION,
+            commit_message=commit_message if validation.has_uncommitted_changes else None,
+            state_snapshot=state_snapshot,
+        )
+
+        # Store operation context in checkpoint metadata
+        checkpoint.operation_context = {
+            "operation_type": operation_type,
+            "operation_description": operation_description,
+            "created_at": self._current_timestamp(),
+        }
+
+        # Create git tag
+        tag_name = f"{self.TAG_PREFIX}{checkpoint_id}"
+        tag_message = f"Pre-operation Checkpoint: {operation_type} - {operation_description}"
+
+        tag_result = self._run_git_command(
+            ["tag", "-a", tag_name, "-m", tag_message]
+        )
+        if tag_result.returncode != 0:
+            raise ValueError(f"Failed to create tag: {tag_result.stderr}")
+
+        checkpoint.tags.append(tag_name)
+
+        # Save to checkpoint log
+        self._save_checkpoint(session_id, checkpoint)
+
+        logger.info(
+            f"Pre-operation checkpoint created: {checkpoint.checkpoint_id[:8]} "
+            f"(SHA: {checkpoint.commit_sha[:8]})"
+        )
+
+        return checkpoint
+
+    def should_trigger_rollback(
+        self,
+        error_context: Dict[str, Any],
+        attempts: int,
+        max_attempts: int = 3,
+    ) -> bool:
+        """
+        Determine if a rollback should be triggered based on error context.
+
+        Rollback is triggered when:
+        - All recovery strategies are exhausted (attempts >= max_attempts)
+        - Resource exhaustion with partial progress
+        - Validation failure after N attempts
+        - Unrecoverable errors (permanent failures)
+
+        Args:
+            error_context: Dictionary containing error details
+                - error_category: Error category (transient/permanent/ambiguous)
+                - error_type: Specific error type
+                - has_partial_progress: Whether operation made partial progress
+                - resource_exhausted: Whether resources were exhausted
+                - validation_failed: Whether validation failed
+            attempts: Number of recovery attempts already made
+            max_attempts: Maximum recovery attempts before rollback (default: 3)
+
+        Returns:
+            True if rollback should be triggered
+        """
+        # Check if we've exhausted recovery attempts
+        if attempts >= max_attempts:
+            logger.warning(
+                f"Recovery attempts exhausted ({attempts}/{max_attempts}), "
+                "triggering rollback"
+            )
+            return True
+
+        # Check for permanent errors (should rollback immediately)
+        error_category = error_context.get("error_category", "").lower()
+        if error_category == "permanent":
+            logger.warning(
+                f"Permanent error detected: {error_context.get('error_type')}, "
+                "triggering rollback"
+            )
+            return True
+
+        # Check for resource exhaustion with partial progress
+        if error_context.get("resource_exhausted") and error_context.get("has_partial_progress"):
+            logger.warning(
+                "Resource exhaustion with partial progress detected, "
+                "triggering rollback"
+            )
+            return True
+
+        # Check for validation failures after multiple attempts
+        if error_context.get("validation_failed") and attempts >= 2:
+            logger.warning(
+                f"Validation failed after {attempts} attempts, triggering rollback"
+            )
+            return True
+
+        # Check for unrecoverable specific error types
+        error_type = error_context.get("error_type", "").lower()
+        unrecoverable_errors = [
+            "disk_full",
+            "permission_denied",
+            "corruption",
+            "database_connection_lost",
+            "network_partition",
+        ]
+
+        if any(err in error_type for err in unrecoverable_errors):
+            logger.warning(
+                f"Unrecoverable error type detected: {error_type}, "
+                "triggering rollback"
+            )
+            return True
+
+        return False
 
     def delete_checkpoint(
         self,
