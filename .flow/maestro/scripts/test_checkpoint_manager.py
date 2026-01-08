@@ -21,6 +21,7 @@ from checkpoint_manager import (
     StateSnapshot,
     CheckpointSummary,
     ValidationResult,
+    RollbackOperation,
 )
 
 
@@ -690,6 +691,406 @@ class TestCheckpointIntegration(unittest.TestCase):
         summary = self.manager.get_checkpoint_summary(self.session_id)
         self.assertEqual(summary.total_checkpoints, 3)
         self.assertEqual(summary.checkpoints_by_type["phase_complete"], 3)
+
+
+class TestRollbackOperation(unittest.TestCase):
+    """Test RollbackOperation dataclass."""
+
+    def test_rollback_operation_creation(self):
+        """Test RollbackOperation object creation."""
+        snapshot = StateSnapshot(tasks_completed=5, files_modified=10)
+        rollback_op = RollbackOperation(
+            operation_id="rb-123",
+            timestamp="2024-01-01T12:00:00Z",
+            session_id="session-1",
+            checkpoint_id="cp-1",
+            checkpoint_description="Test checkpoint",
+            checkpoint_sha="abc123",
+            rollback_mode="hard",
+            pre_rollback_head="def456",
+            post_rollback_head="abc123",
+            validation_passed=True,
+            state_snapshot_restored=snapshot,
+            success=True,
+        )
+
+        self.assertEqual(rollback_op.operation_id, "rb-123")
+        self.assertEqual(rollback_op.rollback_mode, "hard")
+        self.assertEqual(rollback_op.validation_passed, True)
+        self.assertIsNotNone(rollback_op.state_snapshot_restored)
+
+    def test_rollback_operation_to_dict(self):
+        """Test RollbackOperation serialization."""
+        rollback_op = RollbackOperation(
+            operation_id="rb-123",
+            timestamp="2024-01-01T12:00:00Z",
+            session_id="session-1",
+            checkpoint_id="cp-1",
+            checkpoint_description="Test checkpoint",
+            checkpoint_sha="abc123",
+            rollback_mode="mixed",
+            pre_rollback_head="def456",
+            post_rollback_head="abc123",
+            validation_passed=True,
+            success=True,
+        )
+
+        data = rollback_op.to_dict()
+
+        self.assertEqual(data["operation_id"], "rb-123")
+        self.assertEqual(data["checkpoint_sha"], "abc123")
+        self.assertEqual(data["validation_passed"], True)
+        self.assertEqual(data["success"], True)
+
+
+class TestCheckpointManagerRollback(unittest.TestCase):
+    """Test CheckpointManager rollback functionality with validation and logging."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        import subprocess
+        import shutil
+
+        # Create temporary directory for testing
+        self.temp_dir = tempfile.mkdtemp()
+        self.session_id = str(uuid4())
+
+        # Initialize git repository
+        subprocess.run(["git", "init"], cwd=self.temp_dir, capture_output=True)
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"],
+            cwd=self.temp_dir,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"],
+            cwd=self.temp_dir,
+            capture_output=True,
+        )
+
+        # Create initial commit
+        test_file = Path(self.temp_dir) / "test.txt"
+        test_file.write_text("Initial content")
+        subprocess.run(
+            ["git", "add", "test.txt"],
+            cwd=self.temp_dir,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit"],
+            cwd=self.temp_dir,
+            capture_output=True,
+        )
+
+        # Initialize checkpoint manager
+        self.manager = CheckpointManager(repo_root=self.temp_dir)
+
+    def tearDown(self):
+        """Clean up test fixtures."""
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_rollback_to_checkpoint_success(self):
+        """Test successful rollback to checkpoint with validation."""
+        import subprocess
+
+        # Create a second commit to have something to rollback from
+        test_file2 = Path(self.temp_dir) / "test2.txt"
+        test_file2.write_text("Second file")
+        subprocess.run(
+            ["git", "add", "test2.txt"],
+            cwd=self.temp_dir,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "Second commit"],
+            cwd=self.temp_dir,
+            capture_output=True,
+        )
+
+        # Get initial HEAD SHA (will rollback to this)
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD~1"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        target_sha = result.stdout.strip()
+
+        # Create checkpoint at initial commit
+        snapshot = StateSnapshot(tasks_completed=1, files_created=1)
+        checkpoint = Checkpoint(
+            checkpoint_id=str(uuid4()),
+            commit_sha=target_sha,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            description="Initial state checkpoint",
+            phase=CheckpointPhase.PLAN,
+            checkpoint_type=CheckpointType.SAFE_STATE,
+            state_snapshot=snapshot,
+        )
+        self.manager._save_checkpoint(self.session_id, checkpoint)
+
+        # Perform rollback
+        rollback_op = self.manager.rollback_to_checkpoint(
+            self.session_id,
+            checkpoint.checkpoint_id,
+            hard_reset=True,
+        )
+
+        # Verify rollback operation details
+        self.assertTrue(rollback_op.success)
+        self.assertTrue(rollback_op.validation_passed)
+        self.assertEqual(rollback_op.checkpoint_id, checkpoint.checkpoint_id)
+        self.assertEqual(rollback_op.post_rollback_head, checkpoint.commit_sha)
+        self.assertIsNotNone(rollback_op.state_snapshot_restored)
+        self.assertEqual(rollback_op.state_snapshot_restored.tasks_completed, 1)
+
+        # Verify git HEAD is at checkpoint SHA
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        current_head = result.stdout.strip()
+        self.assertEqual(current_head, checkpoint.commit_sha)
+
+    def test_rollback_validates_head_match(self):
+        """Test that rollback validates HEAD matches checkpoint SHA."""
+        import subprocess
+
+        # Create checkpoint at current HEAD
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        current_sha = result.stdout.strip()
+
+        checkpoint = Checkpoint(
+            checkpoint_id=str(uuid4()),
+            commit_sha=current_sha,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            description="Current state checkpoint",
+            phase=CheckpointPhase.PLAN,
+            checkpoint_type=CheckpointType.SAFE_STATE,
+        )
+        self.manager._save_checkpoint(self.session_id, checkpoint)
+
+        # Rollback to same commit (should validate successfully)
+        rollback_op = self.manager.rollback_to_checkpoint(
+            self.session_id,
+            checkpoint.checkpoint_id,
+            hard_reset=True,
+        )
+
+        self.assertTrue(rollback_op.validation_passed)
+        self.assertEqual(rollback_op.post_rollback_head, checkpoint.commit_sha)
+        self.assertEqual(len(rollback_op.validation_errors), 0)
+
+    def test_rollback_fails_with_uncommitted_changes(self):
+        """Test that rollback fails when there are uncommitted changes."""
+        import subprocess
+
+        # Create checkpoint
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        current_sha = result.stdout.strip()
+
+        checkpoint = Checkpoint(
+            checkpoint_id=str(uuid4()),
+            commit_sha=current_sha,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            description="Test checkpoint",
+            phase=CheckpointPhase.PLAN,
+            checkpoint_type=CheckpointType.SAFE_STATE,
+        )
+        self.manager._save_checkpoint(self.session_id, checkpoint)
+
+        # Create uncommitted changes
+        test_file = Path(self.temp_dir) / "test.txt"
+        test_file.write_text("Modified content")
+
+        # Attempt rollback should fail
+        with self.assertRaises(ValueError) as context:
+            self.manager.rollback_to_checkpoint(
+                self.session_id,
+                checkpoint.checkpoint_id,
+                hard_reset=True,
+            )
+
+        self.assertIn("uncommitted changes", str(context.exception))
+
+    def test_rollback_logs_operation_to_history(self):
+        """Test that rollback operations are logged to rollback history."""
+        import subprocess
+
+        # Create checkpoint
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        current_sha = result.stdout.strip()
+
+        checkpoint = Checkpoint(
+            checkpoint_id=str(uuid4()),
+            commit_sha=current_sha,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            description="Test checkpoint",
+            phase=CheckpointPhase.PLAN,
+            checkpoint_type=CheckpointType.SAFE_STATE,
+        )
+        self.manager._save_checkpoint(self.session_id, checkpoint)
+
+        # Perform rollback
+        rollback_op = self.manager.rollback_to_checkpoint(
+            self.session_id,
+            checkpoint.checkpoint_id,
+            hard_reset=True,
+        )
+
+        # Verify rollback history is saved
+        rollback_history = self.manager.get_rollback_history(self.session_id)
+        self.assertEqual(len(rollback_history), 1)
+        self.assertEqual(rollback_history[0].operation_id, rollback_op.operation_id)
+        self.assertEqual(rollback_history[0].checkpoint_id, checkpoint.checkpoint_id)
+
+    def test_rollback_updates_checkpoint_metadata(self):
+        """Test that rollback updates checkpoint metadata."""
+        import subprocess
+
+        # Create checkpoint
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        current_sha = result.stdout.strip()
+
+        checkpoint = Checkpoint(
+            checkpoint_id=str(uuid4()),
+            commit_sha=current_sha,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            description="Test checkpoint",
+            phase=CheckpointPhase.PLAN,
+            checkpoint_type=CheckpointType.SAFE_STATE,
+        )
+        self.manager._save_checkpoint(self.session_id, checkpoint)
+
+        # Perform rollback
+        self.manager.rollback_to_checkpoint(
+            self.session_id,
+            checkpoint.checkpoint_id,
+            hard_reset=True,
+        )
+
+        # Verify checkpoint metadata is updated
+        updated_checkpoint = self.manager.get_checkpoint(
+            self.session_id,
+            checkpoint.checkpoint_id,
+        )
+        self.assertTrue(updated_checkpoint.rollback_used)
+        self.assertEqual(updated_checkpoint.rollback_count, 1)
+
+        # Verify summary is updated
+        summary = self.manager.get_checkpoint_summary(self.session_id)
+        self.assertEqual(summary.checkpoints_used_for_rollback, 1)
+
+    def test_rollback_mixed_reset_mode(self):
+        """Test rollback with mixed reset mode."""
+        import subprocess
+
+        # Create checkpoint
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        current_sha = result.stdout.strip()
+
+        checkpoint = Checkpoint(
+            checkpoint_id=str(uuid4()),
+            commit_sha=current_sha,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            description="Test checkpoint",
+            phase=CheckpointPhase.PLAN,
+            checkpoint_type=CheckpointType.SAFE_STATE,
+        )
+        self.manager._save_checkpoint(self.session_id, checkpoint)
+
+        # Perform rollback with mixed mode
+        rollback_op = self.manager.rollback_to_checkpoint(
+            self.session_id,
+            checkpoint.checkpoint_id,
+            hard_reset=False,  # Use mixed reset
+        )
+
+        self.assertEqual(rollback_op.rollback_mode, "mixed")
+        self.assertTrue(rollback_op.success)
+
+    def test_get_rollback_history_empty_session(self):
+        """Test getting rollback history for session with no rollbacks."""
+        history = self.manager.get_rollback_history(self.session_id)
+        self.assertEqual(len(history), 0)
+
+    def test_rollback_with_state_snapshot_restoration(self):
+        """Test that rollback preserves and restores state snapshot."""
+        import subprocess
+
+        # Create checkpoint with detailed state snapshot
+        snapshot = StateSnapshot(
+            tasks_completed=10,
+            decisions_made=5,
+            files_modified=8,
+            files_created=12,
+            tests_passing=20,
+            tests_failing=1,
+        )
+
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.temp_dir,
+            capture_output=True,
+            text=True,
+        )
+        current_sha = result.stdout.strip()
+
+        checkpoint = Checkpoint(
+            checkpoint_id=str(uuid4()),
+            commit_sha=current_sha,
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            description="State snapshot checkpoint",
+            phase=CheckpointPhase.IMPLEMENT,
+            checkpoint_type=CheckpointType.PHASE_COMPLETE,
+            state_snapshot=snapshot,
+        )
+        self.manager._save_checkpoint(self.session_id, checkpoint)
+
+        # Perform rollback
+        rollback_op = self.manager.rollback_to_checkpoint(
+            self.session_id,
+            checkpoint.checkpoint_id,
+            hard_reset=True,
+        )
+
+        # Verify state snapshot is restored
+        self.assertIsNotNone(rollback_op.state_snapshot_restored)
+        restored = rollback_op.state_snapshot_restored
+        self.assertEqual(restored.tasks_completed, 10)
+        self.assertEqual(restored.decisions_made, 5)
+        self.assertEqual(restored.files_modified, 8)
+        self.assertEqual(restored.files_created, 12)
+        self.assertEqual(restored.tests_passing, 20)
+        self.assertEqual(restored.tests_failing, 1)
 
 
 if __name__ == "__main__":
