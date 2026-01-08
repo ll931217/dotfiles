@@ -4,17 +4,120 @@ Decision Logger for Maestro Orchestrator
 
 Logs decisions with rationale and context, enables learning from past decisions.
 Supports session-based logging and historical aggregation across sessions.
+
+Enhanced with:
+- Decision lineage tracking (parent-child relationships)
+- Decision impact assessment
+- Comprehensive query interface
+- Export functionality (JSON, CSV)
 """
 
+import csv
 import json
 import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass, asdict, field
 from collections import defaultdict
-import re
+from enum import Enum
+
+
+class RiskLevel(Enum):
+    """Risk level enumeration."""
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+class ConfidenceLevel(Enum):
+    """Confidence level enumeration."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+@dataclass
+class DecisionLineage:
+    """Tracks decision dependencies and relationships."""
+    parent_decision_id: Optional[str] = None
+    child_decision_ids: List[str] = field(default_factory=list)
+    related_decisions: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DecisionLineage":
+        """Create from dictionary."""
+        return cls(
+            parent_decision_id=data.get("parent_decision_id"),
+            child_decision_ids=data.get("child_decision_ids", []),
+            related_decisions=data.get("related_decisions", []),
+        )
+
+
+@dataclass
+class DecisionImpact:
+    """Assesses decision impact with detailed metrics."""
+    files_modified: List[str] = field(default_factory=list)
+    tests_affected: List[str] = field(default_factory=list)
+    risk_level: str = RiskLevel.MEDIUM.value
+    rollback_available: bool = False
+    scope: str = "unknown"  # codebase, tests, config, docs
+    reversibility: str = "unknown"  # easy, moderate, difficult
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DecisionImpact":
+        """Create from dictionary."""
+        return cls(
+            files_modified=data.get("files_modified", []),
+            tests_affected=data.get("tests_affected", []),
+            risk_level=data.get("risk_level", RiskLevel.MEDIUM.value),
+            rollback_available=data.get("rollback_available", False),
+            scope=data.get("scope", "unknown"),
+            reversibility=data.get("reversibility", "unknown"),
+        )
+
+    def calculate_risk_score(self) -> float:
+        """Calculate overall risk score (0.0 to 1.0)."""
+        score = 0.5  # Base score
+
+        # Risk level contribution
+        risk_weights = {RiskLevel.LOW.value: 0.0, RiskLevel.MEDIUM.value: 0.3, RiskLevel.HIGH.value: 0.6}
+        score += risk_weights.get(self.risk_level, 0.3)
+
+        # File count contribution
+        file_count = len(self.files_modified)
+        if file_count > 20:
+            score += 0.3
+        elif file_count > 10:
+            score += 0.2
+        elif file_count > 5:
+            score += 0.1
+
+        # Test impact contribution
+        test_count = len(self.tests_affected)
+        if test_count > 10:
+            score += 0.2
+        elif test_count > 5:
+            score += 0.1
+
+        # Rollback availability reduces risk
+        if self.rollback_available:
+            score -= 0.2
+
+        # Reversibility contribution
+        reversibility_weights = {"easy": -0.1, "moderate": 0.0, "difficult": 0.2}
+        score += reversibility_weights.get(self.reversibility, 0.0)
+
+        return max(0.0, min(1.0, score))
 
 
 @dataclass
@@ -30,12 +133,63 @@ class Decision:
     alternatives_considered: List[Dict[str, str]] = field(default_factory=list)
     context: Dict[str, Any] = field(default_factory=dict)
     impact: Dict[str, str] = field(default_factory=dict)
+    lineage: DecisionLineage = field(default_factory=DecisionLineage)
+    impact_assessment: Optional[DecisionImpact] = None
+    confidence: str = ConfidenceLevel.MEDIUM.value
+
+    def __post_init__(self):
+        """Extract confidence from context if not explicitly provided."""
+        # For backward compatibility: if confidence is still MEDIUM (default)
+        # but context contains confidence, use that instead
+        if self.confidence == ConfidenceLevel.MEDIUM.value and "confidence" in self.context:
+            self.confidence = self.context["confidence"]
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary, handling datetime serialization."""
         data = asdict(self)
-        # Ensure nested objects are properly serialized
+        # Convert nested dataclasses
+        if self.lineage:
+            data["lineage"] = self.lineage.to_dict()
+        if self.impact_assessment:
+            data["impact_assessment"] = self.impact_assessment.to_dict()
         return data
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Decision":
+        """Create from dictionary."""
+        lineage_data = data.pop("lineage", {})
+        impact_data = data.pop("impact_assessment", None)
+
+        lineage = DecisionLineage.from_dict(lineage_data) if lineage_data else DecisionLineage()
+        impact = DecisionImpact.from_dict(impact_data) if impact_data else None
+
+        return cls(
+            **data,
+            lineage=lineage,
+            impact_assessment=impact,
+        )
+
+    def get_risk_score(self) -> float:
+        """Get decision risk score."""
+        if self.impact_assessment:
+            return self.impact_assessment.calculate_risk_score()
+
+        # Fallback to basic impact data
+        risk_level = self.impact.get("risk_level", RiskLevel.MEDIUM.value)
+        # Handle both uppercase (enum) and lowercase (legacy) values
+        risk_level_normalized = risk_level.upper() if isinstance(risk_level, str) else risk_level
+        risk_weights = {
+            RiskLevel.LOW.value: 0.2,
+            "LOW": 0.2,
+            RiskLevel.MEDIUM.value: 0.5,
+            "MEDIUM": 0.5,
+            RiskLevel.HIGH.value: 0.8,
+            "HIGH": 0.8,
+            "low": 0.2,
+            "medium": 0.5,
+            "high": 0.8,
+        }
+        return risk_weights.get(risk_level, 0.5)
 
 
 @dataclass
@@ -58,19 +212,26 @@ class DecisionLog:
         by_category = defaultdict(int)
         high_confidence = 0
         high_risk = 0
+        total_risk_score = 0.0
 
         for decision in self.decisions:
             by_category[decision.category] += 1
-            if decision.context.get("confidence") == "high":
+            if decision.confidence == ConfidenceLevel.HIGH.value:
                 high_confidence += 1
-            if decision.impact.get("risk_level") == "high":
+
+            risk_score = decision.get_risk_score()
+            total_risk_score += risk_score
+            if risk_score > 0.7:
                 high_risk += 1
+
+        avg_risk_score = total_risk_score / total if total > 0 else 0.0
 
         self.summary = {
             "total_decisions": total,
             "decisions_by_category": dict(by_category),
             "high_confidence_decisions": high_confidence,
             "high_risk_decisions": high_risk,
+            "average_risk_score": round(avg_risk_score, 2),
         }
 
     def to_dict(self) -> Dict[str, Any]:
@@ -83,16 +244,146 @@ class DecisionLog:
         }
 
 
+class DecisionQuery:
+    """Query interface for decision history."""
+
+    def __init__(self, decisions: List[Decision]):
+        """Initialize with a list of decisions."""
+        self.decisions = decisions
+
+    def filter_by_type(self, decision_type: str) -> "DecisionQuery":
+        """Filter by decision type/category."""
+        filtered = [d for d in self.decisions if d.category == decision_type]
+        return DecisionQuery(filtered)
+
+    def filter_by_time_range(
+        self, start_time: str, end_time: str
+    ) -> "DecisionQuery":
+        """Filter by time range (ISO format strings)."""
+        filtered = [
+            d
+            for d in self.decisions
+            if start_time <= d.timestamp <= end_time
+        ]
+        return DecisionQuery(filtered)
+
+    def filter_by_confidence(self, min_confidence: str) -> "DecisionQuery":
+        """Filter by minimum confidence level."""
+        confidence_order = [ConfidenceLevel.LOW.value, ConfidenceLevel.MEDIUM.value, ConfidenceLevel.HIGH.value]
+        min_idx = confidence_order.index(min_confidence)
+
+        filtered = [
+            d for d in self.decisions
+            if confidence_order.index(d.confidence) >= min_idx
+        ]
+        return DecisionQuery(filtered)
+
+    def filter_by_impact_level(self, max_risk_score: float) -> "DecisionQuery":
+        """Filter by maximum risk score."""
+        filtered = [
+            d for d in self.decisions
+            if d.get_risk_score() <= max_risk_score
+        ]
+        return DecisionQuery(filtered)
+
+    def filter_by_phase(self, phase: str) -> "DecisionQuery":
+        """Filter by execution phase."""
+        filtered = [d for d in self.decisions if d.phase == phase]
+        return DecisionQuery(filtered)
+
+    def filter_by_risk_level(self, risk_level: str) -> "DecisionQuery":
+        """Filter by specific risk level."""
+        filtered = [
+            d for d in self.decisions
+            if d.impact.get("risk_level") == risk_level
+            or (d.impact_assessment and d.impact_assessment.risk_level == risk_level)
+        ]
+        return DecisionQuery(filtered)
+
+    def trace_lineage(self, decision_id: str) -> List[Decision]:
+        """Trace decision lineage (ancestors and descendants)."""
+        lineage_decisions = []
+
+        # Find the decision
+        target = None
+        for d in self.decisions:
+            if d.decision_id == decision_id:
+                target = d
+                break
+
+        if not target:
+            return lineage_decisions
+
+        # Add parent decision
+        if target.lineage.parent_decision_id:
+            for d in self.decisions:
+                if d.decision_id == target.lineage.parent_decision_id:
+                    lineage_decisions.append(d)
+                    break
+
+        # Add child decisions
+        for child_id in target.lineage.child_decision_ids:
+            for d in self.decisions:
+                if d.decision_id == child_id:
+                    lineage_decisions.append(d)
+                    break
+
+        # Add related decisions
+        for related_id in target.lineage.related_decisions:
+            for d in self.decisions:
+                if d.decision_id == related_id:
+                    lineage_decisions.append(d)
+                    break
+
+        return lineage_decisions
+
+    def sort_by_time(self, descending: bool = True) -> "DecisionQuery":
+        """Sort decisions by timestamp."""
+        sorted_decisions = sorted(
+            self.decisions,
+            key=lambda d: d.timestamp,
+            reverse=descending,
+        )
+        return DecisionQuery(sorted_decisions)
+
+    def sort_by_risk(self, descending: bool = True) -> "DecisionQuery":
+        """Sort decisions by risk score."""
+        sorted_decisions = sorted(
+            self.decisions,
+            key=lambda d: d.get_risk_score(),
+            reverse=descending,
+        )
+        return DecisionQuery(sorted_decisions)
+
+    def limit(self, count: int) -> "DecisionQuery":
+        """Limit results to specified count."""
+        return DecisionQuery(self.decisions[:count])
+
+    def to_list(self) -> List[Decision]:
+        """Get decisions as a list."""
+        return self.decisions
+
+    def to_dict_list(self) -> List[Dict[str, Any]]:
+        """Get decisions as a list of dictionaries."""
+        return [d.to_dict() for d in self.decisions]
+
+    def count(self) -> int:
+        """Get count of decisions in query result."""
+        return len(self.decisions)
+
+
 class DecisionLogger:
     """
     Main decision logging system.
 
     Features:
     - Log decisions with full rationale and context
+    - Track decision lineage and dependencies
+    - Assess decision impact
+    - Query decisions with multiple filters
+    - Export to JSON/CSV formats
     - Persist to session-specific files
     - Aggregate decisions across sessions into historical records
-    - Query past decisions to inform new choices
-    - Learn from historical patterns
     """
 
     def __init__(
@@ -119,6 +410,9 @@ class DecisionLogger:
         # In-memory decision log
         self._decision_log = DecisionLog(session_id=self.session_id)
 
+        # Decision ID counter for generating unique IDs
+        self._decision_counter = 0
+
         # Load existing session decisions if available
         self._load_session_decisions()
 
@@ -126,6 +420,8 @@ class DecisionLogger:
         self,
         decision_type: str,
         decision: Dict[str, Any],
+        parent_decision_id: Optional[str] = None,
+        impact_assessment: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Log a decision with full context.
@@ -139,6 +435,14 @@ class DecisionLogger:
                 - alternatives_considered: List of alternatives (optional)
                 - context: Additional context (optional)
                 - impact: Expected impact (optional)
+            parent_decision_id: ID of parent decision (for lineage tracking)
+            impact_assessment: Detailed impact assessment dict containing:
+                - files_modified: List of modified file paths
+                - tests_affected: List of affected test files
+                - risk_level: LOW, MEDIUM, or HIGH
+                - rollback_available: Whether rollback is possible
+                - scope: Scope of impact (codebase, tests, config, docs)
+                - reversibility: easy, moderate, or difficult
 
         Returns:
             The decision ID
@@ -151,9 +455,39 @@ class DecisionLogger:
         if "rationale" not in decision:
             raise ValueError("Decision must contain 'rationale' field")
 
+        # Generate decision ID
+        self._decision_counter += 1
+        decision_id = f"decision-{self._decision_counter:03d}"
+
+        # Create lineage if parent provided
+        lineage = DecisionLineage(parent_decision_id=parent_decision_id)
+
+        # Add this decision as child to parent
+        if parent_decision_id:
+            self._add_child_to_parent(parent_decision_id, decision_id)
+
+        # Create impact assessment if provided
+        impact_obj = None
+        if impact_assessment:
+            impact_obj = DecisionImpact(
+                files_modified=impact_assessment.get("files_modified", []),
+                tests_affected=impact_assessment.get("tests_affected", []),
+                risk_level=impact_assessment.get("risk_level", RiskLevel.MEDIUM.value),
+                rollback_available=impact_assessment.get("rollback_available", False),
+                scope=impact_assessment.get("scope", "unknown"),
+                reversibility=impact_assessment.get("reversibility", "unknown"),
+            )
+
+        # Get confidence from context
+        confidence = decision.get("context", {}).get("confidence", ConfidenceLevel.MEDIUM.value)
+
+        # Validate confidence
+        if confidence not in [e.value for e in ConfidenceLevel]:
+            confidence = ConfidenceLevel.MEDIUM.value
+
         # Create decision object
         decision_obj = Decision(
-            decision_id=f"decision-{len(self._decision_log.decisions) + 1:03d}",
+            decision_id=decision_id,
             timestamp=datetime.now(timezone.utc).isoformat(),
             category=decision_type,
             decision=decision["decision"],
@@ -162,6 +496,9 @@ class DecisionLogger:
             alternatives_considered=decision.get("alternatives_considered", []),
             context=decision.get("context", {}),
             impact=decision.get("impact", {}),
+            lineage=lineage,
+            impact_assessment=impact_obj,
+            confidence=confidence,
         )
 
         # Add to log
@@ -170,7 +507,243 @@ class DecisionLogger:
         # Persist to file
         self._save_session_decisions()
 
-        return decision_obj.decision_id
+        return decision_id
+
+    def _add_child_to_parent(self, parent_id: str, child_id: str) -> None:
+        """Add child decision ID to parent's lineage."""
+        for decision in self._decision_log.decisions:
+            if decision.decision_id == parent_id:
+                decision.lineage.child_decision_ids.append(child_id)
+                break
+
+    def trace_decision(self, decision_id: str) -> Dict[str, Any]:
+        """
+        Trace a decision's lineage (ancestors and descendants).
+
+        Args:
+            decision_id: ID of decision to trace
+
+        Returns:
+            Dictionary with:
+                - decision: The target decision
+                - parent: Parent decision (if any)
+                - children: List of child decisions
+                - related: List of related decisions
+                - lineage_chain: Full chain from root to this decision
+        """
+        # Find the decision
+        target = None
+        for d in self._decision_log.decisions:
+            if d.decision_id == decision_id:
+                target = d
+                break
+
+        if not target:
+            return {"error": f"Decision {decision_id} not found"}
+
+        # Build lineage chain (walk up to root)
+        lineage_chain = []
+        current = target
+        while current:
+            lineage_chain.insert(0, current.to_dict())
+            if current.lineage.parent_decision_id:
+                for d in self._decision_log.decisions:
+                    if d.decision_id == current.lineage.parent_decision_id:
+                        current = d
+                        break
+            else:
+                current = None
+
+        # Get parent
+        parent = None
+        if target.lineage.parent_decision_id:
+            for d in self._decision_log.decisions:
+                if d.decision_id == target.lineage.parent_decision_id:
+                    parent = d.to_dict()
+                    break
+
+        # Get children
+        children = []
+        for child_id in target.lineage.child_decision_ids:
+            for d in self._decision_log.decisions:
+                if d.decision_id == child_id:
+                    children.append(d.to_dict())
+                    break
+
+        # Get related decisions
+        related = []
+        for related_id in target.lineage.related_decisions:
+            for d in self._decision_log.decisions:
+                if d.decision_id == related_id:
+                    related.append(d.to_dict())
+                    break
+
+        return {
+            "decision": target.to_dict(),
+            "parent": parent,
+            "children": children,
+            "related": related,
+            "lineage_chain": lineage_chain,
+        }
+
+    def query_decisions(
+        self,
+        decision_type: Optional[str] = None,
+        time_range: Optional[Dict[str, str]] = None,
+        min_confidence: Optional[str] = None,
+        max_risk_score: Optional[float] = None,
+        phase: Optional[str] = None,
+        risk_level: Optional[str] = None,
+        limit: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Query decisions with multiple filters.
+
+        Args:
+            decision_type: Filter by decision type
+            time_range: Dict with 'start' and 'end' ISO format timestamps
+            min_confidence: Minimum confidence level (low, medium, high)
+            max_risk_score: Maximum risk score (0.0 to 1.0)
+            phase: Filter by execution phase
+            risk_level: Filter by specific risk level (LOW, MEDIUM, HIGH)
+            limit: Maximum number of results
+
+        Returns:
+            List of decision dictionaries matching filters
+        """
+        query = DecisionQuery(self._decision_log.decisions)
+
+        # Apply filters
+        if decision_type:
+            query = query.filter_by_type(decision_type)
+
+        if time_range:
+            query = query.filter_by_time_range(
+                time_range["start"],
+                time_range["end"],
+            )
+
+        if min_confidence:
+            query = query.filter_by_confidence(min_confidence)
+
+        if max_risk_score is not None:
+            query = query.filter_by_impact_level(max_risk_score)
+
+        if phase:
+            query = query.filter_by_phase(phase)
+
+        if risk_level:
+            query = query.filter_by_risk_level(risk_level)
+
+        # Sort by time (newest first)
+        query = query.sort_by_time(descending=True)
+
+        # Apply limit
+        if limit:
+            query = query.limit(limit)
+
+        return query.to_dict_list()
+
+    def export_decisions(
+        self,
+        format: str = "json",
+        output_path: Optional[Path] = None,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Export decisions to file.
+
+        Args:
+            format: Export format ('json' or 'csv')
+            output_path: Path to export file (defaults to session directory)
+            filters: Optional filters to apply before export
+
+        Returns:
+            Path to exported file
+
+        Raises:
+            ValueError: If format is not supported
+        """
+        # Get decisions to export
+        if filters:
+            decisions = self.query_decisions(**filters)
+        else:
+            decisions = [d.to_dict() for d in self._decision_log.decisions]
+
+        # Generate output path if not provided
+        if not output_path:
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            if format == "json":
+                output_path = self.session_dir / f"decisions_export_{timestamp}.json"
+            elif format == "csv":
+                output_path = self.session_dir / f"decisions_export_{timestamp}.csv"
+            else:
+                raise ValueError(f"Unsupported format: {format}")
+
+        # Export based on format
+        if format == "json":
+            self._export_json(decisions, output_path)
+        elif format == "csv":
+            self._export_csv(decisions, output_path)
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+
+        return str(output_path)
+
+    def _export_json(self, decisions: List[Dict[str, Any]], output_path: Path) -> None:
+        """Export decisions to JSON format."""
+        export_data = {
+            "session_id": self.session_id,
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "total_decisions": len(decisions),
+            "decisions": decisions,
+        }
+
+        output_path.write_text(json.dumps(export_data, indent=2))
+
+    def _export_csv(self, decisions: List[Dict[str, Any]], output_path: Path) -> None:
+        """Export decisions to CSV format."""
+        if not decisions:
+            # Write empty CSV with headers
+            output_path.write_text("decision_id,timestamp,category,decision,rationale,confidence,risk_score\n")
+            return
+
+        # Flatten decision data for CSV
+        flat_data = []
+        for d in decisions:
+            # Calculate risk score
+            risk_score = 0.5
+            if d.get("impact_assessment"):
+                impact = DecisionImpact.from_dict(d["impact_assessment"])
+                risk_score = impact.calculate_risk_score()
+            elif d.get("impact", {}).get("risk_level"):
+                risk_weights = {
+                    RiskLevel.LOW.value: 0.2,
+                    RiskLevel.MEDIUM.value: 0.5,
+                    RiskLevel.HIGH.value: 0.8,
+                }
+                risk_score = risk_weights.get(d["impact"]["risk_level"], 0.5)
+
+            flat_data.append({
+                "decision_id": d["decision_id"],
+                "timestamp": d["timestamp"],
+                "category": d["category"],
+                "decision": d["decision"],
+                "rationale": d["rationale"],
+                "phase": d.get("phase", ""),
+                "confidence": d.get("confidence", "medium"),
+                "risk_score": round(risk_score, 2),
+                "parent_id": d.get("lineage", {}).get("parent_decision_id", ""),
+                "files_modified": len(d.get("impact_assessment", {}).get("files_modified", [])),
+                "tests_affected": len(d.get("impact_assessment", {}).get("tests_affected", [])),
+            })
+
+        # Write CSV
+        with open(output_path, "w", newline="", encoding="utf-8") as f:
+            if flat_data:
+                writer = csv.DictWriter(f, fieldnames=flat_data[0].keys())
+                writer.writeheader()
+                writer.writerows(flat_data)
 
     def get_session_decisions(self, session_id: Optional[str] = None) -> List[Decision]:
         """
@@ -217,7 +790,7 @@ class DecisionLogger:
                 historical = decisions[:limit]
         else:
             # Search all historical files
-            for hist_file in self.decisions_dir.glob("historational-*.json"):
+            for hist_file in self.decisions_dir.glob("historical-*.json"):
                 data = json.loads(hist_file.read_text())
                 decisions = data.get("decisions", [])
                 historical.extend(decisions)
@@ -363,7 +936,7 @@ class DecisionLogger:
     def _create_historical_structure(self, category: str) -> Dict[str, Any]:
         """Create initial structure for historical file."""
         return {
-            "version": "1.0",
+            "version": "2.0",
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "decisions": [],
             "patterns": self._get_empty_patterns(category),
@@ -408,7 +981,7 @@ class DecisionLogger:
         # Analyze outcomes and update preferences
         by_choice = defaultdict(list)
         for decision in data["decisions"]:
-            choice = decision.get("choice", "unknown")
+            choice = decision.get("context", {}).get("choice", "unknown")
             by_choice[choice].append(decision)
 
         for choice, decisions in by_choice.items():
@@ -492,10 +1065,18 @@ class DecisionLogger:
             data = json.loads(session_file.read_text())
             decisions = data.get("decisions", [])
             self._decision_log.decisions = [
-                Decision(**d) for d in decisions
+                Decision.from_dict(d) for d in decisions
             ]
             self._decision_log.summary = data.get("summary", {})
             self._decision_log.generated_at = data.get("generated_at", "")
+
+            # Update counter
+            if self._decision_log.decisions:
+                max_id = max(
+                    int(d.decision_id.split("-")[1])
+                    for d in self._decision_log.decisions
+                )
+                self._decision_counter = max_id
 
     def _save_session_decisions(self) -> None:
         """Persist decisions to session file."""
@@ -509,7 +1090,7 @@ class DecisionLogger:
         session_path = self.base_path / "sessions" / session_id / "decisions.json"
         if session_path.exists():
             data = json.loads(session_path.read_text())
-            return [Decision(**d) for d in data.get("decisions", [])]
+            return [Decision.from_dict(d) for d in data.get("decisions", [])]
         return []
 
     def export_summary(self) -> Dict[str, Any]:
@@ -534,7 +1115,8 @@ class DecisionLogger:
                 "decision_id": decision.decision_id,
                 "decision": decision.decision,
                 "timestamp": decision.timestamp,
-                "confidence": decision.context.get("confidence", "unknown"),
+                "confidence": decision.confidence,
+                "risk_score": round(decision.get_risk_score(), 2),
             })
         return dict(grouped)
 
@@ -582,6 +1164,18 @@ def main():
         action="store_true",
         help="Export session summary",
     )
+    parser.add_argument(
+        "--export",
+        help="Export decisions to file (format: json or csv)",
+    )
+    parser.add_argument(
+        "--output",
+        help="Output path for export",
+    )
+    parser.add_argument(
+        "--trace",
+        help="Trace decision lineage by ID",
+    )
 
     args = parser.parse_args()
 
@@ -615,10 +1209,21 @@ def main():
         summary = logger.export_summary()
         print(json.dumps(summary, indent=2))
 
+    elif args.export:
+        # Export decisions
+        output_path = Path(args.output) if args.output else None
+        exported_path = logger.export_decisions(format=args.export, output_path=output_path)
+        print(f"Exported decisions to: {exported_path}")
+
+    elif args.trace:
+        # Trace decision lineage
+        lineage = logger.trace_decision(args.trace)
+        print(json.dumps(lineage, indent=2))
+
     else:
         # Interactive mode
         print(f"Decision Logger - Session: {logger.session_id}")
-        print("Use --query, --learn, --aggregate, or --summary")
+        print("Use --query, --learn, --aggregate, --summary, --export, or --trace")
 
 
 if __name__ == "__main__":

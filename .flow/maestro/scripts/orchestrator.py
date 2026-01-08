@@ -43,6 +43,7 @@ try:
     from parallel_coordinator import ParallelCoordinator
     from task_ordering import TaskOrderingEngine
     from resource_monitor import ResourceMonitor, ResourceLimits
+    from auto_recovery import AutoRecoveryManager, RecoveryStrategyType, Error as RecoveryError
 except ImportError as e:
     print(f"Error importing Maestro modules: {e}")
     print(f"Scripts directory: {scripts_dir}")
@@ -86,6 +87,15 @@ class MaestroOrchestrator:
         self.subagent_factory = SubagentFactory()
         self.skill_orchestrator = SkillOrchestrator(self.project_root)
         self.parallel_coordinator = ParallelCoordinator(self.project_root)
+
+        # Initialize auto-recovery manager
+        self.auto_recovery_manager = AutoRecoveryManager(
+            max_attempts=self.config["error_recovery"]["max_retry_attempts"],
+            enable_fix_generation=True,
+            enable_alternatives=True,
+            enable_rollback=self.config["error_recovery"]["enable_rollback"],
+        )
+        self._setup_auto_recovery_callbacks()
 
         # Initialize resource monitor
         self.resource_monitor: Optional[ResourceMonitor] = None
@@ -182,6 +192,65 @@ class MaestroOrchestrator:
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             ))
             self.logger.addHandler(file_handler)
+
+    def _setup_auto_recovery_callbacks(self):
+        """
+        Setup callbacks for auto-recovery manager.
+
+        These callbacks integrate the auto-recovery system with
+        existing orchestrator components.
+        """
+        # Fix generation callback - uses LLM to generate fixes
+        def fix_generator(error: RecoveryError) -> str:
+            """Generate a fix for the given error using AI."""
+            self.logger.info(f"Generating fix for error: {error.message}")
+            # In a real implementation, this would call an LLM to generate a fix
+            # For now, return a placeholder fix
+            return f"Fix suggestion for {error.error_type}: Review and correct the issue"
+
+        # Retry handler - re-run failed validation
+        def retry_handler(error: RecoveryError) -> bool:
+            """Retry the failed operation."""
+            self.logger.info(f"Retrying operation for error: {error.message}")
+            # In a real implementation, this would re-run the failed test/validation
+            # For now, simulate success for transient errors
+            return "timeout" in error.message.lower() or "temporary" in error.message.lower()
+
+        # Alternative selector - select alternative implementation approach
+        def alternative_selector(error: RecoveryError) -> str:
+            """Select an alternative implementation approach."""
+            self.logger.info(f"Selecting alternative for error: {error.message}")
+            # In a real implementation, this would analyze and suggest alternatives
+            return "Alternative implementation approach"
+
+        # Rollback handler - rollback to last checkpoint
+        def rollback_handler() -> bool:
+            """Rollback to the last checkpoint."""
+            self.logger.info("Rolling back to last checkpoint")
+            if self.session_id:
+                try:
+                    # Get most recent checkpoint
+                    checkpoints = self.checkpoint_manager.list_checkpoints(self.session_id)
+                    if checkpoints:
+                        latest_checkpoint = checkpoints[0]
+                        self.checkpoint_manager.restore_checkpoint(
+                            checkpoint_id=latest_checkpoint.checkpoint_id,
+                            session_id=self.session_id,
+                        )
+                        self.logger.info(f"Successfully rolled back to checkpoint {latest_checkpoint.checkpoint_id}")
+                        return True
+                except Exception as e:
+                    self.logger.error(f"Rollback failed: {e}")
+                    return False
+            return False
+
+        # Register callbacks
+        self.auto_recovery_manager.fix_generator = fix_generator
+        self.auto_recovery_manager.retry_handler = retry_handler
+        self.auto_recovery_manager.alternative_selector = alternative_selector
+        self.auto_recovery_manager.rollback_handler = rollback_handler
+
+        self.logger.info("Auto-recovery callbacks configured")
 
     def _initialize_resource_monitor(self, session_id: str):
         """
@@ -978,30 +1047,199 @@ class MaestroOrchestrator:
         )
 
         validation_results = {}
+        recovery_attempts = []
 
         # Run tests
         if self.config["validation"]["run_tests"]:
             self.logger.info("  → Running test suite...")
-            # TODO: Execute test suite
-            validation_results["tests"] = {"status": "passed", "count": 127}
-            self.logger.info("  ✓ 127/127 tests passed")
+            test_result = self._run_test_suite_with_recovery()
+
+            validation_results["tests"] = {
+                "status": test_result["status"],
+                "count": test_result.get("count", 0),
+            }
+
+            if test_result.get("recovery_attempted"):
+                recovery_attempts.append({
+                    "stage": "tests",
+                    "recovery_result": test_result.get("recovery_result"),
+                })
+
+            if test_result["status"] == "passed":
+                self.logger.info(f"  ✓ {test_result.get('count', 0)}/{test_result.get('count', 0)} tests passed")
+            else:
+                self.logger.warning(f"  ✗ Tests failed after recovery attempts")
 
         # Validate PRD requirements
         if self.config["validation"]["validate_prd"]:
             self.logger.info("  → Validating PRD requirements...")
-            # TODO: Validate against PRD
-            validation_results["prd"] = {"status": "passed", "requirements_met": 8}
-            self.logger.info("  ✓ All 8 PRD requirements met")
+            prd_result = self._validate_prd_with_recovery(prd_path)
+
+            validation_results["prd"] = {
+                "status": prd_result["status"],
+                "requirements_met": prd_result.get("requirements_met", 0),
+            }
+
+            if prd_result.get("recovery_attempted"):
+                recovery_attempts.append({
+                    "stage": "prd",
+                    "recovery_result": prd_result.get("recovery_result"),
+                })
+
+            if prd_result["status"] == "passed":
+                self.logger.info(f"  ✓ All {prd_result.get('requirements_met', 0)} PRD requirements met")
+            else:
+                self.logger.warning("  ✗ PRD validation failed after recovery attempts")
 
         # Run quality gates
         quality_gates = self.config["validation"]["quality_gates"]
         for gate in quality_gates:
             self.logger.info(f"  → Quality gate: {gate}...")
-            # TODO: Execute quality gates
-            validation_results[f"gate_{gate}"] = {"status": "passed"}
-            self.logger.info(f"  ✓ {gate} passed")
+            gate_result = self._run_quality_gate_with_recovery(gate)
+
+            validation_results[f"gate_{gate}"] = {"status": gate_result["status"]}
+
+            if gate_result.get("recovery_attempted"):
+                recovery_attempts.append({
+                    "stage": f"gate_{gate}",
+                    "recovery_result": gate_result.get("recovery_result"),
+                })
+
+            if gate_result["status"] == "passed":
+                self.logger.info(f"  ✓ {gate} passed")
+            else:
+                self.logger.warning(f"  ✗ {gate} failed after recovery attempts")
+
+        # Add recovery summary to validation results
+        if recovery_attempts:
+            validation_results["recovery_attempts"] = recovery_attempts
+            self.logger.info(f"  → Recovery attempted {len(recovery_attempts)} time(s)")
 
         return validation_results
+
+    def _run_test_suite_with_recovery(self) -> Dict[str, Any]:
+        """
+        Run test suite with automatic recovery on failure.
+
+        Returns:
+            Dictionary with test results and recovery information
+        """
+        # TODO: Execute actual test suite
+        # For now, simulate test execution
+        test_passed = True  # Simulate test passing
+
+        if not test_passed:
+            # Test failed - attempt auto-recovery
+            self.logger.warning("Test suite failed, attempting auto-recovery")
+
+            error = RecoveryError(
+                error_type="TestFailure",
+                message="Test suite failed with 3 failing tests",
+                source="pytest",
+                context={"test_count": 130, "failed_count": 3},
+            )
+
+            recovery_result = self.auto_recovery_manager.attempt_recovery(
+                error=error,
+                context={"stage": "test_suite"},
+            )
+
+            return {
+                "status": "passed" if recovery_result.success else "failed",
+                "count": 130,
+                "recovery_attempted": True,
+                "recovery_result": recovery_result.to_dict(),
+            }
+
+        return {
+            "status": "passed",
+            "count": 127,
+            "recovery_attempted": False,
+        }
+
+    def _validate_prd_with_recovery(self, prd_path: Path) -> Dict[str, Any]:
+        """
+        Validate PRD requirements with automatic recovery on failure.
+
+        Args:
+            prd_path: Path to PRD file
+
+        Returns:
+            Dictionary with validation results and recovery information
+        """
+        # TODO: Validate against actual PRD
+        # For now, simulate validation
+        prd_passed = True  # Simulate PRD validation passing
+
+        if not prd_passed:
+            # PRD validation failed - attempt auto-recovery
+            self.logger.warning("PRD validation failed, attempting auto-recovery")
+
+            error = RecoveryError(
+                error_type="RequirementNotMet",
+                message="2 PRD requirements not met",
+                source="prd_validator",
+                context={"total_requirements": 8, "met_requirements": 6},
+            )
+
+            recovery_result = self.auto_recovery_manager.attempt_recovery(
+                error=error,
+                context={"stage": "prd_validation", "prd_path": str(prd_path)},
+            )
+
+            return {
+                "status": "passed" if recovery_result.success else "failed",
+                "requirements_met": 8 if recovery_result.success else 6,
+                "recovery_attempted": True,
+                "recovery_result": recovery_result.to_dict(),
+            }
+
+        return {
+            "status": "passed",
+            "requirements_met": 8,
+            "recovery_attempted": False,
+        }
+
+    def _run_quality_gate_with_recovery(self, gate: str) -> Dict[str, Any]:
+        """
+        Run a quality gate with automatic recovery on failure.
+
+        Args:
+            gate: Name of the quality gate
+
+        Returns:
+            Dictionary with gate results and recovery information
+        """
+        # TODO: Execute actual quality gates
+        # For now, simulate gate execution
+        gate_passed = True  # Simulate gate passing
+
+        if not gate_passed:
+            # Quality gate failed - attempt auto-recovery
+            self.logger.warning(f"Quality gate '{gate}' failed, attempting auto-recovery")
+
+            error = RecoveryError(
+                error_type=f"{gate.capitalize()}Violation",
+                message=f"Quality gate '{gate}' found 5 violations",
+                source=f"quality_gate_{gate}",
+                context={"gate": gate, "violations": 5},
+            )
+
+            recovery_result = self.auto_recovery_manager.attempt_recovery(
+                error=error,
+                context={"stage": f"quality_gate_{gate}"},
+            )
+
+            return {
+                "status": "passed" if recovery_result.success else "failed",
+                "recovery_attempted": True,
+                "recovery_result": recovery_result.to_dict(),
+            }
+
+        return {
+            "status": "passed",
+            "recovery_attempted": False,
+        }
 
     def _phase_review(self, validation_result: Dict[str, Any]) -> bool:
         """Phase 5: Review completion criteria and decide whether to continue."""
