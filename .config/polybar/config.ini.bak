@@ -1,0 +1,285 @@
+[global/wm]
+margin-top = 10
+
+[bar/main]
+monitor = ${env:MONITOR:DP-0}
+
+override-redirect = true
+; width = 40%
+width = 100%
+height = 30
+
+bottom = true
+wm-restack = i3
+
+; offset-x = 30%
+offset-x = 0
+offset-y = 10
+
+fixed-center = true
+
+; Background and colors
+background = #00000000
+foreground = #cdd6f4
+
+; Transparency
+; opacity = 1.0
+
+; Line
+line-size = 2
+
+; Rounded corners
+radius = 12
+
+; Module padding
+module-margin-left = 1
+module-margin-right = 1
+padding-left = 1
+padding-right = 1
+
+; Font
+font-0 = "RecMonoLinear Nerd Font Propo:Bold:size=10;2"
+font-1 = "RecMonoLinear Nerd Font Propo:Regular:size=10;2"
+font-2 = "RecMonoLinear Nerd Font Propo:size=18;4.5"
+
+; Modules
+modules-left = 
+modules-center = i3 cpu cpu-graph memory loadavg date tray
+modules-right = 
+
+[bar/external]
+inherit = bar/main
+modules-left = i3
+modules-center = date
+modules-right = 
+
+; Mouse interactions
+enable-ipc = true
+
+; Scroll to switch workspaces
+scroll-up = i3wm-wsnext
+scroll-down = i3wm-wsprev
+
+[colors]
+background = #1e1e2e
+foreground = #cdd6f4
+color0 = #45475a
+color1 = #f38ba8
+color2 = #a6e3a1
+color3 = #f9e2af
+color4 = #89b4fa
+color5 = #cba6f7
+color6 = #94e2d5
+color7 = #bac2de
+color8 = #585b70
+color9 = #eba0ac
+color10 = #a6e3a1
+color11 = #f5c2e7
+color12 = #89b4fa
+color13 = #f5c2e7
+color14 = #89dceb
+color15 = #a6adc8
+
+; Workspace colors
+urgent-bg = ${colors.color1}
+urgent-fg = ${colors.background}
+active-bg = ${colors.color4}
+active-fg = ${colors.background}
+focused-bg = ${colors.color6}
+focused-fg = ${colors.background}
+occupied-bg = ${colors.color8}
+occupied-fg = ${colors.foreground}
+
+; Module colors
+module-bg = ${colors.color0}
+module-fg = ${colors.foreground}
+date-fg = ${colors.color6}
+date-bg = ${colors.color0}
+load-fg = ${colors.color5}
+load-bg = ${colors.color0}
+cpu-fg = ${colors.color3}
+cpu-bg = ${colors.color0}
+memory-fg = ${colors.color2}
+memory-bg = ${colors.color0}
+
+[module/i3]
+type = internal/i3
+format = <label-state>
+index-sort = true
+wrapping-scroll = false
+
+; Only show workspaces on the current monitor
+pin-workspaces = true
+
+enable-click = true
+enable-scroll = true
+
+fuzzy-match = true
+
+; Workspace labels
+label-focused = %name%
+label-focused-background = ${colors.focused-bg}
+label-focused-foreground = ${colors.focused-fg}
+label-focused-padding = 2
+; Animate focus with subtle underline effect
+label-focused-underline = ${colors.color6}
+label-focused-overline = ${colors.color6}
+
+label-unfocused = %name%
+label-unfocused-padding = 2
+label-unfocused-foreground = ${colors.color7}
+label-unfocused-background = ${colors.color0}
+
+label-visible = %name%
+label-visible-padding = 2
+label-visible-foreground = ${colors.color7}
+label-visible-background = ${colors.color0}
+; Animate with subtle overline for visible workspaces
+label-visible-overline = ${colors.color0}
+
+label-urgent = %name%
+label-urgent-background = ${colors.urgent-bg}
+label-urgent-foreground = ${colors.urgent-fg}
+label-urgent-padding = 2
+; Pulse animation for urgent workspaces
+label-urgent-underline = ${colors.color1}
+
+; Separator between workspaces
+label-separator = ""
+label-separator-padding = 0
+
+; Module background
+format-background = ${colors.color0}
+format-padding = 0
+
+format-prefix = "%{T3}%{T-}"
+format-prefix-foreground = ${colors.color0}
+format-prefix-background = ${bar/main.background}
+format-suffix = "%{T3}%{T-}"
+format-suffix-foreground = ${colors.color0}
+format-suffix-background = ${bar/main.background}
+
+[module/date]
+type = internal/date
+interval = 1
+
+; Time
+date = %H:%M:%S
+date-alt = %H:%M
+
+; Date
+time = %Y/%m/%d
+time-alt = %A, %d %B %Y
+
+; Format
+format = <label>
+format-prefix = "%{T3}%{T-}"
+format-prefix-foreground = ${colors.date-bg}
+format-prefix-background = ${bar/main.background}
+format-suffix = "%{T3}%{T-}"
+format-suffix-foreground = ${colors.date-bg}
+format-suffix-background = ${bar/main.background}
+
+label = %time% %date%
+label-background = ${colors.date-bg}
+label-foreground = ${colors.date-fg}
+label-padding = 1
+
+[module/cpu]
+type = internal/cpu
+interval = 0.5
+
+; Animated bar graph
+format = <label><ramp-coreload>
+format-prefix = "%{T3}%{T-}"
+format-prefix-foreground = ${colors.cpu-bg}
+format-prefix-background = ${bar/main.background}
+format-suffix = "%{T3}%{T-}"
+format-suffix-foreground = ${colors.cpu-bg}
+format-suffix-background = ${bar/main.background}
+
+; Color-coded by intensity
+label = " %percentage:0:2%%"
+label-background = ${colors.cpu-bg}
+label-foreground = ${colors.cpu-fg}
+label-padding = 1
+
+; Animated width based on usage
+ramp-coreload-foreground = ${colors.cpu-fg}
+ramp-coreload-background = ${colors.cpu-bg}
+ramp-coreload-spacing = 0
+ramp-coreload-0 = ▁
+ramp-coreload-1 = ▂
+ramp-coreload-2 = ▃
+ramp-coreload-3 = ▄
+ramp-coreload-4 = ▅
+ramp-coreload-5 = ▆
+ramp-coreload-6 = ▇
+ramp-coreload-7 = █
+ramp-coreload-8 = █
+ramp-coreload-9 = █
+ramp-coreload-10 = █
+ramp-coreload-11 = █
+
+[module/memory]
+type = internal/memory
+interval = 1
+format = <label><ramp-used>
+format-prefix = "%{T3}%{T-}"
+format-prefix-foreground = ${colors.memory-bg}
+format-prefix-background = ${bar/main.background}
+format-suffix = "%{T3}%{T-}"
+format-suffix-foreground = ${colors.memory-bg}
+format-suffix-background = ${bar/main.background}
+
+label = " %percentage_used%%"
+label-background = ${colors.memory-bg}
+label-foreground = ${colors.memory-fg}
+label-padding = 1
+
+; Animated usage indicator
+ramp-used-0 = ▁
+ramp-used-1 = ▂
+ramp-used-2 = ▃
+ramp-used-3 = ▄
+ramp-used-4 = ▅
+ramp-used-5 = ▆
+ramp-used-6 = ▇
+ramp-used-7 = █
+ramp-used-foreground = ${colors.memory-fg}
+ramp-used-background = ${colors.color0}
+
+[module/loadavg]
+type = custom/script
+exec = awk '{print $1, $2, $3}' /proc/loadavg
+interval = 2
+
+; Format
+format = <label>
+format-prefix = "%{T3}%{T-}"
+format-prefix-foreground = ${colors.load-bg}
+format-prefix-background = ${bar/main.background}
+format-suffix = "%{T3}%{T-}"
+format-suffix-foreground = ${colors.load-bg}
+format-suffix-background = ${bar/main.background}
+label = " %output%"
+label-background = ${colors.load-bg}
+label-foreground = ${colors.load-fg}
+label-padding = 1
+
+[module/tray]
+type = internal/tray
+format = <tray>
+format-background = ${colors.color0}
+format-prefix = "%{T3}%{T-}"
+format-prefix-foreground = ${colors.color0}
+format-prefix-background = ${bar/main.background}
+format-suffix = "%{T3}%{T-}"
+format-suffix-foreground = ${colors.color0}
+format-suffix-background = ${bar/main.background}
+tray-background = ${colors.color0}
+tray-spacing = 4px
+tray-padding = 4px
+tray-size = 20
+tray-maxsize = 24
+

@@ -80,8 +80,8 @@ bindsym $mod+Shift+d exec rofi-rbw
 bindsym $mod+v exec ~/.scripts/screen_record.sh start DP-0
 bindsym $mod+Shift+v exec ~/.scripts/screen_record.sh stop
 
-# bindsym $mod+Shift+t exec ~/.scripts/randwall.sh
-bindsym $mod+Shift+t exec ~/.scripts/randwall_new.sh
+bindsym $mod+Shift+t exec ~/.scripts/randwall.sh
+# bindsym $mod+Shift+t exec ~/.scripts/randwall_new.sh
 bindsym $mod+Shift+n exec ~/.scripts/randwall.sh ~/.pvt/NSFW/
 
 # focus the child container
@@ -147,7 +147,10 @@ bindsym $mod+Shift+r restart
 # gaps inner 10
 gaps inner 5
 gaps outer 0
-smart_gaps on
+# Spacing for polybar
+gaps bottom 30
+# If using polybar, turn this off for better aesthetics
+smart_gaps off
 
 # Disables cursor follow
 focus_follows_mouse yes
@@ -220,7 +223,7 @@ for_window [title="^(Path of Exile)$"] floating enable, border none, move positi
 for_window [class="^(Emulator)$"] resize 1396 628
 
 # Alacritty window - no border (left border handled by padding script)
-for_window [class="^Alacritty$"] border pixel 0
+for_window [class="^Alacritty$"] border pixel 2
 # for_window [class="^Alacritty$"] title_format " "
 # default_border normal 2
 # titlebar_position left
@@ -243,7 +246,6 @@ workspace_auto_back_and_forth yes
 
 # Autostart programs
 exec --no-startup-id systemctl --user restart pipewire
-exec --no-startup-id $HOME/.screenlayout/default.sh
 # exec --no-startup-id $HOME/.scripts/fcitx5.sh && fcitx5
 exec --no-startup-id fcitx5 -d
 exec --no-startup-id dunst -config $HOME/.config/dunst/dunstrc
@@ -319,19 +321,23 @@ client.unfocused          $inactive-bg-color  $inactive-bg-color  $inactive-text
 client.focused_inactive   $inactive-bg-color  $bg-color           $text-color           $00ff00
 client.urgent             $urgent-bg-color    $urgent-bg-color    $text-color           $00ff00
 
-bar {
-    output HDMI-0
-    status_command i3status --config ~/.config/i3/i3status.conf
-    position bottom
-    workspace_buttons yes
+# Old i3bar - replaced with Polybar
+# bar {
+#     output HDMI-0
+#     status_command i3status --config ~/.config/i3/i3status.conf
+#     position bottom
+#     workspace_buttons yes
+# 
+#     colors {
+#         background #1e293b
+#         statusline #f1f5f9
+# 
+#         focused_workspace #f1f5f9 #06b6d4
+#         active_workspace #f1f5f9 #16a34a
+#         inactive_workspace #f1f5f9 #64748b
+#         urgent_workspace #f1f5f9 #ef4444
+#     }
+# }
 
-    colors {
-        background #1e293b
-        statusline #f1f5f9
-
-        focused_workspace #f1f5f9 #06b6d4
-        active_workspace #f1f5f9 #16a34a
-        inactive_workspace #f1f5f9 #64748b
-        urgent_workspace #f1f5f9 #ef4444
-    }
-}
+# Launch Polybar
+exec --no-startup-id ~/.config/polybar/launch.sh
