@@ -1,55 +1,38 @@
 local wezterm = require("wezterm")
--- local theme = wezterm.plugin.require("https://github.com/neapsix/wezterm").moon
--- local theme = require("lua/rose-pine-moon")
--- local theme = require("lua/rose-pine")
 
 local function font_with_fallback(name, params)
-	local names = { name, "Apple Color Emoji", "azuki_font" }
+	local names = { name }
 	return wezterm.font_with_fallback(names, params)
 end
 
-local font_name = "JetBrainsMonoNL NF"
+local font_name = "JetBrainsMonoNL Nerd Font"
 
 local config = {
-	-- OpenGL for GPU acceleration, Software for CPU
+	-- OpenGL for GPU acceleration
 	front_end = "OpenGL",
 
-	color_scheme_dirs = {
-		"/home/ll931217/.config/wezterm/colors",
+	-- Use built-in color scheme to avoid loading errors
+	colors = {
+		foreground = "#ffffff",
+		background = "#1e1e1e",
+		cursor_bg = "#ffffff",
+		cursor_border = "#ffffff",
+		cursor_fg = "#000000",
+		selection_bg = "#444444",
+		selection_fg = "#ffffff",
+		ansi = {"#000000", "#ff0000", "#00ff00", "#ffff00", "#0000ff", "#ff00ff", "#00ffff", "#ffffff"},
+		brights = {"#555555", "#ff5555", "#55ff55", "#ffff55", "#5555ff", "#ff55ff", "#55ffff", "#ffffff"},
 	},
 
-	-- colors = theme.colors(),
-	-- window_frame = theme.window_frame(),
-
-	-- color_scheme = "Catppuccin Mocha",
-	color_scheme = "rose-pine-moon",
-	-- color_scheme = "dracula",
-
-	-- Font config
+	-- Simplified font config for performance
 	font = font_with_fallback(font_name),
-	font_rules = {
-		{
-			italic = true,
-			font = font_with_fallback(font_name, { italic = true }),
-		},
-		{
-			italic = false,
-			font = font_with_fallback(font_name, { bold = true }),
-		},
-		{
-			intensity = "Bold",
-			font = font_with_fallback(font_name, { bold = true }),
-		},
-	},
-	warn_about_missing_glyphs = false,
 	font_size = 10,
 	line_height = 1.0,
-	dpi = 96.0,
 
 	-- Cursor style
-	default_cursor_style = "BlinkingBlock",
+	default_cursor_style = "BlinkingUnderline",
 
-	-- Keybinds
+	-- Keybinds (unchanged)
 	disable_default_key_bindings = true,
 	keys = {
 		{
@@ -111,7 +94,7 @@ local config = {
 			mods = "CTRL|SHIFT|ALT",
 			action = wezterm.action({ AdjustPaneSize = { "Down", 1 } }),
 		},
-		{ -- browser-like bindings for tabbing
+		{
 			key = "t",
 			mods = "CTRL",
 			action = wezterm.action({ SpawnTab = "CurrentPaneDomain" }),
@@ -130,10 +113,10 @@ local config = {
 			key = "Tab",
 			mods = "CTRL|SHIFT",
 			action = wezterm.action({ ActivateTabRelative = -1 }),
-		}, -- standard copy/paste bindings
+		},
 		{
-			key = "v",
-			mods = "ALT|SHIFT",
+			key = "x",
+			mods = "CTRL",
 			action = "ActivateCopyMode",
 		},
 		{
@@ -148,14 +131,15 @@ local config = {
 		},
 	},
 
-	-- Aesthetic Night Colorscheme
-	bold_brightens_ansi_colors = true,
-	-- Padding
+	-- Performance optimizations
+	bold_brightens_ansi_colors = false, -- Disable for better performance
+	
+	-- Reduced padding
 	window_padding = {
-		left = 25,
-		right = 25,
-		top = 15,
-		bottom = 15,
+		left = 10,
+		right = 10,
+		top = 8,
+		bottom = 8,
 	},
 
 	-- Tab Bar
@@ -163,17 +147,20 @@ local config = {
 	hide_tab_bar_if_only_one_tab = true,
 	show_tab_index_in_tab_bar = false,
 	tab_bar_at_bottom = false,
-	use_fancy_tab_bar = true,
+	use_fancy_tab_bar = false, -- Disable fancy tab bar for performance
 
 	-- General
-	automatically_reload_config = true,
+	automatically_reload_config = false, -- Disable auto-reload
 	inactive_pane_hsb = { saturation = 1.0, brightness = 1.0 },
-	window_decorations = "NONE",
-	window_background_opacity = 0.7,
+	window_background_opacity = 1.0, -- Remove transparency for performance
 	window_close_confirmation = "NeverPrompt",
-	-- window_frame = { active_titlebar_bg = "#45475a", font = font_with_fallback(font_name, { bold = true }) },
 }
 
-config.enable_wayland = os.getenv("XDG_CURRENT_DESKTOP") == "Hyprland"
+-- Fixed Wayland detection for Sway
+if os.getenv("XDG_SESSION_TYPE") == "wayland" then
+	config.enable_wayland = true
+else
+	config.enable_wayland = false
+end
 
 return config

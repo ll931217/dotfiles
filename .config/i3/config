@@ -22,10 +22,12 @@ set $w4 "4 "
 set $w5 "5 "
 set $w10 "10 "
 
-# bindsym $mod+Return exec kitty
-bindsym $mod+Return exec alacritty
-# bindsym $mod+Return exec wezterm
-# bindsym $mod+Return exec ghostty
+# set $term alacritty
+# set $term ghostty
+# set $term kitty
+set $term wezterm
+
+bindsym $mod+Return exec $term
 
 bindsym $mod+q kill
 # bindsym $mod+d exec killall rofi || ~/.config/rofi/launchers/type-7/launcher.sh
@@ -225,6 +227,7 @@ for_window [class="^(Emulator)$"] resize 1396 628
 
 # Alacritty window - no border (left border handled by padding script)
 for_window [class="^Alacritty$"] border pixel 4
+for_window [class="wezterm$"] border pixel 4
 # for_window [class="^Alacritty$"] title_format " "
 # default_border normal 2
 # titlebar_position left
