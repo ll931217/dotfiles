@@ -6,8 +6,9 @@ floating_modifier $mod
 # Some colour variables
 # set $bg-color #2f343f
 # set $bg-color #1be888
-set $bg-color #f44336
-set $inactive-bg-color #2f343f
+# set $bg-color #f44336
+set $bg-color #7aa2f7
+set $inactive-bg-color #414868
 # set $inactive-bg-color #ef5350
 set $text-color #f3f4f5
 set $inactive-text-color #676E7D
@@ -223,7 +224,7 @@ for_window [title="^(Path of Exile)$"] floating enable, border none, move positi
 for_window [class="^(Emulator)$"] resize 1396 628
 
 # Alacritty window - no border (left border handled by padding script)
-for_window [class="^Alacritty$"] border pixel 2
+for_window [class="^Alacritty$"] border pixel 4
 # for_window [class="^Alacritty$"] title_format " "
 # default_border normal 2
 # titlebar_position left
