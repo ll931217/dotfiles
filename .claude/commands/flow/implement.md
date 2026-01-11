@@ -7,8 +7,17 @@ Guidelines for managing task lists to track progress on completing a PRD.
 1. **Discover PRD** - Auto-detected from git context (branch/worktree)
 2. **Verify status** - Must be `approved` or `implementing`
 3. **Execute tasks** - Autonomous with specialized subagents (NO checkpoints in autonomous mode)
-4. **Track progress** - Execute `/flow:summary` every 5 tasks or 30 minutes
-5. **Complete PRD** - Run `/flow:cleanup` when all tasks are done
+
+**TDD Test-First Enforcement (CRITICAL):**
+- **Tests MUST be written first** - Before implementing ANY feature, write failing tests that describe expected behavior
+- **Verify tests fail** - Run test suite and confirm all tests fail (RED status initially)
+- **Implement until tests pass** - Only mark implementation task complete when its corresponding tests pass (GREEN status)
+- **No progress without tests** - Do NOT proceed to next task until current task's tests pass
+- **Quality gate** - All tests must pass before allowing merge or considering epic complete
+
+**Red/Green Status Convention:**
+- When displaying task status: `🔴 FAIL` (tests failing, cannot proceed) or `🟢 PASS` (tests passing, can proceed)
+- This provides immediate visual feedback on test status
 
 **Pre-implementation:** PRD must be `approved` or `implementing` status.
 

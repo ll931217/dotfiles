@@ -851,7 +851,66 @@ Epic: Simple UI Component
 | ----------------------- | ------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | **Sequential testing**  | **DEFAULT** - most projects           | Testing epic `blocks` on all implementation epics  | Implementation tasks appear first, then testing tasks after all implementations complete |
 | **Incremental testing** | TDD workflow, PRD explicitly requests | `related` dependencies between impl + test pairs   | Implementation and test tasks appear together                                            |
-| **Parallel testing**    | Very simple features, fast iteration  | No dependencies between testing and implementation | All tasks appear immediately                                                             |
+| **TDD (Test-Driven Development) Approach - DEFAULT:**
+
+When a PRD explicitly requests TDD or indicates test-driven development, use the following approach:
+
+**How it Works:**
+- For each implementation task, create a corresponding test task
+- Use `related` dependencies (not blocking) between implementation and test pairs
+- Implementation and its tests can be worked on in parallel or sequentially
+- Tests are written FIRST (before implementation) and will fail initially
+- Feature is implemented only when its tests pass
+- **Always prioritize test writing** over implementation tasks
+- **No implementation task begins without a corresponding test that can validate it
+
+**Task Structure:**
+- Epic: Testing Strategy [blocks on ALL implementation epics]
+- For each feature task: `Epic: [Feature] Sub-task: Write tests for [Feature]` [related: [Feature implementation]]
+- Tests follow the same priority as their implementation counterparts
+
+**When to Use:**
+- PRD explicitly requests "TDD approach" or "write tests first" or "test-driven development"
+- Project requires strict test-first workflow
+- Team wants tests written before implementation
+
+**Behavioral Difference from Sequential/Parallel Testing:**
+- Tests appear **before** implementation (not after)
+- Tests are **paired** 1:1 with implementation tasks via `related` dependencies
+- Ready tasks show both implementation and test tasks together
+- Implementation blocked until its corresponding tests pass
+
+**Quality Gate:**
+- **ALL tests MUST pass** before any implementation task is marked complete
+- Test failures MUST be fixed before continuing to next task
+- No feature is considered complete without passing its tests
+
+**Example Dependency Tree:**
+```
+Epic: Testing Strategy [blocks: Feature Implementation, Database Schema]
+    ├── Write tests for authentication flow [parent-child]
+    │   └── related: Implement authentication flow [related: auth]
+    ├── Write tests for database schema [parent-child]
+    │   └── related: Implement database schema [related: db]
+    └── blocked by: Write tests for authentication flow
+```
+
+**Default Behavior (without explicit TDD request):**
+- Use Sequential Testing approach (default behavior)
+- Testing epic blocks on all implementation epics
+
+**Autonomous Mode:**
+- If invoked from `/flow:autonomous`, auto-detect TDD approach from PRD
+- Apply TDD rules without confirmation
+
+**Priority Assignment:**
+- Test creation tasks inherit implementation task priority
+- Test epics block on implementation epics using blocking dependencies
+
+**Implementation Notes:**
+- Developers write failing tests first (RED), then implement to make them pass (GREEN)
+- This ensures tests exist for verification during development
+- Test failures should be addressed immediately - do not proceed with implementation until tests pass
 
 ## Default Behavior
 

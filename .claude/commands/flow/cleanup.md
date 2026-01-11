@@ -8,10 +8,11 @@ description: Clean up after implementation - close issues, commit changes, updat
 
 1. **Auto-discover PRD** - Matches current git context (branch/worktree)
 2. **Verify all tasks complete** - All issues must be closed
-3. **Check worktree** - Optional merge to target branch
-4. **Create summary commit** - Groups all implementation changes
-5. **Generate docs (optional)** - Auto-generate documentation with document-skills
-6. **Update PRD status** - `implementing` → `implemented`
+3. **Verify all tests pass** - MANDATORY: All tests MUST pass before merge/cleanup (TDD quality gate)
+4. **Check worktree** - Optional merge to target branch
+5. **Create summary commit** - Groups all implementation changes
+6. **Generate docs (optional)** - Auto-generate documentation with document-skills
+7. **Update PRD status** - `implementing` → `implemented`
 
 **Requirements:** All PRD tasks must be complete.
 
@@ -79,17 +80,64 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
      - If user selects "Exit", exit cleanup and suggest running `/flow:implement`
      - If user selects "Continue anyway", proceed with partial cleanup
 
-   - **Step 2c - Task Summary:**
-     - Display completion summary:
-       ```
-       📊 Task Completion Status:
-       Total tasks: X
-       Completed: Y
-       In Progress: Z
-       Open: W
-       ```
+    - **Step 2c - Task Summary:**
+      - Display completion summary:
+        ```
+        📊 Task Completion Status:
+        Total tasks: X
+        Completed: Y
+        In Progress: Z
+        Open: W
+        ```
 
-   **Without beads (TodoWrite fallback):**
+    - **Step 2d - TDD Test Verification (MANDATORY):**
+      - **CRITICAL:** Before allowing cleanup, verify ALL tests pass
+      - Run test suite: Execute project's test command (npm test, pytest, cargo test, etc.)
+      - Check test status: All tests must pass (exit code 0, no failures)
+      - **If tests FAIL:**
+        - Display 🔴 status with failing tests summary
+        - Do NOT proceed to merge/cleanup
+        - Ask user to fix failing tests first
+        - Use AskUserQuestion:
+          ```
+          AskUserQuestion({
+            questions: [
+              {
+                question: "❌ Tests are failing. Cannot proceed with cleanup until all tests pass. What would you like to do?",
+                header: "Tests Failing",
+                options: [
+                  {
+                    label: "Fix and retest",
+                    description: "Stop cleanup to fix failing tests, then retry"
+                  },
+                  {
+                    label: "View test failures",
+                    description: "Show which tests are failing"
+                  },
+                  {
+                    label: "Continue anyway (RISKY)",
+                    description: "Proceed despite failing tests (not recommended)"
+                  }
+                ],
+                multiSelect: false
+              }
+            ]
+          })
+          ```
+        - If user selects "Continue anyway":
+          - Display ⚠️ warning about merging failing tests
+          - Proceed with cleanup but document in commit message
+      - **If tests PASS:**
+        - Display 🟢 status with test summary
+        - Proceed to next step (worktree check/merge)
+        - Example output:
+          ```
+          🟢 All Tests Passing!
+          Total: X tests passed
+          Coverage: Y%
+          ```
+
+    **Without beads (TodoWrite fallback):**
    - Check internal TodoWrite state for all PRD-related tasks
    - Verify all tasks have status "completed"
    - If any tasks are incomplete, show warning and offer options
@@ -368,49 +416,59 @@ To guide an AI assistant in performing post-implementation cleanup after all PRD
 
 7. **Display Cleanup Summary:** Show the user what was accomplished.
 
-   **Output Format (with worktree merge):**
+    **Output Format (with worktree merge):**
 
-   ```
-   🧹 Implementation Cleanup Complete!
+    ```
+    🧹 Implementation Cleanup Complete!
 
-   📋 PRD: prd-[feature]-vN.md
-      Status: implementing → implemented
-      Version: N → N+1
+    📋 PRD: prd-[feature]-vN.md
+       Status: implementing → implemented
+       Version: N → N+1
 
-   📊 Worktree: [worktree-name]
-      ✓ Merged to [target-branch]
-      ✓ Worktree removed
-      ✓ Branch deleted
+    🧪 Tests: 🟢 ALL PASSING
+       Total: X tests
+       Coverage: Y%
+       ✓ All tests verified
 
-   📊 Tasks: X/X completed
-      ✓ All issues closed
+    📊 Worktree: [worktree-name]
+       ✓ Merged to [target-branch]
+       ✓ Worktree removed
+       ✓ Branch deleted
 
-   📝 Merge Commit:
-      Commit: [commit SHA]
-      Message: feat([scope]): merge [feature] - complete
+    📊 Tasks: X/X completed
+       ✓ All issues closed
 
-   ✨ PRD implemented and merged!
-   ```
+    📝 Merge Commit:
+       Commit: [commit SHA]
+       Message: feat([scope]): merge [feature] - complete
 
-   **Output Format (without worktree merge):**
+    ✨ PRD implemented and merged!
+    ```
 
-   ```
-   🧹 Implementation Cleanup Complete!
+    **Output Format (without worktree merge):**
 
-   📋 PRD: prd-[feature]-vN.md
-      Status: implementing → implemented
-      Version: N → N+1
-      Branch: [branch-name]
+    ```
+    🧹 Implementation Cleanup Complete!
 
-   📊 Tasks: X/X completed
-      ✓ All issues closed
+    📋 PRD: prd-[feature]-vN.md
+       Status: implementing → implemented
+       Version: N → N+1
+       Branch: [branch-name]
 
-   📝 Summary Commit:
-      Commit: [commit SHA]
-      Message: feat([scope]): implement [feature] - complete
+    🧪 Tests: 🟢 ALL PASSING
+       Total: X tests
+       Coverage: Y%
+       ✓ All tests verified
 
-   ✨ PRD is now marked as implemented!
-   ```
+    📊 Tasks: X/X completed
+       ✓ All issues closed
+
+    📝 Summary Commit:
+       Commit: [commit SHA]
+       Message: feat([scope]): implement [feature] - complete
+
+    ✨ PRD is now marked as implemented!
+    ```
 
 8. **Optional Next Step:** Suggest running `/flow:summary` to view the final implementation summary.
 
@@ -460,6 +518,58 @@ verify_all_tasks_complete() {
 }
 ```
 
+### Helper Function: verify_all_tests_pass
+
+```bash
+# Function to verify all tests pass before cleanup
+verify_all_tests_pass() {
+  echo "🧪 Verifying test suite..."
+
+  # Detect test command based on project type
+  if [ -f "package.json" ]; then
+    # Node.js/TypeScript project
+    TEST_CMD="npm test"
+  elif [ -f "Cargo.toml" ]; then
+    # Rust project
+    TEST_CMD="cargo test"
+  elif [ -f "pyproject.toml" ] || [ -f "setup.py" ] || [ -f "requirements.txt" ]; then
+    # Python project
+    TEST_CMD="pytest"  # or python -m pytest
+  elif [ -f "go.mod" ]; then
+    # Go project
+    TEST_CMD="go test ./..."
+  elif [ -f "pom.xml" ] || [ -f "build.gradle" ]; then
+    # Java/Kotlin project
+    TEST_CMD="mvn test"  # or gradle test
+  else
+    echo "⚠️  Could not auto-detect test command"
+    echo "Please run tests manually and confirm all pass"
+    return 0  # Allow manual verification
+  fi
+
+  # Run tests
+  echo "Running: $TEST_CMD"
+  if eval "$TEST_CMD"; then
+    echo ""
+    echo "🟢 ALL TESTS PASSING!"
+    echo ""
+    # Try to get test count/coverage if available
+    if [ -f "coverage/lcov-report/index.html" ]; then
+      echo "Coverage report available: coverage/lcov-report/index.html"
+    elif [ -f ".nyc_output/index.json" ]; then
+      echo "Coverage data: .nyc_output/index.json"
+    fi
+    return 0
+  else
+    echo ""
+    echo "🔴 TESTS ARE FAILING!"
+    echo ""
+    echo "Cannot proceed with cleanup until all tests pass."
+    return 1
+  fi
+}
+```
+
 ## Without beads (TodoWrite fallback):
 
 Task completion is verified through internal TodoWrite state. Note: Context may be lost between sessions, so manual verification may be needed.
@@ -472,7 +582,8 @@ Before performing cleanup, the following safety checks are performed:
 2. **Git Status Check:** Ensure there are uncommitted changes to commit
 3. **Branch Check:** Verify current branch matches PRD's git context
 4. **Task Completion Check:** Verify all tasks are marked as completed
-5. **Worktree Clean State Check:** If in worktree, ensure no uncommitted changes before merge
+5. **TDD Test Verification (MANDATORY):** Verify ALL tests pass before allowing merge/cleanup
+6. **Worktree Clean State Check:** If in worktree, ensure no uncommitted changes before merge
 
 If any safety check fails, the AI will:
 
@@ -487,6 +598,7 @@ If any safety check fails, the AI will:
 | Error                           | Cause                               | Resolution                                             |
 | ------------------------------- | ----------------------------------- | ------------------------------------------------------ |
 | No PRD found                    | No matching PRD for current context | Offer to create new PRD or select manually             |
+| Tests not passing               | TDD requirement: ALL tests must pass | Display failing tests, offer to fix or continue (risky) |
 | Tasks not complete              | Some issues still open/in-progress  | Show incomplete tasks, offer to exit or continue       |
 | No git changes                  | Nothing to commit                   | Verify if work was done, may skip commit step          |
 | Beads not available             | `bd` command not found              | Fall back to TodoWrite verification                    |
@@ -522,6 +634,12 @@ Verifying task completion...
    In Progress: 0
    Open: 0
    ✓ All tasks complete
+
+🧪 Verifying test suite...
+Running: npm test
+🟢 ALL TESTS PASSING!
+   Total: 127 tests
+   Coverage: 92%
 
 🔍 Worktree detected: feature-user-auth
    Current branch: feature/user-auth
@@ -595,6 +713,12 @@ Verifying task completion...
    In Progress: 0
    Open: 0
    ✓ All tasks complete
+
+🧪 Verifying test suite...
+Running: pytest
+🟢 ALL TESTS PASSING!
+   Total: 156 tests
+   Coverage: 88%
 
 Creating summary commit...
 ✓ Staged all changes

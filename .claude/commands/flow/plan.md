@@ -10,7 +10,8 @@ description: Generating a Product Requirements Document (PRD)
 2. **Verify/create worktree** - Isolated worktrees recommended for feature branches
 3. **Ask clarifying questions** - 3-5 questions at a time to gather requirements
 4. **Generate PRD** - Creates structured markdown from your answers
-5. **Get approval** - Review and approve before task generation
+5. **Generate tests** - Create failing tests for each requirement before implementation
+6. **Get approval** - Review and approve before task generation
 
 **Next:** Run `/flow:generate-tasks` to create implementation tasks
 
