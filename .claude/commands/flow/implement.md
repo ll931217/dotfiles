@@ -27,17 +27,23 @@ Guidelines for managing task lists to track progress on completing a PRD.
 
 **CRITICAL:** Before executing, check if this command is running in autonomous mode:
 
-- This command is running autonomously if invoked from `/flow:autonomous`
-- When autonomous, **DO NOT pause for confirmations between tasks**
-- When autonomous, **DO NOT pause at phase boundaries**
-- When autonomous, **DO NOT use AskUserQuestion tool**
-- Continue execution through all tasks without stopping
-- Only stop for critical errors that absolutely require human intervention
+ - This command is running autonomously if invoked from `/flow:autonomous`
 
 **Detection method:**
-- Check if the current conversation context indicates autonomous execution
-- Look for `[Maestro]` log format or explicit autonomous mode flags
-- If uncertain, assume interactive mode (safer default)
+- Check if invoked from `/flow:autonomous` (look for parent workflow or explicit autonomous flag)
+- Check if current conversation context indicates autonomous execution
+- Check for `[Maestro]` log format or explicit autonomous mode flags
+- If ANY pattern matches → Set autonomous_mode = true
+- If NO patterns match → Set autonomous_mode = false (fallback to interactive)
+- Log detection result: `[Maestro] Autonomous mode detected: {autonomous_mode}`
+- Note: This flag is passed to downstream commands to control their behavior
+
+**If autonomous mode is TRUE:**
+- **SKIP** all "Wait for Go" confirmations - proceed directly
+- **SKIP** AskUserQuestion checkpoints (except critical errors)
+
+**If autonomous mode is FALSE:**
+- Follow interactive mode with AskUserQuestion for confirmations
 
 **Task Management Options:**
 
@@ -60,7 +66,19 @@ If you are reading this workflow and ANY of the following are true:
 
 **Then execute:** `/flow:summary`
 
-After executing `/flow:summary`, replace the content between the `==== LATEST SUMMARY ====` markers below with the new output and update the "Last Refresh" timestamp.
+After executing `/flow:summary`, replace the content between `==== LATEST SUMMARY ====` markers below with new output and update the "Last Refresh" timestamp.
+
+**CRITICAL: Compaction Recovery in Autonomous Mode**
+
+If autonomous mode has been running for 30+ minutes OR context appears stale, auto-execute `/flow:summary` to refresh context and recover from compaction.
+
+**Context Refresh Trigger Conditions:**
+- Autonomous mode has been running for 30+ minutes
+- Context appears stale (suspected auto-compaction)
+- About to start a [P:Group-X] parallel task group
+
+**Pre-Group Refresh (REQUIRED):**
+Before starting ANY [P:Group-X] parallel task group, you MUST execute `/flow:summary` to ensure you have a current task state. Parallel groups require accurate context about dependencies and blocking issues.
 
 **Current Status Summary:**
 

@@ -64,6 +64,26 @@ Maestro orchestrates these components:
 └──────────────────┘  └──────────────────┘  └──────────────────┘
 ```
 
+## Detection Method
+
+Check if this workflow is running in autonomous mode:
+
+**Detection Rules:**
+- Check if invoked from `/flow:autonomous` (look for parent workflow or explicit autonomous flag)
+- Check if current conversation context indicates autonomous execution
+- Check for `[Maestro]` log format or explicit autonomous mode flags
+- If ANY pattern matches → Set autonomous_mode = true
+- If NO patterns match → Set autonomous_mode = false (fallback to interactive)
+- Log detection result: `[Maestro] Autonomous mode detected: {autonomous_mode}`
+- Note: This flag is passed to downstream commands to control their behavior
+
+**If autonomous mode is TRUE:**
+- **SKIP** all "Wait for Go" confirmations - proceed directly
+- **SKIP** AskUserQuestion checkpoints (except critical errors)
+
+**If autonomous mode is FALSE:**
+- Follow interactive mode with AskUserQuestion for confirmations
+
 ## Prerequisites
 
 **Required:**
