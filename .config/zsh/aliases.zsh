@@ -10,7 +10,16 @@ alias tk="tmux -2 kill-session -t"
 alias tka="tmux kill-server"
 alias tl="tmux -2 list-sessions"
 
+# Atuin
+alias atsr="atuin scripts run"
+
+# Worktrunk
+alias wsc='wt switch --create'
+alias wtm='wt merge'
+alias wtr='wt remove'
+
 alias zj="zellij"
+alias zjl="$HOME/.scripts/zellij-list-sessions.sh"
 
 alias tf="terraform"
 alias tfw="terraform workspace"
@@ -26,29 +35,14 @@ alias ma="mcpm-aider"
 # alias ff="fastfetch"
 alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
 
-# History
-alias h='history -10000'
-alias hf='history -10000 | fzf'
-alias hl='history -10000 | less'
-alias hs='history -10000 | grep'
-alias hsi='history -10000 | grep -i'
+alias mcp-inspector="npx @modelcontextprotocol/inspector"
 
-# Atuin - enhanced shell history
-alias ats='atuin search'
-alias atl='atuin history list'
-alias atsync='atuin sync'
-alias atdoc='atuin doctor'
-alias atssh='atuin search ssh'
-alias atsshl='atuin history list | grep ssh'
-alias atdk='atuin search docker'
-alias atdkb='atuin search "docker build"'
-alias atdkr='atuin search "docker run"'
-alias atdkl='atuin history list | grep -i docker'
-alias atgit='atuin search git'
-alias atgitc='atuin search "git commit"'
-alias atgitb='atuin search "git branch"'
-alias atstat='atuin history list | cut -d" " -f2- | sort | uniq -c | sort -nr | head -20'
-alias atfail='atuin search --filter "exit=1"'
+# History
+# alias h='history -10000'
+# alias hf='history -10000 | fzf'
+# alias hl='history -10000 | less'
+# alias hs='history -10000 | grep'
+# alias hsi='history -10000 | grep -i'
 
 # GitHub Copilot
 alias ghcu="gh extension upgrade gh-copilot"
@@ -56,14 +50,19 @@ alias ghce="gh copilot explain"
 alias ghcs="gh copilot suggest"
 
 alias ubd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
+alias uwt="curl --proto '=https' --tlsv1.2 -LsSf https://github.com/max-sixty/worktrunk/releases/download/v0.8.2/worktrunk-installer.sh | sh"
 
 alias zshrc='pushd ~ ; $EDITOR ~/.config/zsh/.zshrc ~/.config/zsh/aliases.zsh ~/.config/zsh/env.zsh ~/.config/zsh/keys.zsh ; popd ; exec zsh'
 alias nvrc='cd ~/.config/nvim ; $EDITOR init.lua ; cd -'
 alias hyprrc='cd ~/.config/hypr/ ; $EDITOR ~/.config/hypr/hyprland.conf ; cd -'
 alias i3rc='cd ~/.config/i3/ ; $EDITOR ~/.config/i3/config ; cd -'
+alias awrc="pushd ~/.config/awesome ; $EDITOR rc.lua ; popd"
 
 # Pretty print PATH
 alias print_path="sed 's/:/\\n/g' <<< \"$PATH\""
+
+# Quick memory check
+alias memwatch='watch -n 2 free -h && echo \"---TOP 10---\" && ps aux --sort=-%mem | head -12'
 
 alias pm="pulsemixer"
 alias yv="youtube-viewer"
@@ -84,6 +83,7 @@ alias q="exit"
 alias cleanram="sudo sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'"
 alias trim_all="sudo fstrim -va"
 alias mkgrub='sudo grub-mkconfig -o /boot/grub/grub.cfg'
+alias rmdeps='find . -type d \( -name "node_modules" -o -name ".venv" \) -print0 | xargs -0 rm -rf'
 alias mtar='tar -zcvf' # mtar <archive_compress>
 alias utar='tar -zxvf' # utar <archive_decompress> <file_list>
 # alias z='zip -r' # z <archive_compress> <file_list>

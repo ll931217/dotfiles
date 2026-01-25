@@ -1,7 +1,0 @@
-# Versions file for tracking installed application versions
-# Format: app_name=version
-# Examples:
-# zen-browser=1.0.1
-# vs-code=1.85.1
-
-zen-browser=1.17.15b
