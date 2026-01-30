@@ -129,24 +129,25 @@ keybinds clear-defaults=true {
         }
     }
     shared_among "normal" "locked" {
-        bind "Alt left" { MoveFocusOrTab "left"; }
-        bind "Alt down" { MoveFocus "down"; }
-        bind "Alt up" { MoveFocus "up"; }
-        bind "Alt right" { MoveFocusOrTab "right"; }
         bind "Alt +" { Resize "Increase"; }
         bind "Alt -" { Resize "Decrease"; }
         bind "Alt =" { Resize "Increase"; }
+
         bind "Alt [" { PreviousSwapLayout; }
         bind "Alt ]" { NextSwapLayout; }
-        bind "Alt d" { NewPane "down"; }
+
         bind "Alt f" { ToggleFloatingPanes; }
-        bind "Alt h" { MoveFocusOrTab "left"; }
+
+        bind "Alt h" "Ctrl h" { MoveFocusOrTab "left"; }
+        bind "Alt l" "Ctrl l" { MoveFocusOrTab "right"; }
+        bind "Alt j" "Ctrl j" { MoveFocus "down"; }
+        bind "Alt k" "Ctrl k" { MoveFocus "up"; }
+
         bind "Alt i" { MoveTab "left"; }
-        bind "Alt j" { MoveFocus "down"; }
-        bind "Alt k" { MoveFocus "up"; }
-        bind "Alt l" { MoveFocusOrTab "right"; }
-        bind "Alt n" { NewPane; }
         bind "Alt o" { MoveTab "right"; }
+
+        bind "Alt n" { NewPane; }
+        bind "Alt d" { NewPane "down"; }
         bind "Alt r" { NewPane "right"; }
         bind "Alt t" { NewTab; }
     }
@@ -215,15 +216,14 @@ keybinds clear-defaults=true {
 // changing these requires a restart to take effect
 plugins {
     about location="zellij:about"
-    // compact-bar location="zellij:compact-bar"
+    compact-bar location="zellij:compact-bar"
     configuration location="zellij:configuration"
     filepicker location="zellij:strider" {
         cwd "/"
     }
     plugin-manager location="zellij:plugin-manager"
     session-manager location="zellij:session-manager"
-    // status-bar location="zellij:status-bar"
-    status-bar location="zellij:compact-bar"
+    status-bar location="zellij:status-bar"
     strider location="zellij:strider"
     tab-bar location="zellij:tab-bar"
     welcome-screen location="zellij:session-manager" {
@@ -292,7 +292,7 @@ default_mode "locked"
 //   - true (default, enabled)
 //   - false
 // 
-pane_frames false
+// pane_frames true
  
 // When attaching to an existing session with other users,
 // should the session be mirrored (true)
@@ -326,7 +326,7 @@ pane_frames false
 // that will be used by default if this option is not set.
 // Examples:
 //
-// copy_command "xclip -selection clipboard" // x11
+copy_command "xclip -selection clipboard" // x11
 // copy_command "wl-copy"                    // wayland
 // copy_command "pbcopy"                     // osx
 // 
@@ -412,7 +412,7 @@ pane_frames false
 // (Requires restart)
 // Default: true (if the host terminal supports it)
 // 
-support_kitty_keyboard_protocol false
+// support_kitty_keyboard_protocol false
  
 // Whether to stack panes when resizing beyond a certain size
 // Default: true
