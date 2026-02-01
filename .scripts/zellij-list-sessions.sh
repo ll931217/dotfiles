@@ -4,7 +4,7 @@ NO_SESSIONS=$(echo "${ZJ_SESSIONS}" | wc -l)
 
 if [ "${NO_SESSIONS}" -ge 2 ]; then
   zellij attach \
-    "$(echo "${ZJ_SESSIONS}" | fzf --ansi)"
+    "$(echo "${ZJ_SESSIONS}" | fzf --ansi | awk '{print $1}')"
 else
   zellij attach -c
 fi
