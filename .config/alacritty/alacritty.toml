@@ -1,11 +1,13 @@
-
 [font]
-size = 12.0
+size = 11.0
+offset = { x = 0, y = -1 } # This moves lines 1px closer together
+glyph_offset = { x = 0, y = 0 }
 
 [font.normal]
 family = "JetBrainsMonoNL Nerd Font"
-# style = "Regular"
-style = "Bold"
+# family = "RecMonoLinear Nerd Font Propo"
+style = "Regular"
+# style = "Bold"
 
 [[keyboard.bindings]]
 action = "ToggleViMode"
@@ -39,20 +41,25 @@ mode = "Vi"
 mods = "Shift"
 
 [window]
-decorations = "buttonless"
+decorations = "none"
 opacity = 0.8
 # option_as_alt = "Both"
+dynamic_padding = true
 
 [window.dimensions]
 columns = 120
-lines = 35
+lines = 38
 
 [window.padding]
-x = 12
-y = 12
+x = 2
+y = 2
 
 [general]
 import = [
+  # "/home/ll931217/.config/alacritty/tokyo-night-storm.toml",
+  "/home/ll931217/.config/alacritty/kanso.toml",
   # "/home/ll931217/.config/alacritty/catppuccin/catppuccin-macchiato.toml",
-  "/home/ll931217/.config/alacritty/tokyo-night-storm.toml",
 ]
+
+[terminal]
+osc52 = "CopyPaste"

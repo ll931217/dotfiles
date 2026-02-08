@@ -21,3 +21,11 @@ yellow = "#e0af68"
 [colors.primary]
 background = "#24283b"
 foreground = "#a9b1d6"
+
+[colors.cursor]
+text = "#24283b"
+cursor = "#7aa2f7"
+
+[colors.vi_mode_cursor]
+text = "#24283b"
+cursor = "#f7768e"

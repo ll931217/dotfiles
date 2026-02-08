@@ -16,6 +16,12 @@
 export ZDOTDIR="$HOME/.config/zsh"
 
 # --------------------------------------------
+# Fix x_cmd .zwc compilation issues
+# --------------------------------------------
+# Remove compiled .zwc files before x_cmd loads to prevent alias lookup errors
+find ~/.x-cmd.root -name '*.zwc' -delete 2>/dev/null
+
+# --------------------------------------------
 # Znap: the fast-as-hell plugin manager
 # --------------------------------------------
 if [[ ! -f ~/.znap/znap.zsh ]]; then
@@ -111,34 +117,27 @@ autoload -Uz compinit && compinit -C
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /usr/bin/terraform terraform
 
-# Lazy load heavy configurations only when needed
-# _lazy_load_heavy_configs() {
-#   files=("functions" "aliases" "keys" "env", "fzf")
-#   for file in "${files[@]}"; do
-#     [ -f "$HOME/.config/zsh/$file.zsh" ] && source "$HOME/.config/zsh/$file.zsh"
-#   done
-# }
+# --------------------------------------------
+# Source extra config files
+# --------------------------------------------
+# Fixed: Changed from heredoc to array to avoid blank line issue
+files=(
+  "env"
+  "keys"
+  "fzf"
+  "theme"
+  "aliases"
+  "functions"
+  "utility"
+  "options"
+  "plugins"
+  "keybinds"
+  "prompt"
+)
 
-# Defer heavy configurations - trigger after first command
-# autoload -Uz add-zsh-hook
-# add-zsh-hook precmd _lazy_load_heavy_configs
-
-while read file
-do
+for file in "${files[@]}"; do
   [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"
-done <<-EOF
-  env
-  keys
-  fzf
-  theme
-  aliases
-  functions
-  utility
-  options
-  plugins
-  keybinds
-  prompt
-EOF
+done
 
 # Enable grc
 [[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh
@@ -148,5 +147,7 @@ EOF
 
 # Command not found with suggestions on how to install
 [ -f /usr/share/doc/pkgfile/command-not-found.zsh ] && source /usr/share/doc/pkgfile/command-not-found.zsh
+
+[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 
 # vim:ft=zsh:nowrap

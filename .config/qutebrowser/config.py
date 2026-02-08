@@ -11,7 +11,8 @@
 #   qute://help/settings.html
 # pylint: disable=C0111
 
-import dracula.draw
+# import colorschemes.dracula.draw
+import colorschemes.kanso.draw
 from qutebrowser.config.configfiles import ConfigAPI  # noqa: F401
 from qutebrowser.config.config import ConfigContainer  # noqa: F401
 
@@ -21,7 +22,8 @@ c: ConfigContainer = c  # noqa: F821 # pyright: ignore
 # Change the argument to True to still load settings configured via autoconfig.yml
 config.load_autoconfig(True)
 
-dracula.draw.blood(c, {"spacing": {"vertical": 6, "horizontal": 8}})
+# colorschemes.dracula.draw.blood(c, {"spacing": {"vertical": 6, "horizontal": 8}})
+colorschemes.kanso.draw.zen(c, {"spacing": {"vertical": 6, "horizontal": 8}})
 
 c.auto_save.session = True
 
