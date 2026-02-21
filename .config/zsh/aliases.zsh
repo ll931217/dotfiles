@@ -29,7 +29,7 @@ alias wclass="xprop | grep WM_CLASS | awk '{ print $4 }'"
 
 alias k="kubectl"
 
-alias oc="opencode"
+# alias oc="opencode"
 alias ccusage="npx ccusage@latest"
 alias ma="mcpm-aider"
 # alias ff="fastfetch"
@@ -70,6 +70,7 @@ alias say="espeak"
 
 alias jsonp="python -m json.tool"
 alias lg="lazygit"
+alias ld="lazydocker"
 alias run="pnpm run"
 alias rl="exec zsh"
 alias c="clear"

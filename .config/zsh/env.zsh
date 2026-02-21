@@ -5,7 +5,9 @@
 # export XDG_CURRENT_DESKTOP=Hyprland
 # export XDG_CURRENT_DESKTOP=Sway
 
-export TERM=xterm-kitty yazi
+export QT_QPA_PLATFORMTHEME=qt6ct
+
+# export TERM=xterm-kitty yazi
 
 # Init starship
 export STARSHIP_CONFIG=$HOME/.config/starship/starship.toml
@@ -108,7 +110,7 @@ export BROWSER="zen"
 # export BROWSER="qutebrowser"
 export VISUAL="nvim"
 export EDITOR="nvim"
-export PAGER="moar"
+export PAGER="moor"
 # export PAGER="less"
 
 export XDG_CONFIG_HOME="$HOME/.config"

@@ -165,3 +165,32 @@ function uwt() {
 
   curl --proto '=https' --tlsv1.2 -LsSf "$install_url" | sh
 }
+
+function oc() {
+    local base_name=$(basename "$PWD")
+    local path_hash=$(echo "$PWD" | md5sum | cut -c1-4)
+    local session_name="${base_name}-${path_hash}"
+    
+    # Find available port
+    local port=4096
+    while [ $port -lt 5096 ]; do
+        if ! lsof -i :$port >/dev/null 2>&1; then
+            break
+        fi
+        port=$((port + 1))
+    done
+    
+    export OPENCODE_PORT=$port
+    
+    if [ -n "$TMUX" ]; then
+        opencode --port $port "$@"
+    else
+        local oc_cmd="OPENCODE_PORT=$port opencode --port $port $*; exec $SHELL"
+        if tmux has-session -t "$session_name" 2>/dev/null; then
+            tmux new-window -t "$session_name" -c "$PWD" "$oc_cmd"
+            tmux attach-session -t "$session_name"
+        else
+            tmux new-session -s "$session_name" -c "$PWD" "$oc_cmd"
+        fi
+    fi
+}
