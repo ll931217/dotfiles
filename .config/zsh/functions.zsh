@@ -166,6 +166,7 @@ function uwt() {
   curl --proto '=https' --tlsv1.2 -LsSf "$install_url" | sh
 }
 
+# Oh-My-OpenCode
 function oc() {
     local base_name=$(basename "$PWD")
     local path_hash=$(echo "$PWD" | md5sum | cut -c1-4)
