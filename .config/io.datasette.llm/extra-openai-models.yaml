@@ -9,3 +9,9 @@
   api_key_name: ANTHROPIC_API_KEY
   streaming: true
   aliases: ["opus"]
+- model_id: claude-max-opus-4-5
+  model_name: claude-max-opus-4-5
+  api_base: http://aigw-a.vici.corp
+  api_key_name: ANTHROPIC_API_KEY
+  streaming: true
+  aliases: ["max-opus"]
