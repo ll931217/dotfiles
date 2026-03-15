@@ -30,6 +30,7 @@ alias wclass="xprop | grep WM_CLASS | awk '{ print $4 }'"
 alias k="kubectl"
 
 # alias oc="opencode"
+alias cc="claude"
 alias ccusage="npx ccusage@latest"
 alias ma="mcpm-aider"
 # alias ff="fastfetch"
@@ -54,6 +55,7 @@ alias zshrc='pushd ~ ; $EDITOR ~/.config/zsh/.zshrc ~/.config/zsh/aliases.zsh ~/
 alias nvrc='cd ~/.config/nvim ; $EDITOR init.lua ; cd -'
 alias hyprrc='cd ~/.config/hypr/ ; $EDITOR ~/.config/hypr/hyprland.conf ; cd -'
 alias i3rc='cd ~/.config/i3/ ; $EDITOR ~/.config/i3/config ; cd -'
+alias nirirc='cd ~/.config/niri/ ; $EDITOR ~/.config/niri/config.kdl ~/.config/niri/noctalia.kdl ; cd -'
 
 # Pretty print PATH
 alias print_path="sed 's/:/\\n/g' <<< \"$PATH\""

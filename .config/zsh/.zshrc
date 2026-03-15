@@ -85,6 +85,7 @@ eval "$(direnv hook zsh)"
 eval "$(starship init zsh)"
 eval "$(goose term init zsh)"
 eval "$(atuin init zsh)"
+eval "$(dra completion zsh)"
 
 # --------------------------------------------
 # Source private config files
@@ -138,6 +139,8 @@ files=(
 for file in "${files[@]}"; do
   [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"
 done
+
+eval "$(gt completion zsh)"
 
 # Enable grc
 [[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh

@@ -167,30 +167,66 @@ function uwt() {
 }
 
 function oc() {
-    local base_name=$(basename "$PWD")
-    local path_hash=$(echo "$PWD" | md5sum | cut -c1-4)
-    local session_name="${base_name}-${path_hash}"
-    
-    # Find available port
-    local port=4096
-    while [ $port -lt 5096 ]; do
-        if ! lsof -i :$port >/dev/null 2>&1; then
-            break
-        fi
-        port=$((port + 1))
-    done
-    
-    export OPENCODE_PORT=$port
-    
-    if [ -n "$TMUX" ]; then
-        opencode --port $port "$@"
-    else
-        local oc_cmd="OPENCODE_PORT=$port opencode --port $port $*; exec $SHELL"
-        if tmux has-session -t "$session_name" 2>/dev/null; then
-            tmux new-window -t "$session_name" -c "$PWD" "$oc_cmd"
-            tmux attach-session -t "$session_name"
-        else
-            tmux new-session -s "$session_name" -c "$PWD" "$oc_cmd"
-        fi
+  local base_name=$(basename "$PWD")
+  local path_hash=$(echo "$PWD" | md5sum | cut -c1-4)
+  local session_name="${base_name}-${path_hash}"
+  
+  # Find available port
+  local port=14096
+  while [ $port -lt 15096 ]; do
+    if ! lsof -i :$port >/dev/null 2>&1; then
+      break
     fi
+    port=$((port + 1))
+  done
+  
+  export OPENCODE_PORT=$port
+  
+  if [ -n "$TMUX" ]; then
+    opencode --port $port "$@"
+  else
+    local oc_cmd="OPENCODE_PORT=$port opencode --port $port $*; exec $SHELL"
+    if tmux has-session -t "$session_name" 2>/dev/null; then
+      tmux new-window -t "$session_name" -c "$PWD" "$oc_cmd"
+      tmux attach-session -t "$session_name"
+    else
+      tmux new-session -s "$session_name" -c "$PWD" "$oc_cmd"
+    fi
+  fi
 }
+
+function reset_anthropic_env() {
+  unset ANTHROPIC_DEFAULT_HAIKU_MODEL
+  unset ANTHROPIC_DEFAULT_OPUS_MODEL
+  unset ANTHROPIC_DEFAULT_SONNET_MODEL
+  unset ANTHROPIC_MODEL
+  unset ANTHROPIC_BASE_URL
+}
+
+function use_zai() {
+  reset_anthropic_env
+
+  export ANTHROPIC_DEFAULT_OPUS_MODEL="glm-5"
+  export ANTHROPIC_DEFAULT_SONNET_MODEL="glm-4.7"
+  export ANTHROPIC_DEFAULT_HAIKU_MODEL="glm-4.7-flashx"
+  export ANTHROPIC_MODEL="opusplan"
+  export CLAUDE_CODE_ENABLE_TELEMETRY="0"
+  export ANTHROPIC_BASE_URL="https://api.z.ai/api/anthropic"
+  export ANTHROPIC_AUTH_TOKEN="$GLM_API_KEY"
+  export API_TIMEOUT_MS=3000000
+}
+
+function use_llama_cpp() {
+  reset_anthropic_env
+
+  export ANTHROPIC_DEFAULT_HAIKU_MODEL="qwen2.5-coder"
+  export ANTHROPIC_DEFAULT_SONNET_MODEL="qwen2.5-coder"
+  export ANTHROPIC_DEFAULT_OPUS_MODEL="qwen3-deepseek-r1"
+  export ANTHROPIC_MODEL="qwen2.5-coder"
+  # export ANTHROPIC_MODEL="glm-opus"
+  export ANTHROPIC_BASE_URL="http://localhost:20000"
+  export CLAUDE_CODE_ENABLE_TELEMETRY="0"
+  export API_TIMEOUT_MS=3000000
+}
+
+use_zai

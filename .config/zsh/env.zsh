@@ -35,18 +35,11 @@ export XMODIFIERS=@im=fcitx
 #   export BW_SESSION="`bw unlock --raw --passwordfile $HOME/.pvt/pass.txt`"
 # fi
 
-# For Claude using ZAI
-export ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic
-export ANTHROPIC_AUTH_TOKEN=$GLM_API_KEY
-export ANTHROPIC_DEFAULT_OPUS_MODEL="GLM-4.7"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="GLM-4.7"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="GLM-4.5-Air"
-export API_TIMEOUT_MS=3000000
-
 # Configure Claude Code to only search for tools when needed
 export ENABLE_TOOL_SEARCH=true
+export CLAUDE_CODE_TEAMMATE_COMMAND=$HOME/.local/bin/claude-teammate-wrapper
 
-export OPENAI_BASE_URL=http://localhost:11434
+# export OPENAI_BASE_URL=http://localhost:11434
 export DEFAULT_MODEL="llama3.1"
 
 export AIDER_EDITOR=nvim
