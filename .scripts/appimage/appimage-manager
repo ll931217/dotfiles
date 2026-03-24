@@ -1,0 +1,319 @@
+#!/bin/bash
+
+# Source the shared library
+# Resolve symlinks to get the actual script directory
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SCRIPT_SOURCE" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
+  [[ $SCRIPT_SOURCE != /* ]] && SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+source "$SCRIPT_DIR/lib/appimage-lib.sh"
+
+# Initialize
+init_directories
+init_config
+
+# Add a new app to config
+add_app() {
+  clear
+  print_header "Add New AppImage"
+
+  read -p "Enter GitHub repository (owner/repo): " repo_path
+
+  if ! validate_repo_format "$repo_path"; then
+    read -p "Press Enter to continue..."
+    return 1
+  fi
+
+  read -p "Enter app name (for tracking): " app_name
+  read -p "Enter filename pattern (default: *.AppImage): " pattern
+  read -p "Enter local filename (default: app_name): " local_name
+
+  # Set defaults
+  pattern="${pattern:-*.AppImage}"
+  local_name="${local_name:-$app_name}"
+
+  # Add to config using library function
+  add_app_to_config "$repo_path" "$app_name" "$pattern" "$local_name"
+
+  print_success "App '$app_name' added successfully!"
+
+  # Ask if user wants to download and create desktop entry now
+  echo
+  read -p "Do you want to download and create desktop entry now? (y/N): " download_now
+
+  if [[ $download_now =~ ^[Yy]$ ]]; then
+    echo
+    print_info "Downloading $app_name..."
+
+    local args=()
+    [ -n "$pattern" ] && args+=(--pattern "$pattern")
+    [ -n "$local_name" ] && args+=(--local-name "$local_name")
+    args+=(--desktop)
+
+    "$SCRIPT_DIR/update-appimage" "$repo_path" "$app_name" "${args[@]}"
+
+    echo
+  fi
+
+  read -p "Press Enter to continue..."
+}
+
+# List all apps
+display_apps() {
+  clear
+  print_header "Configured AppImages"
+  echo
+
+  local count=$(get_app_count)
+
+  if [ "$count" -eq 0 ]; then
+    print_warning "No apps configured yet"
+    echo
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  # Display apps with their current version
+  list_apps_raw | while IFS='|' read -r name repo pattern local_name version; do
+    local version_info="${GRAY}Not installed${NC}"
+
+    if [ -n "$version" ]; then
+      version_info="${GREEN}${version}${NC}"
+    fi
+
+    echo -e "${CYAN}▸${NC} ${WHITE}${name}${NC}"
+    echo -e "  ${GRAY}├─${NC} Repo: ${BLUE}${repo}${NC}"
+    echo -e "  ${GRAY}├─${NC} Pattern: ${YELLOW}${pattern}${NC}"
+    echo -e "  ${GRAY}├─${NC} Local: ${YELLOW}${local_name}.AppImage${NC}"
+    echo -e "  ${GRAY}└─${NC} Version: $version_info"
+    echo
+  done
+
+  echo -e "Total apps: ${GREEN}${count}${NC}"
+  echo
+  read -p "Press Enter to continue..."
+}
+
+# Remove an app
+remove_app() {
+  clear
+  print_header "Remove AppImage"
+  echo
+
+  local apps=$(list_apps | cut -d'|' -f1,2)
+
+  if [ -z "$apps" ]; then
+    print_warning "No apps configured yet"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  # Use fzf for selection
+  local selected=$(echo "$apps" | fzf --prompt="Select app to remove: " --height=15 --border)
+
+  if [ -z "$selected" ]; then
+    print_info "No app selected"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  local app_name=$(echo "$selected" | cut -d'|' -f1)
+
+  echo
+  read -p "Are you sure you want to remove '$app_name'? (y/N): " confirm
+
+  if [[ $confirm =~ ^[Yy]$ ]]; then
+    remove_app_from_config "$app_name"
+    print_success "App '$app_name' removed successfully!"
+  else
+    print_info "Operation cancelled"
+  fi
+
+  read -p "Press Enter to continue..."
+}
+
+# Update a specific app
+update_app() {
+  clear
+  print_header "Update AppImage"
+  echo
+
+  local apps=$(list_apps)
+
+  if [ -z "$apps" ]; then
+    print_warning "No apps configured yet"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  # Use fzf for selection
+  local selected=$(echo "$apps" | fzf --prompt="Select app to update: " --height=15 --border)
+
+  if [ -z "$selected" ]; then
+    print_info "No app selected"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  IFS='|' read -r name repo pattern local_name version <<<"$selected"
+
+  echo
+  print_info "Updating $name..."
+  echo
+
+  # Call the update script
+  local args=()
+  [ -n "$pattern" ] && args+=(--pattern "$pattern")
+  [ -n "$local_name" ] && args+=(--local-name "$local_name")
+
+  "$SCRIPT_DIR/update-appimage" "$repo" "$name" "${args[@]}"
+
+  echo
+  read -p "Press Enter to continue..."
+}
+
+# Create desktop entry for an app
+create_desktop() {
+  clear
+  print_header "Create Desktop Entry"
+  echo
+
+  local apps=$(list_apps | cut -d'|' -f1,4)
+
+  if [ -z "$apps" ]; then
+    print_warning "No apps configured yet"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  # Use fzf for selection
+  local selected=$(echo "$apps" | fzf --prompt="Select app to create desktop entry: " --height=15 --border)
+
+  if [ -z "$selected" ]; then
+    print_info "No app selected"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  IFS='|' read -r name local_name <<<"$selected"
+
+  local appimage_path="$APPS_DIR/${local_name}.AppImage"
+
+  if [ ! -f "$appimage_path" ]; then
+    print_error "AppImage not found: $appimage_path"
+    print_info "Please update the app first"
+    read -p "Press Enter to continue..."
+    return 1
+  fi
+
+  echo
+  print_info "Creating desktop entry for $name..."
+  echo
+
+  "$SCRIPT_DIR/create-desktop-entry" "$appimage_path" "$name"
+
+  echo
+  read -p "Press Enter to continue..."
+}
+
+# Update all apps
+update_all() {
+  clear
+  print_header "Update All AppImages"
+  echo
+
+  local count=$(get_app_count)
+
+  if [ "$count" -eq 0 ]; then
+    print_warning "No apps configured yet"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  print_info "Updating $count app(s)..."
+  echo
+
+  list_apps | while IFS='|' read -r name repo pattern local_name version; do
+    echo -e "${CYAN}➜${NC} Updating ${WHITE}${name}${NC}..."
+
+    local args=()
+    [ -n "$pattern" ] && args+=(--pattern "$pattern")
+    [ -n "$local_name" ] && args+=(--local-name "$local_name")
+
+    "$SCRIPT_DIR/update-appimage" "$repo" "$name" "${args[@]}" 2>&1 | grep -E "(✓|✗|➜|★|ℹ|🚀|📦|⚙|Updated|up to date|available)" || true
+    echo
+  done
+
+  print_success "All updates completed!"
+  echo
+  read -p "Press Enter to continue..."
+}
+
+# Main menu
+show_menu() {
+  while true; do
+    clear
+    print_header "AppImage Manager"
+    echo
+
+    # Show summary
+    local count=$(get_app_count)
+    echo -e "  ${GRAY}Configured apps:${NC} ${GREEN}${count}${NC}"
+    echo
+
+    # Menu options using fzf
+    local choice=$(echo -e "Add new app\nList all apps\nUpdate specific app\nUpdate all apps\nCreate desktop entry\nRemove app\nExit" |
+      fzf --prompt="Select action: " --height=13 --border --cycle)
+
+    case "$choice" in
+    "Add new app")
+      add_app
+      ;;
+    "List all apps")
+      display_apps
+      ;;
+    "Update specific app")
+      update_app
+      ;;
+    "Update all apps")
+      update_all
+      ;;
+    "Create desktop entry")
+      create_desktop
+      ;;
+    "Remove app")
+      remove_app
+      ;;
+    "Exit")
+      print_success "Goodbye!"
+      exit 0
+      ;;
+    "")
+      print_info "No selection made"
+      exit 0
+      ;;
+    esac
+  done
+}
+
+# Main
+init_config
+
+# Check if fzf is available
+if ! command -v fzf &>/dev/null; then
+  print_error "fzf is required but not installed"
+  print_info "Install it with: sudo apt install fzf"
+  exit 1
+fi
+
+# Check if jq is available
+if ! command -v jq &>/dev/null; then
+  print_error "jq is required but not installed"
+  print_info "Install it with: sudo apt install jq"
+  exit 1
+fi
+
+show_menu

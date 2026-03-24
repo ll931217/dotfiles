@@ -1,0 +1,32 @@
+{
+  "apps": [
+    {
+      "repo": "zen-browser/desktop",
+      "name": "zen-browser",
+      "pattern": "*.AppImage",
+      "local_name": "zen-browser",
+      "version": "1.19.3b"
+    },
+    {
+      "repo": "pingdotgg/t3code",
+      "name": "t3code",
+      "pattern": "T3-Code-*.AppImage",
+      "local_name": "t3code",
+      "version": "v0.0.13"
+    },
+    {
+      "repo": "superset-sh/superset",
+      "name": "superset",
+      "pattern": "*.AppImage",
+      "local_name": "superset",
+      "version": "desktop-v1.2.3"
+    },
+    {
+      "repo": "coollabsio/jean",
+      "name": "jean",
+      "pattern": "Jean-*.AppImage",
+      "local_name": "jean",
+      "version": "v0.1.30"
+    }
+  ]
+}

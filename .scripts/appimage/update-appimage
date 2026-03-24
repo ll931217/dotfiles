@@ -1,0 +1,284 @@
+#!/bin/bash
+
+# Source the shared library
+# Resolve symlinks to get the actual script directory
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SCRIPT_SOURCE" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
+  [[ $SCRIPT_SOURCE != /* ]] && SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+source "$SCRIPT_DIR/lib/appimage-lib.sh"
+
+# Initialize
+init_directories
+init_config
+
+# Additional print functions
+print_section() {
+    echo -e "${PURPLE}${ARROW} $1${NC}"
+}
+
+print_download() {
+    echo -e "${CYAN}${ROCKET} $1${NC}"
+}
+
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: $(basename "$0") <owner/repo> <app-name> [options]
+
+Arguments:
+  owner/repo    GitHub repository in format "owner/repo" (e.g., "zen-browser/desktop")
+  app-name      Name for tracking and local file (e.g., "zen-browser")
+
+Options:
+  -v, --version VERSION    Specific version tag to download (default: latest)
+  -p, --pattern PATTERN    Filename pattern to match in release assets (default: "*.AppImage")
+  -l, --local-name NAME    Local filename without extension (default: app-name)
+  -d, --desktop            Create desktop entry after installation
+  --dry-run                Preview what would be done without making changes
+  -h, --help               Show this help message
+
+Examples:
+  # Download latest zen-browser
+  $(basename "$0") zen-browser/desktop zen-browser
+
+  # Download with desktop entry creation
+  $(basename "$0") zen-browser/desktop zen-browser --desktop
+
+  # Download specific version of t3code
+  $(basename "$0") pingdotgg/t3code t3code --version v0.0.13
+
+  # Download with custom filename pattern
+  $(basename "$0") owner/repo myapp --pattern "*-x86_64.AppImage"
+
+  # Download with custom local filename
+  $(basename "$0") owner/repo myapp --local-name CustomName
+EOF
+    exit 1
+}
+
+# Parse command line arguments
+if [ $# -lt 2 ]; then
+    print_error "Insufficient arguments"
+    usage
+fi
+
+# Parse owner/repo
+REPO_PATH="$1"
+if ! validate_repo_format "$REPO_PATH"; then
+    usage
+fi
+OWNER="${REPO_PATH%/*}"
+REPO="${REPO_PATH#*/}"
+
+APP_NAME="$2"
+shift 2
+
+# Default values
+VERSION=""
+PATTERN="*.AppImage"
+LOCAL_NAME="$APP_NAME"
+CREATE_DESKTOP=false
+DRY_RUN=false
+
+# Parse options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -v|--version)
+            VERSION="$2"
+            shift 2
+            ;;
+        -p|--pattern)
+            PATTERN="$2"
+            shift 2
+            ;;
+        -l|--local-name)
+            LOCAL_NAME="$2"
+            shift 2
+            ;;
+        -d|--desktop)
+            CREATE_DESKTOP=true
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+# File paths
+TEMP_FILE="/tmp/${LOCAL_NAME}.AppImage"
+LOCAL_FILE="$APPS_DIR/${LOCAL_NAME}.AppImage"
+
+print_header "AppImage Update Script Starting..."
+if [ "$DRY_RUN" = true ]; then
+    print_warning "DRY RUN MODE - No changes will be made"
+fi
+print_section "Configuration"
+print_info "Repository: $OWNER/$REPO"
+print_info "App Name: $APP_NAME"
+print_info "Local File: $LOCAL_FILE"
+print_info "Pattern: $PATTERN"
+
+# Check if a specific version tag was provided
+if [ -n "$VERSION" ]; then
+    print_info "Using specified version: $VERSION"
+else
+    # GitHub API endpoint for latest release
+    RELEASE_URL="https://api.github.com/repos/$OWNER/$REPO/releases/latest"
+    print_section "Fetching latest release information..."
+    VERSION="$(curl -s "$RELEASE_URL" | jq -r ".tag_name")"
+
+    if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+        print_error "Failed to fetch latest version from GitHub API"
+        exit 1
+    fi
+
+    print_success "Latest version found: $VERSION"
+fi
+
+# Read current version from config file
+CURRENT_VERSION=$(get_app_version "$APP_NAME")
+print_section "Version comparison..."
+
+# Compare versions if current version exists
+if [ -n "$CURRENT_VERSION" ]; then
+    comparison=$(version_compare "$CURRENT_VERSION" "$VERSION")
+    case "$comparison" in
+        "equal")
+            print_success "Already up to date! Current version ($CURRENT_VERSION) is the same as latest version ($VERSION)"
+            print_info "No update needed. $APP_NAME is already the latest version."
+            exit 0
+            ;;
+        "greater")
+            print_warning "Current version ($CURRENT_VERSION) is newer than latest release ($VERSION)"
+            print_info "No update needed. You're already running a newer version."
+            exit 0
+            ;;
+        "less")
+            print_warning "Update available! Current version ($CURRENT_VERSION) → Latest version ($VERSION)"
+            ;;
+    esac
+else
+    print_info "No current version found in config"
+    print_info "Installing latest version for the first time..."
+fi
+
+# Find the correct AppImage file in the release
+print_section "Finding AppImage in release..."
+RELEASE_URL="https://api.github.com/repos/$OWNER/$REPO/releases/tags/$VERSION"
+ASSETS=$(curl -s "$RELEASE_URL" | jq -r ".assets[].name")
+
+if [ -z "$ASSETS" ] || [ "$ASSETS" = "null" ]; then
+    print_error "Failed to fetch release assets"
+    exit 1
+fi
+
+# Find the matching AppImage file
+DOWNLOAD_FILE=""
+for asset in $ASSETS; do
+    if [[ $asset == $PATTERN ]]; then
+        DOWNLOAD_FILE="$asset"
+        break
+    fi
+done
+
+if [ -z "$DOWNLOAD_FILE" ]; then
+    print_error "No file matching pattern '$PATTERN' found in release assets"
+    print_info "Available assets:"
+    echo "$ASSETS" | while read -r asset; do
+        echo "  - $asset"
+    done
+    exit 1
+fi
+
+print_success "Found matching file: $DOWNLOAD_FILE"
+
+# Check if dry run mode
+if [ "$DRY_RUN" = true ]; then
+    print_section "Dry run summary"
+    print_info "Would download: $DOWNLOAD_FILE"
+    print_info "Would install to: $LOCAL_FILE"
+    print_info "Would update version: $VERSION"
+    print_header "Dry run complete. No changes were made."
+    exit 0
+fi
+
+# Download the file to temp dir then moved to ~/Applications
+DOWNLOAD_URL="https://github.com/$OWNER/$REPO/releases/download/$VERSION/$DOWNLOAD_FILE"
+
+print_section "Downloading $APP_NAME..."
+print_download "Downloading from: $DOWNLOAD_URL"
+curl -L -o "$TEMP_FILE" "$DOWNLOAD_URL"
+
+if [ ! -f "$TEMP_FILE" ] || [ ! -s "$TEMP_FILE" ]; then
+    print_error "Download failed or file is empty"
+    exit 1
+fi
+
+print_section "Installing $APP_NAME..."
+mv "$TEMP_FILE" "$LOCAL_FILE"
+chmod +x "$LOCAL_FILE"
+print_success "$APP_NAME AppImage installed successfully!"
+
+print_section "Version tracking..."
+# Store the current version before updating
+if [ -n "$CURRENT_VERSION" ]; then
+  print_package "Previous version: $CURRENT_VERSION"
+else
+  print_info "No previous version found - first time installation"
+fi
+
+# Update the config file with the new version
+if update_app_version "$APP_NAME" "$VERSION"; then
+    print_package "Version updated in config file"
+else
+    # Add new entry to config
+    add_app_to_config "$OWNER/$REPO" "$APP_NAME" "$PATTERN" "$LOCAL_NAME" "$VERSION"
+    print_package "New app and version added to config file"
+fi
+
+print_success "$APP_NAME updated to version: $VERSION"
+print_info "Version tracked in: $CONFIG_FILE"
+
+# Log the operation
+log_operation "update" "$APP_NAME" "success" "Updated from $CURRENT_VERSION to $VERSION"
+
+# Create desktop entry if requested
+if [ "$CREATE_DESKTOP" = true ]; then
+    print_section "Desktop integration..."
+
+    # Check if desktop entry script exists
+    if [ -f "$HOME/.scripts/create-desktop-entry" ]; then
+        # Check if desktop entry already exists
+        DESKTOP_FILE="$HOME/.local/share/applications/${APP_NAME}.desktop"
+
+        if [ ! -f "$DESKTOP_FILE" ]; then
+            print_info "Creating desktop entry..."
+            if ~/.scripts/create-desktop-entry "$LOCAL_FILE" "$APP_NAME"; then
+                print_success "Desktop entry created successfully!"
+            else
+                print_warning "Failed to create desktop entry"
+            fi
+        else
+            print_info "Desktop entry already exists at $DESKTOP_FILE"
+            print_info "To recreate it, run: ~/.scripts/create-desktop-entry $LOCAL_FILE $APP_NAME"
+        fi
+    else
+        print_warning "Desktop entry script not found"
+        print_info "Create it manually with: ~/.scripts/create-desktop-entry $LOCAL_FILE $APP_NAME"
+    fi
+fi
+
+print_header "$APP_NAME update completed successfully! 🎉"

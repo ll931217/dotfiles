@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# Source the shared library
+# Resolve symlinks to get the actual script directory
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SCRIPT_SOURCE" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
+  [[ $SCRIPT_SOURCE != /* ]] && SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+source "$SCRIPT_DIR/lib/appimage-lib.sh"
+
+# Initialize
+init_directories
+init_config
+
+# Function to display version information
+show_versions() {
+    if ! validate_config; then
+        return 1
+    fi
+
+    echo "Tracked Application Versions:"
+    echo "============================"
+    list_apps | while IFS='|' read -r name repo pattern local_name version; do
+        if [ -z "$version" ]; then
+            version="Not installed"
+        fi
+        printf "%-20s: %s\n" "$name" "$version"
+    done
+    echo "============================"
+}
+
+# Function to show help
+show_help() {
+    cat << EOF
+Usage: versions [command] [app_name] [version]
+
+Commands:
+  (none)              Show all tracked versions
+  <app_name>          Show version for specific application
+  set <app> <version> Manually set version for an app
+  remove <app>         Remove app from version tracking
+  -h, --help          Show this help message
+
+Examples:
+  versions                          # Show all versions
+  versions zen-browser               # Show zen-browser version
+  versions set zen-browser 1.20.0   # Set zen-browser version
+  versions remove old-app            # Remove old-app from tracking
+EOF
+}
+
+# Main script logic
+case "$1" in
+    -h|--help)
+        show_help
+        ;;
+    set)
+        if [ -z "$2" ] || [ -z "$3" ]; then
+            print_error "Usage: versions set <app_name> <version>"
+            exit 1
+        fi
+        if update_app_version "$2" "$3"; then
+            print_success "Version for '$2' set to $3"
+        else
+            print_error "Failed to set version for '$2'"
+            exit 1
+        fi
+        ;;
+    remove)
+        if [ -z "$2" ]; then
+            print_error "Usage: versions remove <app_name>"
+            exit 1
+        fi
+        if ! is_app_configured "$2"; then
+            print_error "App '$2' not found in configuration"
+            exit 1
+        fi
+        read -p "Are you sure you want to remove '$2' from version tracking? (y/N): " confirm
+        if [[ $confirm =~ ^[Yy]$ ]]; then
+            remove_app_from_config "$2"
+            print_success "App '$2' removed from version tracking"
+        else
+            print_info "Operation cancelled"
+        fi
+        ;;
+    "")
+        show_versions
+        ;;
+    *)
+        # Show version for specific app
+        if ! is_app_configured "$1"; then
+            print_error "App '$1' not found in configuration"
+            echo ""
+            echo "Available apps:"
+            list_apps | cut -d'|' -f1 | while read -r app; do
+                echo "  • $app"
+            done
+            exit 1
+        fi
+
+        version=$(get_app_version "$1")
+        if [ -n "$version" ] && [ "$version" != "null" ]; then
+            echo "$1: $version"
+        else
+            echo "$1: Not installed"
+        fi
+        ;;
+esac

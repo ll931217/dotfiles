@@ -1,0 +1,351 @@
+#!/bin/bash
+
+# Color definitions for prettier output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+GRAY='\033[0;90m'
+NC='\033[0m' # No Color
+
+# Special characters
+ARROW='➜'
+STAR='★'
+CHECK='✓'
+CROSS='✗'
+INFO='ℹ'
+GEAR='⚙'
+
+# Function to print colored messages
+print_info() {
+  echo -e "${BLUE}${INFO} $1${NC}"
+}
+
+print_success() {
+  echo -e "${GREEN}${CHECK} $1${NC}"
+}
+
+print_warning() {
+  echo -e "${YELLOW}${STAR} $1${NC}"
+}
+
+print_error() {
+  echo -e "${RED}${CROSS} $1${NC}"
+}
+
+print_header() {
+  echo -e "${WHITE}${GEAR} $1${NC}"
+}
+
+print_section() {
+  echo -e "${PURPLE}${ARROW} $1${NC}"
+}
+
+# Check if required tools are available
+check_dependencies() {
+  if ! command -v jq &>/dev/null; then
+    print_error "jq is required but not installed"
+    print_info "Install it with: sudo apt install jq"
+    exit 1
+  fi
+}
+
+# Extract AppImage to temp directory using AppImage's built-in extraction
+extract_appimage() {
+  local appimage_path="$1"
+  local extract_dir="$2"
+
+  print_section "Extracting AppImage..."
+  print_info "Extracting to: $extract_dir"
+
+  # Create temp directory for extraction
+  local temp_extract_dir="/tmp/appimage-temp-$$"
+  mkdir -p "$temp_extract_dir"
+  cd "$temp_extract_dir"
+
+  # Use AppImage's built-in extraction (--appimage-extract)
+  # This extracts to squashfs-root directory
+  "$appimage_path" --appimage-extract >/dev/null 2>&1
+
+  if [ $? -ne 0 ] || [ ! -d "squashfs-root" ]; then
+    print_error "Failed to extract AppImage"
+    cd - >/dev/null
+    rm -rf "$temp_extract_dir"
+    return 1
+  fi
+
+  # Move squashfs-root to the target directory
+  mv squashfs-root/* "$extract_dir/" 2>/dev/null
+  mv squashfs-root/.* "$extract_dir/" 2>/dev/null
+
+  # Cleanup
+  cd - >/dev/null
+  rm -rf "$temp_extract_dir"
+
+  print_success "AppImage extracted successfully"
+  return 0
+}
+
+# Find .desktop file in extracted directory
+find_desktop_file() {
+  local extract_dir="$1"
+
+  # Search for .desktop files
+  local desktop_file=$(find "$extract_dir" -name "*.desktop" -type f | head -n 1)
+
+  if [ -z "$desktop_file" ]; then
+    print_warning "No .desktop file found in AppImage"
+    return 1
+  fi
+
+  echo "$desktop_file"
+}
+
+# Get icon path from .desktop file
+get_icon_from_desktop() {
+  local desktop_file="$1"
+
+  local icon=$(grep "^Icon=" "$desktop_file" | cut -d'=' -f2 | head -n 1)
+
+  if [ -z "$icon" ]; then
+    print_warning "No icon found in .desktop file"
+    return 1
+  fi
+
+  echo "$icon"
+}
+
+# Find icon file in extracted directory
+find_icon_file() {
+  local extract_dir="$1"
+  local icon_name="$2"
+
+  # Search for the icon file (common formats)
+  local icon_file=$(find "$extract_dir" -name "$icon_name" -o -name "$icon_name.png" -o -name "$icon_name.svg" -o -name "$icon_name.xpm" | head -n 1)
+
+  if [ -z "$icon_file" ]; then
+    print_warning "Icon file not found: $icon_name"
+    return 1
+  fi
+
+  echo "$icon_file"
+}
+
+# Copy icon to local icons directory
+install_icon() {
+  local icon_source="$1"
+  local icon_name="$2"
+
+  local icons_dir="$HOME/.local/share/icons"
+  mkdir -p "$icons_dir"
+
+  local icon_dest="$icons_dir/$icon_name"
+
+  # Determine file extension
+  local extension="${icon_source##*.}"
+
+  # If source has no extension, try to detect or use png
+  if [ "$extension" = "$icon_source" ]; then
+    if file "$icon_source" | grep -q "PNG"; then
+      extension="png"
+    elif file "$icon_source" | grep -q "SVG"; then
+      extension="svg"
+    else
+      extension="png"
+    fi
+  fi
+
+  icon_dest="$icons_dir/$icon_name.$extension"
+
+  # Copy icon
+  cp "$icon_source" "$icon_dest"
+
+  if [ $? -eq 0 ]; then
+    # print_success "Icon installed to: $icon_dest"
+    echo "$icon_dest"
+    return 0
+  else
+    print_error "Failed to copy icon"
+    return 1
+  fi
+}
+
+# Create/update .desktop file
+create_desktop_entry() {
+  local source_desktop="$1"
+  local app_name="$2"
+  local appimage_path="$3"
+  local icon_path="$4"
+
+  local desktop_dir="$HOME/.local/share/applications"
+  mkdir -p "$desktop_dir"
+
+  local desktop_file="$desktop_dir/$app_name.desktop"
+
+  # Read the source .desktop file
+  print_section "Creating desktop entry..."
+
+  # Create desktop file based on source
+  cat >"$desktop_file" <<EOF
+[Desktop Entry]
+$(grep -E "^(Name|GenericName|Comment|Categories|Keywords|MimeType|StartupNotify|StartupWMClass|Terminal|Type)" "$source_desktop" | grep -v "^Name\[" | grep -v "^Comment\[" | grep -v "^GenericName\[")
+Exec=$appimage_path %u
+Icon=$icon_path
+Type=Application
+EOF
+
+  # Add Actions if they exist in source
+  if grep -q "^Actions=" "$source_desktop"; then
+    echo "" >>"$desktop_file"
+    echo "Actions=$(grep "^Actions=" "$source_desktop" | cut -d'=' -f2)" >>"$desktop_file"
+  fi
+
+  # Add Actions section if they exist
+  if grep -q "^Desktop Action " "$source_desktop"; then
+    local in_actions=false
+    while IFS= read -r line; do
+      if [[ $line =~ ^Desktop\ Action ]]; then
+        in_actions=true
+      fi
+      if [ "$in_actions" = true ]; then
+        # Replace Exec paths to point to AppImage
+        if [[ $line =~ ^Exec= ]]; then
+          echo "Exec=$appimage_path $(echo "$line" | cut -d'=' -f2- | cut -d' ' -f2-)" >>"$desktop_file"
+        else
+          echo "$line" >>"$desktop_file"
+        fi
+      fi
+    done <"$source_desktop"
+  fi
+
+  # Make desktop file executable
+  chmod +x "$desktop_file"
+
+  print_success "Desktop entry created: $desktop_file"
+  echo "$desktop_file"
+}
+
+# Main function
+create_desktop_integration() {
+  local appimage_path="$1"
+  local app_name="$2"
+
+  print_header "AppImage Desktop Integration"
+  print_info "AppImage: $appimage_path"
+  print_info "App Name: $app_name"
+
+  # Check if AppImage exists
+  if [ ! -f "$appimage_path" ]; then
+    print_error "AppImage not found: $appimage_path"
+    exit 1
+  fi
+
+  # Check if desktop file already exists
+  local desktop_dir="$HOME/.local/share/applications"
+  local desktop_file="$desktop_dir/$app_name.desktop"
+
+  if [ -f "$desktop_file" ]; then
+    print_warning "Desktop file already exists: $desktop_file"
+    read -p "Do you want to recreate it? (y/N): " recreate
+    if [[ ! $recreate =~ ^[Yy]$ ]]; then
+      print_info "Keeping existing desktop file"
+      exit 0
+    fi
+  fi
+
+  # Create temp directory for extraction
+  local temp_dir="/tmp/appimage-extract-$$"
+  mkdir -p "$temp_dir"
+
+  # Extract AppImage
+  if ! extract_appimage "$appimage_path" "$temp_dir"; then
+    rm -rf "$temp_dir"
+    exit 1
+  fi
+
+  # Find .desktop file
+  local source_desktop=$(find_desktop_file "$temp_dir")
+
+  if [ -z "$source_desktop" ]; then
+    print_error "No .desktop file found in AppImage"
+    rm -rf "$temp_dir"
+    exit 1
+  fi
+
+  print_success "Found .desktop file: $source_desktop"
+
+  # Get icon name from .desktop file
+  local icon_name=$(get_icon_from_desktop "$source_desktop")
+
+  if [ -z "$icon_name" ]; then
+    print_warning "No icon specified in .desktop file"
+    rm -rf "$temp_dir"
+    exit 1
+  fi
+
+  print_info "Icon name: $icon_name"
+
+  # Find icon file
+  local icon_source=$(find_icon_file "$temp_dir" "$icon_name")
+
+  if [ -z "$icon_source" ]; then
+    print_warning "Icon file not found, skipping icon installation"
+    icon_path="$icon_name"
+  else
+    print_success "Found icon file: $icon_source"
+
+    # Install icon
+    icon_path=$(install_icon "$icon_source" "$icon_name")
+    if [ $? -ne 0 ]; then
+      icon_path="$icon_name"
+    fi
+  fi
+
+  # Create desktop entry
+  create_desktop_entry "$source_desktop" "$app_name" "$appimage_path" "$icon_path"
+
+  # Cleanup
+  print_section "Cleaning up..."
+  rm -rf "$temp_dir"
+  print_success "Cleanup complete"
+
+  print_header "Desktop integration completed successfully! 🎉"
+}
+
+# Function to display usage
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") <appimage-path> <app-name>
+
+Arguments:
+  appimage-path    Full path to the AppImage file
+  app-name         Name for the desktop entry (without .desktop extension)
+
+Examples:
+  $(basename "$0") ~/Applications/zen-browser.AppImage zen-browser
+  $(basename "$0") ~/Applications/t3code.AppImage T3Code
+
+This script will:
+  1. Check if a .desktop file already exists
+  2. Extract the AppImage to /tmp
+  3. Find the .desktop file and icon inside
+  4. Copy the icon to ~/.local/share/icons
+  5. Create/update the .desktop entry in ~/.local/share/applications
+EOF
+  exit 1
+}
+
+# Parse arguments
+if [ $# -ne 2 ]; then
+  usage
+fi
+
+check_dependencies
+
+APPIMAGE_PATH="$1"
+APP_NAME="$2"
+
+create_desktop_integration "$APPIMAGE_PATH" "$APP_NAME"
