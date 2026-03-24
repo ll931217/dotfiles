@@ -15,6 +15,8 @@ window-padding-y = 10
 confirm-close-surface = false
 window-decoration = none
 
+custom-shader = "$HOME/GitHub/ghostty-shaders/starfield.glsl"
+
 # Vim-mode keybindings for Ghostty
 #
 # Note: We're missing a number of actions to produce a better vim experience.
