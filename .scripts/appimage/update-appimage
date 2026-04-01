@@ -10,6 +10,7 @@ while [ -h "$SCRIPT_SOURCE" ]; do
 done
 SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
 source "$SCRIPT_DIR/lib/appimage-lib.sh"
+shopt -s extglob
 
 # Initialize
 init_directories
@@ -39,6 +40,7 @@ Options:
   -l, --local-name NAME    Local filename without extension (default: app-name)
   -d, --desktop            Create desktop entry after installation
   --dry-run                Preview what would be done without making changes
+  --force                  Force redownload even if already up to date
   -h, --help               Show this help message
 
 Examples:
@@ -83,6 +85,7 @@ PATTERN="*.AppImage"
 LOCAL_NAME="$APP_NAME"
 CREATE_DESKTOP=false
 DRY_RUN=false
+FORCE=false
 
 # Parse options
 while [[ $# -gt 0 ]]; do
@@ -105,6 +108,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --dry-run)
             DRY_RUN=true
+            shift
+            ;;
+        --force)
+            FORCE=true
             shift
             ;;
         -h|--help)
@@ -157,14 +164,22 @@ if [ -n "$CURRENT_VERSION" ]; then
     comparison=$(version_compare "$CURRENT_VERSION" "$VERSION")
     case "$comparison" in
         "equal")
-            print_success "Already up to date! Current version ($CURRENT_VERSION) is the same as latest version ($VERSION)"
-            print_info "No update needed. $APP_NAME is already the latest version."
-            exit 0
+            if [ "$FORCE" = true ]; then
+                print_warning "Force redownload: reinstalling current version ($CURRENT_VERSION)"
+            else
+                print_success "Already up to date! Current version ($CURRENT_VERSION) is the same as latest version ($VERSION)"
+                print_info "No update needed. $APP_NAME is already the latest version."
+                exit 0
+            fi
             ;;
         "greater")
-            print_warning "Current version ($CURRENT_VERSION) is newer than latest release ($VERSION)"
-            print_info "No update needed. You're already running a newer version."
-            exit 0
+            if [ "$FORCE" = true ]; then
+                print_warning "Force redownload: reinstalling version ($VERSION) even though current ($CURRENT_VERSION) is newer"
+            else
+                print_warning "Current version ($CURRENT_VERSION) is newer than latest release ($VERSION)"
+                print_info "No update needed. You're already running a newer version."
+                exit 0
+            fi
             ;;
         "less")
             print_warning "Update available! Current version ($CURRENT_VERSION) → Latest version ($VERSION)"
@@ -243,10 +258,10 @@ fi
 # Update the config file with the new version
 if update_app_version "$APP_NAME" "$VERSION"; then
     print_package "Version updated in config file"
-else
-    # Add new entry to config
-    add_app_to_config "$OWNER/$REPO" "$APP_NAME" "$PATTERN" "$LOCAL_NAME" "$VERSION"
+elif add_app_to_config "$OWNER/$REPO" "$APP_NAME" "$PATTERN" "$LOCAL_NAME" "$VERSION"; then
     print_package "New app and version added to config file"
+else
+    print_error "Failed to save version to config"
 fi
 
 print_success "$APP_NAME updated to version: $VERSION"

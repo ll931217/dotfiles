@@ -219,6 +219,45 @@ create_desktop() {
   read -p "Press Enter to continue..."
 }
 
+# Force redownload a specific app
+redownload_app() {
+  clear
+  print_header "Redownload AppImage"
+  echo
+
+  local apps=$(list_apps)
+
+  if [ -z "$apps" ]; then
+    print_warning "No apps configured yet"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  # Use fzf for selection
+  local selected=$(echo "$apps" | fzf --prompt="Select app to redownload: " --height=15 --border)
+
+  if [ -z "$selected" ]; then
+    print_info "No app selected"
+    read -p "Press Enter to continue..."
+    return 0
+  fi
+
+  IFS='|' read -r name repo pattern local_name version <<<"$selected"
+
+  echo
+  print_info "Redownloading $name (force)..."
+  echo
+
+  local args=(--force)
+  [ -n "$pattern" ] && args+=(--pattern "$pattern")
+  [ -n "$local_name" ] && args+=(--local-name "$local_name")
+
+  "$SCRIPT_DIR/update-appimage" "$repo" "$name" "${args[@]}"
+
+  echo
+  read -p "Press Enter to continue..."
+}
+
 # Update all apps
 update_all() {
   clear
@@ -265,8 +304,8 @@ show_menu() {
     echo
 
     # Menu options using fzf
-    local choice=$(echo -e "Add new app\nList all apps\nUpdate specific app\nUpdate all apps\nCreate desktop entry\nRemove app\nExit" |
-      fzf --prompt="Select action: " --height=13 --border --cycle)
+    local choice=$(echo -e "Add new app\nList all apps\nUpdate specific app\nUpdate all apps\nRedownload app\nCreate desktop entry\nRemove app\nExit" |
+      fzf --prompt="Select action: " --height=14 --border --cycle)
 
     case "$choice" in
     "Add new app")
@@ -280,6 +319,9 @@ show_menu() {
       ;;
     "Update all apps")
       update_all
+      ;;
+    "Redownload app")
+      redownload_app
       ;;
     "Create desktop entry")
       create_desktop

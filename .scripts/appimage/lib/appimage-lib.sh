@@ -182,7 +182,7 @@ update_app_version() {
     if [ -n "$app_exists" ]; then
         # Update existing entry
         local tmp_file=$(mktemp)
-        if jq --arg name "$app_name" --arg version "$new_version" '(.apps[] | select(.name == $name)) |= .version = $version' "$CONFIG_FILE" > "$tmp_file" 2>/dev/null; then
+        if jq --arg name "$app_name" --arg version "$new_version" '.apps |= map(if .name == $name then .version = $version else . end)' "$CONFIG_FILE" > "$tmp_file" 2>/dev/null; then
             mv "$tmp_file" "$CONFIG_FILE"
             return 0
         else
@@ -214,6 +214,15 @@ add_app_to_config() {
     if ! jq empty "$CONFIG_FILE" 2>/dev/null; then
         print_warning "Config file is corrupted, reinitializing..."
         init_config
+    fi
+
+    # Check if app already exists
+    local app_exists=$(jq -r --arg name "$name" '.apps[] | select(.name == $name) | .name' "$CONFIG_FILE" 2>/dev/null)
+
+    if [ -n "$app_exists" ]; then
+        print_warning "App '$name' already exists in config"
+        print_info "Use appimage-manager to remove it first if you want to re-add it"
+        return 1
     fi
 
     local tmp_file=$(mktemp)
