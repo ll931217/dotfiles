@@ -62,8 +62,15 @@ bindsym $mod+s exec --no-startup-id sh -c 'i3-msg "workspace number 9" && (pgrep
 # bindsym $mod+w layout tabbed
 # bindsym $mod+e layout toggle split
 
-bindsym $mod+a scratchpad show
+# === BEGIN:scratchpads ===
+for_window [instance="*-scratchpad"] floating enable
+for_window [instance="*-scratchpad"] move scratchpad
+for_window [instance="*-scratchpad"] resize set 1600 800
+
+bindsym $mod+a exec ~/.config/i3/scripts/special-scratch.sh
+bindsym $mod+Ctrl+a scratchpad show
 bindsym $mod+Shift+a move scratchpad
+# === END:scratchpads ===
 
 # toggle tiling / floating
 bindsym $mod+Shift+space floating toggle
