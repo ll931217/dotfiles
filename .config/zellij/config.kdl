@@ -1,6 +1,6 @@
 keybinds clear-defaults=true {
     locked {
-        bind "Ctrl g" { SwitchToMode "normal"; }
+        bind "Ctrl b" { SwitchToMode "normal"; }
     }
     pane {
         bind "left" { MoveFocus "left"; }
@@ -138,10 +138,13 @@ keybinds clear-defaults=true {
 
         bind "Alt f" { ToggleFloatingPanes; }
 
-        bind "Alt h" "Ctrl h" { MoveFocusOrTab "left"; }
-        bind "Alt l" "Ctrl l" { MoveFocusOrTab "right"; }
-        bind "Alt j" "Ctrl j" { MoveFocus "down"; }
-        bind "Alt k" "Ctrl k" { MoveFocus "up"; }
+        bind "Ctrl h" { MoveFocus "left"; }
+        bind "Ctrl l" { MoveFocus "right"; }
+        bind "Ctrl j" { MoveFocus "down"; }
+        bind "Ctrl k" { MoveFocus "up"; }
+
+        bind "Alt h" { GoToPreviousTab; }
+        bind "Alt l" { GoToNextTab; }
 
         bind "Alt i" { MoveTab "left"; }
         bind "Alt o" { MoveTab "right"; }
@@ -150,6 +153,9 @@ keybinds clear-defaults=true {
         bind "Alt d" { NewPane "down"; }
         bind "Alt r" { NewPane "right"; }
         bind "Alt t" { NewTab; }
+
+        bind "Ctrl s" { SwitchToMode "tmux"; }
+        bind "Ctrl f" { ToggleFocusFullscreen; }
     }
     shared_except "locked" "renametab" "renamepane" {
         bind "Ctrl g" { SwitchToMode "locked"; }
