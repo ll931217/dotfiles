@@ -89,7 +89,7 @@ keybinds clear-defaults=true {
         bind "Alt up" { MoveFocus "up"; SwitchToMode "locked"; }
         bind "Alt right" { MoveFocusOrTab "right"; SwitchToMode "locked"; }
         bind "e" { EditScrollback; SwitchToMode "locked"; }
-        bind "f" { SwitchToMode "entersearch"; SearchInput 0; }
+        bind "/" { SwitchToMode "entersearch"; SearchInput 0; }
         bind "Alt h" { MoveFocusOrTab "left"; SwitchToMode "locked"; }
         bind "Alt j" { MoveFocus "down"; SwitchToMode "locked"; }
         bind "Alt k" { MoveFocus "up"; SwitchToMode "locked"; }
@@ -154,7 +154,6 @@ keybinds clear-defaults=true {
         bind "Alt r" { NewPane "right"; }
         bind "Alt t" { NewTab; }
 
-        bind "Ctrl s" { SwitchToMode "tmux"; }
         bind "Ctrl f" { ToggleFocusFullscreen; }
     }
     shared_except "locked" "renametab" "renamepane" {
@@ -252,8 +251,25 @@ load_plugins {
  
 // Choose the theme that is specified in the themes section.
 // Default: default
-// 
-theme "catppuccin-mocha"
+//
+theme "catppuccin-mocha-vivid"
+
+themes {
+    catppuccin-mocha-vivid {
+        fg   205 214 244  // text
+        bg    30  30  46  // base
+        black  24  24  37  // mantle
+        red   243 139 168  // red
+        // Override green (focused pane border) with vivid orange for strong contrast
+        green 255 140   0
+        yellow 249 226 175  // yellow
+        blue  137 180 250  // blue
+        magenta 245 194 231  // pink
+        cyan  137 220 235  // sky
+        white 205 214 244  // text
+        orange 250 179 135  // peach
+    }
+}
  
 // Choose the base input mode of zellij.
 // Default: normal
