@@ -4,9 +4,12 @@
 Records audio → streams to faster-whisper in chunks → types text in real-time.
 """
 
+from enum import Enum
+
 import os
 import sys
 import shutil
+import re
 import signal
 import subprocess
 import tempfile
@@ -35,6 +38,36 @@ TEXT_COLOR = "#cdd6f4"
 _model = None
 
 
+class ModelSizes(str, Enum):
+    tiny = "tiny"
+    tiny_en = "tiny.en"
+    base = "base"
+    base_en = "base.en"
+    small = "small"
+    small_en = "small.en"
+    distil_small_en = "distil-small.en"
+    medium = "medium"
+    medium_en = "medium.en"
+    distil_medium_en = "distil-medium.en"
+    large_v1 = "large-v1"
+    large_v2 = "large-v2"
+    large_v3 = "large-v3"
+    large = "large"
+    distil_large_v2 = "distil-large-v2"
+    distil_large_v3 = "distil-large-v3"
+    large_v3_turbo = "large-v3-turbo"
+    turbo = "turbo"
+
+
+def load_model():
+    global _model
+    if _model is None:
+        _model = WhisperModel(
+            ModelSizes.small_en, device="cuda", compute_type="int8_float16"
+        )
+    return _model
+
+
 def notify(msg):
     subprocess.Popen(
         ["notify-send", "-u", "low", "Voice Dictation", msg],
@@ -47,13 +80,6 @@ def require(cmd):
     if not shutil.which(cmd):
         notify(f"'{cmd}' not found")
         sys.exit(1)
-
-
-def load_model():
-    global _model
-    if _model is None:
-        _model = WhisperModel("small", device="cuda", compute_type="int8_float16")
-    return _model
 
 
 def lerp_color(a, b, t):
@@ -90,10 +116,23 @@ def type_text(text, window_id):
 def start_ffmpeg():
     return subprocess.Popen(
         [
-            "ffmpeg", "-y", "-loglevel", "quiet",
-            "-f", "pulse", "-i", "default",
-            "-ac", "1", "-ar", str(SAMPLE_RATE),
-            "-acodec", "pcm_s16le", "-f", "s16le", "pipe:1",
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "quiet",
+            "-f",
+            "pulse",
+            "-i",
+            "default",
+            "-ac",
+            "1",
+            "-ar",
+            str(SAMPLE_RATE),
+            "-acodec",
+            "pcm_s16le",
+            "-f",
+            "s16le",
+            "pipe:1",
         ],
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
@@ -131,6 +170,43 @@ def _transcribe_chunk(model, audio, window_id):
 # ── UI ───────────────────────────────────────────────────────────────────────
 
 
+def _active_monitor_geometry():
+    """Return (x, y, w, h) of the monitor containing the active window."""
+    wx, wy = 0, 0
+    aw = get_active_window()
+    if aw:
+        r = subprocess.run(
+            ["xdotool", "getwindowgeometry", "--shell", aw],
+            capture_output=True,
+            text=True,
+        )
+        geo = dict(
+            line.split("=", 1) for line in r.stdout.strip().splitlines() if "=" in line
+        )
+        wx, wy = int(geo.get("X", 0)), int(geo.get("Y", 0))
+
+    r = subprocess.run(
+        ["xrandr", "--query"],
+        capture_output=True,
+        text=True,
+    )
+    monitors = []
+    for line in r.stdout.splitlines():
+        if " connected" not in line:
+            continue
+        m = re.search(r"(\d+)x(\d+)\+(\d+)\+(\d+)", line)
+        if m:
+            monitors.append(
+                (int(m.group(3)), int(m.group(4)), int(m.group(1)), int(m.group(2)))
+            )
+
+    for ox, oy, w, h in monitors:
+        if ox <= wx < ox + w and oy <= wy < oy + h:
+            return ox, oy, w, h
+
+    return monitors[0] if monitors else (0, 0, 1920, 1080)
+
+
 class RecordingWindow:
     def __init__(self):
         self.root = tk.Tk()
@@ -139,10 +215,9 @@ class RecordingWindow:
         self.root.attributes("-topmost", True)
         self.root.configure(bg=BG)
 
-        sw = self.root.winfo_screenwidth()
-        sh = self.root.winfo_screenheight()
-        x = (sw - WINDOW_SIZE) // 2
-        y = (sh - WINDOW_SIZE) // 2
+        mx, my, mw, mh = _active_monitor_geometry()
+        x = mx + (mw - WINDOW_SIZE) // 2
+        y = my + mh - WINDOW_SIZE - 140
         self.root.geometry(f"{WINDOW_SIZE}x{WINDOW_SIZE}+{x}+{y}")
 
         self.canvas = tk.Canvas(
@@ -174,22 +249,40 @@ class RecordingWindow:
             alpha = 1.0 - p
             color = lerp_color(ACCENT, BG, 1 - alpha)
             self.canvas.create_oval(
-                cx - r, cy - r, cx + r, cy + r,
-                outline=color, width=max(1, int(2.5 * alpha)),
+                cx - r,
+                cy - r,
+                cx + r,
+                cy + r,
+                outline=color,
+                width=max(1, int(2.5 * alpha)),
             )
 
         self.canvas.create_oval(
-            cx - 12, cy - 12, cx + 12, cy + 12,
-            fill=MIC_COLOR, outline=MIC_COLOR,
+            cx - 12,
+            cy - 12,
+            cx + 12,
+            cy + 12,
+            fill=MIC_COLOR,
+            outline=MIC_COLOR,
         )
         self.canvas.create_rectangle(
-            cx - 3, cy - 22, cx + 3, cy - 12,
-            fill=MIC_COLOR, outline=MIC_COLOR,
+            cx - 3,
+            cy - 22,
+            cx + 3,
+            cy - 12,
+            fill=MIC_COLOR,
+            outline=MIC_COLOR,
         )
         self.canvas.create_arc(
-            cx - 9, cy - 4, cx + 9, cy + 12,
-            start=0, extent=-180, style=tk.ARC,
-            outline=MIC_COLOR, width=2,
+            cx - 9,
+            cy - 4,
+            cx + 9,
+            cy + 12,
+            start=0,
+            extent=-180,
+            style=tk.ARC,
+            outline=MIC_COLOR,
+            width=2,
         )
         self.canvas.create_line(cx, cy + 8, cx, cy + 18, fill=MIC_COLOR, width=2)
         self.canvas.create_line(
@@ -197,8 +290,11 @@ class RecordingWindow:
         )
 
         self.canvas.create_text(
-            cx, cy + 35, text="Recording…",
-            fill=TEXT_COLOR, font=("sans-serif", 8),
+            cx,
+            cy + 35,
+            text="Recording…",
+            fill=TEXT_COLOR,
+            font=("sans-serif", 8),
         )
 
         self._phase = (self._phase + 0.018) % 1.0
