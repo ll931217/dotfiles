@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
+
 POLYBAR_H=40
-WIN_SCALE=0.9 # 80% of screen size
+WIN_SCALE=0.8 # 80% of screen size
 
 focused_output=$(i3-msg -t get_workspaces | python3 -c "
 import json,sys
@@ -21,14 +22,12 @@ WIN_H=$(echo "$oh $WIN_SCALE" | awk '{printf "%d", $1 * $2}')
 px=$((ox + (ow - WIN_W) / 2))
 py=$((oy + POLYBAR_H + (oh - POLYBAR_H - WIN_H) / 2))
 
-if ! xdotool search --classname "special-scratchpad" >/dev/null 2>&1; then
-  alacritty --class "special-scratchpad,special-scratchpad" \
-    --override window.dimensions.columns=0 \
-    --override window.dimensions.lines=0 &
-  sleep 0.5
+# If no window with instance "special" exists, launch it
+if ! pgrep -x spotify >/dev/null >/dev/null 2>&1; then
+  spotify &
+  sleep 0.5 # wait for window to open before showing scratchpad
 fi
 
-# Fixes flashing in
-i3-msg "[instance=\"special-scratchpad\"] scratchpad show; \
-        [instance=\"special-scratchpad\"] resize set $WIN_W $WIN_H; \
-        [instance=\"special-scratchpad\"] move position $px $py"
+i3-msg "[class=\"Spotify\"] scratchpad show; \
+        [class=\"Spotify\"] resize set $WIN_W $WIN_H; \
+        [class=\"Spotify\"] move position $px $py"

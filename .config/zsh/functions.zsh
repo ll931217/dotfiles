@@ -202,12 +202,23 @@ function reset_anthropic_env() {
   unset ANTHROPIC_DEFAULT_SONNET_MODEL
   unset ANTHROPIC_MODEL
   unset ANTHROPIC_BASE_URL
+  unset ANTHROPIC_AUTH_TOKEN
+  unset ANTHROPIC_API_KEY
+}
+
+function use_openrouter() {
+  reset_anthropic_env
+
+  export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+  export ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY"
+  export ANTHROPIC_API_KEY="" # Important: Must be explicitly empty
+  export ANTHROPIC_MODEL="openrouter/hunter-alpha"
 }
 
 function use_zai() {
   reset_anthropic_env
 
-  export ANTHROPIC_DEFAULT_OPUS_MODEL="glm-5"
+  export ANTHROPIC_DEFAULT_OPUS_MODEL="glm-5.1"
   export ANTHROPIC_DEFAULT_SONNET_MODEL="glm-4.7"
   export ANTHROPIC_DEFAULT_HAIKU_MODEL="glm-4.7-flashx"
   export ANTHROPIC_MODEL="opusplan"

@@ -10,6 +10,8 @@ alias tk="tmux -2 kill-session -t"
 alias tka="tmux kill-server"
 alias tl="tmux -2 list-sessions"
 
+alias p="purple"
+
 alias wsc="wt switch --create --execute=claude"
 alias wrm="wt remove"
 
