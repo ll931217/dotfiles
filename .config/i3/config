@@ -67,7 +67,7 @@ for_window [class=".*-scratchpad"] floating enable
 for_window [class=".*-scratchpad"] move scratchpad
 for_window [class=".*-scratchpad"] resize set 1600 800
 
-bindsym $mod+a exec ~/.config/i3/scripts/special-scratch.sh
+bindsym $mod+a exec ~/.config/i3/scripts/scratch.sh -t "alacritty" -c "special"
 bindsym $mod+Ctrl+a scratchpad show
 bindsym $mod+Shift+a move scratchpad
 # === END:scratchpads ===
