@@ -3,16 +3,17 @@ font pango:JetBrainsMonoNL Nerd Font 8
 font pango:JetBrainsMonoNL Nerd Font Medium 8
 floating_modifier $mod
 
-# Some colour variables
+# Some colour variables (Amp theme)
 # set $bg-color #2f343f
 # set $bg-color #1be888
 # set $bg-color #f44336
-set $bg-color #7aa2f7
-set $inactive-bg-color #414868
+# set $bg-color #7aa2f7
+set $bg-color #E7894C
+set $inactive-bg-color #262626
 # set $inactive-bg-color #ef5350
-set $text-color #f3f4f5
-set $inactive-text-color #676E7D
-set $urgent-bg-color #E53935
+set $text-color #F2ECDD
+set $inactive-text-color #B8AFA0
+set $urgent-bg-color #D9634F
 
 # variables for workspaces
 set $w1 "1 "

@@ -1,0 +1,62 @@
+# Amp Theme for Alacritty
+# Palette mirrors tmux-amp-theme (dark)
+
+[colors.primary]
+background = "#0F0F0F"
+foreground = "#F2ECDD"
+
+[colors.cursor]
+text   = "#0F0F0F"
+cursor = "#E7894C"
+
+[colors.vi_mode_cursor]
+text   = "#0F0F0F"
+cursor = "#6A9FCC"
+
+[colors.selection]
+text       = "CellForeground"
+background = "#3A2614"
+
+[colors.search.matches]
+foreground = "#0F0F0F"
+background = "#E3A25A"
+
+[colors.search.focused_match]
+foreground = "#0F0F0F"
+background = "#E7894C"
+
+[colors.footer_bar]
+foreground = "#F2ECDD"
+background = "#161616"
+
+[colors.hints.start]
+foreground = "#0F0F0F"
+background = "#E7894C"
+
+[colors.hints.end]
+foreground = "#0F0F0F"
+background = "#E3A25A"
+
+[colors.line_indicator]
+foreground = "None"
+background = "None"
+
+[colors.normal]
+black   = "#1A1A1A"
+red     = "#D9634F"
+green   = "#7C9B96"
+yellow  = "#E3A25A"
+blue    = "#6A9FCC"
+magenta = "#E7894C"
+cyan    = "#8FC4C4"
+white   = "#F2ECDD"
+
+[colors.bright]
+black   = "#7A7367"
+red     = "#D9634F"
+green   = "#7C9B96"
+yellow  = "#E3A25A"
+blue    = "#6A9FCC"
+magenta = "#E7894C"
+cyan    = "#8FC4C4"
+white   = "#F2ECDD"

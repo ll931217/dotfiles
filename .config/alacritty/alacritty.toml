@@ -56,9 +56,9 @@ y = 2
 
 [general]
 import = [
-  # "/home/ll931217/.config/alacritty/tokyo-night-storm.toml",
-  "/home/ll931217/.config/alacritty/kanso.toml",
-  # "/home/ll931217/.config/alacritty/catppuccin/catppuccin-macchiato.toml",
+  # "~/.config/alacritty/tokyo-night-storm.toml",
+  # "~/.config/alacritty/kanso.toml",
+  "~/.config/alacritty/amp.toml",
 ]
 
 [terminal]
