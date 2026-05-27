@@ -58,6 +58,7 @@ Plug 'connorholyday/vim-snazzy'
 Plug 'scrooloose/nerdtree'
 Plug 'twitvim/twitvim'
 Plug 'ekalinin/Dockerfile.vim'
+Plug 'tpope/vim-vinegar'
 
 if g:has_async
   Plug 'w0rp/ale'

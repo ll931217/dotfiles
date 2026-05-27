@@ -353,3 +353,23 @@ client.urgent             $urgent-bg-color    $urgent-bg-color    $text-color   
 
 # Launch Polybar
 exec --no-startup-id ~/.config/polybar/launch.sh
+
+# AmpCode themed
+# bar {
+#     output rdp1
+#     status_command i3status --config ~/.config/i3/i3status.conf
+#     position bottom
+#     workspace_buttons yes
+#
+#     colors {
+#         background #0F0F0F
+#         statusline #F2ECDD
+#         separator  #262626
+#
+#         # border bg text
+#         focused_workspace  #E7894C #E7894C #0F0F0F
+#         active_workspace   #1A1A1A #1A1A1A #F2ECDD
+#         inactive_workspace #161616 #161616 #B8AFA0
+#         urgent_workspace   #D9634F #D9634F #0F0F0F
+#     }
+# }
