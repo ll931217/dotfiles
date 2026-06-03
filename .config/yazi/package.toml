@@ -13,6 +13,16 @@ use = "Lil-Dank/lazygit"
 rev = "0e56060"
 hash = "ab2e66065a94cca4886b303518e44bd8"
 
+[[plugin.deps]]
+use = "AnirudhG07/rich-preview"
+rev = "7d616ad"
+hash = "d64feec9761392cbc250d199ab4b8a3a"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:piper"
+rev = "c2c16c8"
+hash = "d99cfbc3812e7738505f9e4bedb759cd"
+
 [[flavor.deps]]
 use = "yazi-rs/flavors:dracula"
 rev = "4296a38"

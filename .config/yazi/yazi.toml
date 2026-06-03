@@ -3,15 +3,12 @@ ratio = [1, 2, 4]
 show_hidden = false
 linemode = "size"
 
-# [plugin]
-# prepend_previewers = [{ name = "*.md", run = "glow" }]
-
 [opener]
-edit = [{ run = '$EDITOR "$1"', block = true, for = "unix" }]
+edit = [{ run = 'nvim "$@"', block = true, for = "unix" }]
 reveal = [
   { run = '''exiftool "$1"; echo "Press enter to exit"; read''', block = true, desc = "Show EXIF", for = "unix" },
 ]
-# extract = [{ run = 'unar "$1"', desc = "Extract here", for = "unix" }]
+extract = [{ run = 'unar "$1"', desc = "Extract here", for = "unix" }]
 play = [
   { run = 'mpv "$@"', block = true, for = "unix" },
   { run = '''mediainfo "$1"; echo "Press enter to exit"; read''', block = true, desc = "Show media info", for = "unix" },
@@ -20,3 +17,16 @@ image = [
   { run = 'feh --scale-down --image-bg black "$@"', block = true, for = "unix" },
 ]
 pdf = [{ run = 'brave "$@"', block = true, for = "unix" }]
+
+[plugin]
+prepend_previewers = [
+  # { url = "*", run = 'piper -- echo "$1"'},
+  # { url = "*.csv", run = "rich-preview"}, # for csv files
+  { url = "*.csv", run = 'piper -- bat -p --color=always "$1"'}, # for csv files
+  # { url = "*.md", run = "rich-preview" }, # for markdown (.md) files
+  {url = "*.md", run  = 'piper -- rich -j --left --panel=rounded --guides --line-numbers --force-terminal "$1"'},
+  { url = "*.rst", run = "rich-preview"}, # for restructured text (.rst) files
+  { url = "*.ipynb", run = "rich-preview"}, # for jupyter notebooks (.ipynb)
+  { url = "*.json", run = "rich-preview"}, # for json (.json) files
+  # { url = "*.lang_type", run = "rich-preview"} # for particular language files eg. .py, .go., .lua, etc.
+]

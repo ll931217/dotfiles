@@ -36,4 +36,12 @@ prepend_keymap = [
     "M",
     "c",
   ], run = "cd ~/.ssh/", desc = "Go to ssh config" },
+  { on = [
+    "g",
+    "G",
+  ], run = "cd ~/GitHub/", desc = "Go to GitHub dir" },
+  { on = [
+    "g",
+    "p",
+  ], run = "cd ~/Projects/", desc = "Go to Projects dir" },
 ]
