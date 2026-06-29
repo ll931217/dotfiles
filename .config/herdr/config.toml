@@ -1,0 +1,55 @@
+onboarding = false
+
+[theme]
+name = "kanagawa"
+
+[theme.custom]
+panel_bg  = "#1A1A1A"
+red       = "#D9634F"
+green     = "#7C9B96"
+yellow    = "#E3A25A"
+blue      = "#6A9FCC"
+magenta   = "#E7894C"
+cyan      = "#8FC4C4"
+white     = "#F2ECDD"
+
+[ui]
+agent_panel_scope = "all"
+
+[keys]
+# tmux-style bindings (prefix is the leader, default ctrl+b)
+split_vertical = "prefix+|"
+split_horizontal = 'prefix+-'
+detach = "prefix+d"
+
+toggle_sidebar = "prefix+b"
+
+new_tab = "alt+n"
+next_tab="alt+l"
+previous_tab="alt+h"
+rename_tab = "prefix+,"
+
+zoom = "ctrl+f"
+
+focus_pane_left = "ctrl+h"
+focus_pane_down = "ctrl+j"
+focus_pane_up = "ctrl+k"
+focus_pane_right = "ctrl+l"
+
+# leader+s opens the workspace ("spaces") picker (settings moves off prefix+s to make room)
+workspace_picker = "prefix+s"
+settings = "prefix+shift+s"
+
+# vim-style j/k move the selection up/down inside the spaces picker
+# (frees pane up/down in navigate mode; use arrows or ctrl+b j/k for pane focus)
+navigate_workspace_up = "k"
+navigate_workspace_down = "j"
+navigate_pane_up = ""
+navigate_pane_down = ""
+
+next_agent = "alt+j"
+previous_agent = "alt+k"
+
+# leader+a focuses the agent panel for keyboard browsing
+# (j/k to move, enter to jump, esc to leave) — needs the rebuilt binary
+agent_picker = "prefix+a"
