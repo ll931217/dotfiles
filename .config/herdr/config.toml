@@ -36,6 +36,9 @@ focus_pane_down = "ctrl+j"
 focus_pane_up = "ctrl+k"
 focus_pane_right = "ctrl+l"
 
+previous_workspace = "alt+k"
+next_workspace = "alt+j"
+
 # leader+s opens the workspace ("spaces") picker (settings moves off prefix+s to make room)
 workspace_picker = "prefix+s"
 settings = "prefix+shift+s"
@@ -47,8 +50,8 @@ navigate_workspace_down = "j"
 navigate_pane_up = ""
 navigate_pane_down = ""
 
-next_agent = "alt+j"
-previous_agent = "alt+k"
+# next_agent = "alt+j"
+# previous_agent = "alt+k"
 
 # leader+a focuses the agent panel for keyboard browsing
 # (j/k to move, enter to jump, esc to leave) — needs the rebuilt binary
