@@ -74,7 +74,9 @@ Scope {
             spacing: 3
 
             Repeater {
-              model: I3.workspaces
+              model: I3.workspaces.values.filter(
+                workspace => workspace.monitor === I3.monitorFor(bar.modelData)
+              )
 
               Rectangle {
                 id: workspaceButton
