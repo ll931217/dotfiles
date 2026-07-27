@@ -1,0 +1,7 @@
+# Input method (fcitx5) - must be set at X session start so GUI apps
+# launched by SDDM/i3 connect to fcitx5's frontend. Without this the
+# trigger key (Ctrl+Space) does nothing because key events never reach fcitx5.
+export GTK_IM_MODULE=fcitx
+export QT_IM_MODULE=fcitx
+export XMODIFIERS=@im=fcitx
+export SDL_IM_MODULE=fcitx

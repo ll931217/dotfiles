@@ -363,6 +363,17 @@ declare -A ITEM_PICOM=(
     [description]="Lightweight compositor for X11"
 )
 
+declare -A ITEM_XPROFILE=(
+    [name]="Xprofile"
+    [category]="utilities"
+    [config_path]="$REPO_ROOT/.xprofile"
+    [target_path]="$HOME/.xprofile"
+    [detection]="symlink"
+    [dependencies]="fcitx5-im"
+    [packages]="fcitx5-im fcitx5-chewing"
+    [description]="X session profile exporting fcitx5 input-method env vars (GTK/QT/XMODIFIERS/SDL) for SDDM-launched apps"
+)
+
 # ============================================================================
 # BROWSER
 # ============================================================================
@@ -470,7 +481,7 @@ get_all_items() {
         NEONVIM VIM \
         CLAUDE \
         RANGER YAZI \
-        BTOP DUNST ROFI CAVA FASTFETCH PICOM \
+        BTOP DUNST ROFI CAVA FASTFETCH PICOM XPROFILE \
         QUTEBROWSER \
         FONTS \
         BASE_DEPS \
