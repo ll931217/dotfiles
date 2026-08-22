@@ -356,7 +356,7 @@ exec --no-startup-id ~/.config/polybar/launch.sh
 
 # AmpCode themed
 # bar {
-#     output rdp1
+#     output HDMI-0
 #     status_command i3status --config ~/.config/i3/i3status.conf
 #     position bottom
 #     workspace_buttons yes
