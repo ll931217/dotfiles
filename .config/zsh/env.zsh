@@ -78,17 +78,18 @@ export PATH="$HOME/.pulumi/bin:$PATH"
 export PATH="$HOME/.millennium/ext/bin:$PATH"
 export PATH="$HOME/.opencode/bin:$PATH"
 export PATH="$HOME/Android/Sdk/platform-tools/:$PATH"
-export PATH="$($HOME/.local/share/pnpm/npm config get prefix)/bin:$PATH"
 
-# pnpm
+# pnpm-managed Node runtime and global packages
 export PNPM_HOME="/home/ll931217/.local/share/pnpm"
+export PNPM_NODE_HOME="$PNPM_HOME/nodejs_current"
+export PATH="$PNPM_NODE_HOME/bin:$PATH"
+
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
-# pnpm end
 
-export NODE_PATH=$NODE_PATH:$($HOME/.local/share/pnpm/npm root -g)
+export NODE_PATH="${NODE_PATH:+$NODE_PATH:}$PNPM_NODE_HOME/lib/node_modules"
 
 # Remove duplicates
 PATH=$(printf "%s" "$PATH" | awk -v RS=':' '!a[$1]++ { if (NR > 1) printf RS; printf $1 }')
