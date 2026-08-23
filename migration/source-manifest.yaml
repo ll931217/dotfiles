@@ -1,0 +1,90 @@
+version: 1
+purpose: "Map repository content before moving target files into chezmoi source state."
+source_root: home
+
+managed:
+  portable_shell:
+    - source: .zshrc
+      target: ~/.zshrc
+      mode: file
+    - source: .tmux.conf
+      target: ~/.tmux.conf
+      mode: file
+    - source: .vimrc
+      target: ~/.vimrc
+      mode: file
+    - source: .vimrc.bundles
+      target: ~/.vimrc.bundles
+      mode: file
+    - source: .xprofile
+      target: ~/.xprofile
+      mode: file
+    - source: .config/zsh
+      target: ~/.config/zsh
+      mode: directory
+  executable_tools:
+    - source: .scripts
+      target: ~/.scripts
+      mode: directory
+      preserve_executable_bits: true
+  application_config:
+    - source: .config
+      target: ~/.config
+      mode: directory
+      policy: "Migrate by subsystem; exclude generated, private, and host-state files."
+  macos_config:
+    - source: macos
+      target: ~
+      mode: platform_variant
+      condition: '.chezmoi.os == "darwin"'
+  fonts:
+    - source: .local/share/fonts
+      target: ~/.local/share/fonts
+      mode: optional_asset_bundle
+      policy: "Keep only intentional fonts; prefer package/download declarations for large collections."
+  wallpapers:
+    - source: .wallpapers
+      target: ~/.wallpapers
+      mode: optional_asset_bundle
+  baoge_hooks:
+    - source: plugins/baoge-hooks
+      target: ~/.claude/scripts/baoge-hooks
+      mode: post_apply_hook_or_target_tree
+
+excluded:
+  - source: .config/zsh/keys.zsh
+    reason: "Plaintext credentials; rotate first and render from a secret backend."
+  - source: .config/hypr/custom/private.env
+    reason: "Host-private environment values."
+  - source: .config/btop/btop.log
+    reason: "Runtime log."
+  - source: .config/worktrunk/worktrunk-receipt.json
+    reason: "Generated receipt/state."
+  - source: .beads
+    reason: "Issue-tracking runtime metadata."
+  - source: st-flexipatch
+    reason: "Build/source tree, not home configuration."
+  - source: scripts
+    reason: "Temporary provisioning and migration tooling; not target dotfile content."
+  - source: claude
+    reason: "Repository documentation/configuration tree; resolve actual ~/.claude ownership before migration."
+
+review_required:
+  - source: .config/nvim
+    reason: "Contains a git submodule; migrate separately from ordinary files."
+  - source: .config/i3
+    reason: "Linux/X11 and host/display assumptions."
+  - source: .config/hypr
+    reason: "Linux/Wayland and host/display assumptions; mutually exclusive with i3."
+  - source: .config/noctalia
+    reason: "Large binary/QML asset tree; confirm it is intentionally managed."
+  - source: .local/share/fonts
+    reason: "Large binary asset set; confirm desired repository ownership."
+  - source: .wallpapers
+    reason: "Large binary asset set; consider external or optional management."
+
+known_drift:
+  - "scripts/installer-registry.sh references $REPO_ROOT/.claude, but the repository contains claude/."
+  - "README.md documents .scripts as installer library while active installer code is under scripts/."
+  - ".config/CATEGORIES.yaml contains paths that do not consistently match tracked files."
+  - "The legacy installer mixes package installation, symlink creation, state, rollback, and content deployment."
