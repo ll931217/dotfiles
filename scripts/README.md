@@ -80,7 +80,9 @@ Hyprland content.
 ## Migration Rules
 
 - Never add `.config/zsh/keys.zsh` to chezmoi source state.
-- Rotate existing credentials before adding password-manager-backed templates.
+- Store shell credentials under the local gopass `dotfiles-secrets/` namespace.
+- Unlock the generated GPG key and confirm gopass decryption before removing
+  the old local secret file.
 - Keep generated logs, receipts, profiles, and backups outside source state.
 - Validate changes in a disposable home directory before applying to the live
   account.
