@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ "{{ .machine.install_packages }}" != "true" ]]; then
+    exit 0
+fi
+
+{{- if eq .chezmoi.os "linux" }}
+{{- if eq .chezmoi.osRelease.id "arch" }}
+official_packages=(
+{{- range .packages.linux.arch.official }}
+    {{ . | quote }}
+{{- end }}
+)
+
+if ! command -v pacman >/dev/null 2>&1; then
+    printf '%s\n' 'ERROR: pacman is required for Arch package installation' >&2
+    exit 1
+fi
+
+sudo pacman -S --needed --noconfirm "${official_packages[@]}"
+
+{{- if .machine.install_optional }}
+aur_packages=(
+{{- range .packages.linux.arch.aur }}
+    {{ . | quote }}
+{{- end }}
+)
+
+if ((${#aur_packages[@]})); then
+    if ! command -v yay >/dev/null 2>&1; then
+        printf '%s\n' 'ERROR: yay is required for optional AUR packages' >&2
+        exit 1
+    fi
+    yay -S --needed --noconfirm "${aur_packages[@]}"
+fi
+{{- end }}
+{{- else }}
+printf '%s\n' 'ERROR: unsupported Linux distribution; configure a package hook for this OS' >&2
+exit 1
+{{- end }}
+{{- end }}
+
+{{- if eq .chezmoi.os "darwin" }}
+if ! command -v brew >/dev/null 2>&1; then
+    printf '%s\n' 'ERROR: Homebrew is required for macOS package installation' >&2
+    exit 1
+fi
+
+brew_packages=(
+{{- range .packages.darwin.brew }}
+    {{ . | quote }}
+{{- end }}
+)
+
+if ((${#brew_packages[@]})); then
+    brew install "${brew_packages[@]}"
+fi
+
+{{- if .machine.install_optional }}
+brew_casks=(
+{{- range .packages.darwin.cask }}
+    {{ . | quote }}
+{{- end }}
+)
+
+if ((${#brew_casks[@]})); then
+    brew install --cask "${brew_casks[@]}"
+fi
+{{- end }}
+{{- end }}

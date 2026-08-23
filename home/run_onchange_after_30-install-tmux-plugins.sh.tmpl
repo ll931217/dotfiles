@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+if [[ "{{ .machine.install_optional }}" != "true" ]]; then
+    exit 0
+fi
+
+plugin_installer="$HOME/.tmux/plugins/tpm/bin/install_plugins"
+if [[ -x "$plugin_installer" ]]; then
+    "$plugin_installer"
+fi
