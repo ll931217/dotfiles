@@ -81,8 +81,7 @@ Hyprland content.
 
 - Never add `.config/zsh/keys.zsh` to chezmoi source state.
 - Store shell credentials under the local gopass `dotfiles-secrets/` namespace.
-- Unlock the generated GPG key and confirm gopass decryption before removing
-  the old local secret file.
+- The former plaintext file was removed after gopass readback verification.
 - Keep generated logs, receipts, profiles, and backups outside source state.
 - Validate changes in a disposable home directory before applying to the live
   account.

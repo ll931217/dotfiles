@@ -53,7 +53,7 @@ alias ghcs="gh copilot suggest"
 alias ubd="curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash"
 alias uwt="curl --proto '=https' --tlsv1.2 -LsSf https://github.com/max-sixty/worktrunk/releases/download/v0.8.2/worktrunk-installer.sh | sh"
 
-alias zshrc='pushd ~ ; $EDITOR ~/.config/zsh/.zshrc ~/.config/zsh/aliases.zsh ~/.config/zsh/env.zsh ~/.config/zsh/keys.zsh ; popd ; exec zsh'
+alias zshrc='pushd ~ ; $EDITOR ~/.config/zsh/.zshrc ~/.config/zsh/aliases.zsh ~/.config/zsh/env.zsh ; popd ; exec zsh'
 alias nvrc='cd ~/.config/nvim ; $EDITOR init.lua ; cd -'
 alias hyprrc='cd ~/.config/hypr/ ; $EDITOR ~/.config/hypr/hyprland.conf ; cd -'
 alias i3rc='cd ~/.config/i3/ ; $EDITOR ~/.config/i3/config ; cd -'

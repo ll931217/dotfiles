@@ -53,7 +53,7 @@ managed:
 
 excluded:
   - source: .config/zsh/keys.zsh
-    reason: "Plaintext credentials; rotate first and render from a secret backend."
+    reason: "Plaintext credentials; imported into gopass and rendered only through a secret-backed template."
   - source: .config/hypr/custom/private.env
     reason: "Host-private environment values."
   - source: .config/btop/btop.log

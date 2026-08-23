@@ -125,10 +125,10 @@ Machine policy lives in chezmoi data rather than the legacy
 `~/.config/dotfiles` state directory. OS and window-manager-specific content
 is controlled with templates and `.chezmoiignore.tmpl`.
 
-Plaintext credentials are excluded from source state. The existing
+Plaintext credentials are excluded from source state. The former
 `.config/zsh/keys.zsh` values were imported into the local gopass store under
 `dotfiles-secrets/`; the private chezmoi template reads them with `gopass`.
-The old local file remains until gopass decryption is confirmed.
+The former local plaintext file was removed after readback verification.
 
 ### Existing Configuration Patterns
 
