@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Setup script to populate initial apps
+
+# Source the shared library
+# Resolve symlinks to get the actual script directory
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SCRIPT_SOURCE" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
+  [[ $SCRIPT_SOURCE != /* ]] && SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+source "$SCRIPT_DIR/lib/appimage-lib.sh"
+
+# Initialize
+init_directories
+init_config
+
+# Add example apps
+print_info "Adding example apps to configuration..."
+add_app_to_config "zen-browser/desktop" "zen-browser" "*.AppImage" "zen-browser"
+add_app_to_config "pingdotgg/t3code" "t3code" "T3-Code-*.AppImage" "t3code"
+
+print_success "Configuration file initialized with example apps"
+echo ""
+echo "Configured apps:"
+list_apps | cut -d'|' -f1,2 | while IFS='|' read -r name repo; do
+    echo "  • $name ($repo)"
+done
+echo ""
+echo "To manage your AppImages, run: ~/.scripts/appimage-manager"
+echo "To update an app, run: ~/.scripts/appimage/update-app <app-name>"

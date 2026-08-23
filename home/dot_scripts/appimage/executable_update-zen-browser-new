@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Wrapper script for updating Zen Browser
+# Usage: ./update-zen-browser [version]
+
+# Update Zen Browser (uses default pattern *.AppImage)
+~/.scripts/update-appimage zen-browser/desktop zen-browser "$@"

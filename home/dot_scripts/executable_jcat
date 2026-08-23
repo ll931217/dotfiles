@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+import sys
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "service",
+        metavar="SERVICE_NAME",
+        type=str,
+        nargs=1,
+        help="The name of the service you want to inspect",
+    )
+    parser.add_argument("--start", action="store_true", help="Starts the service")
+    parser.add_argument("-s", "--stop", action="store_true", help="Stops the service")
+    parser.add_argument(
+        "-r", "--restart", action="store_true", help="Restart the service"
+    )
+    parser.add_argument(
+        "-e", "--enable", action="store_true", help="Enable the service to load on boot"
+    )
+    parser.add_argument(
+        "-n", "--now", action="store_true", help="Enable and start the service"
+    )
+
+    # Test whether there are any arguments
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
+    args = parser.parse_args()
+    command_output = ""
+
+    # Test whether the service exists
+    try:
+        out1 = subprocess.run(
+            ["systemctl", "list-units", "--full", "-all"],
+            universal_newlines=True,
+            check=True,
+            stdout=subprocess.PIPE,
+        )
+        out2 = subprocess.run(
+            ["grep", "-Fq", "{}.service".format(args.service[0])],
+            check=True,
+            input=out1.stdout,
+            universal_newlines=True,
+        )
+    except subprocess.CalledProcessError as err:
+        print("Service does not exist")
+        sys.exit(1)
+
+    if args.start:
+        print("Starting", args.service[0])
+        command_output = subprocess.run(
+            ["sudo", "systemctl", "start", args.service[0]], check=True
+        )
+    elif args.restart:
+        print("Restarting", args.service[0])
+        command_output = subprocess.run(
+            ["sudo", "systemctl", "restart", args.service[0]], check=True
+        )
+    elif args.stop:
+        print("Stopping", args.service[0])
+        command_output = subprocess.run(
+            ["sudo", "systemctl", "stop", args.service[0]], check=True
+        )
+    elif args.enable:
+        print("Enabling", args.service[0])
+        command_output = subprocess.run(
+            ["sudo", "systemctl", "enable", args.service[0]], check=True
+        )
+    elif args.now:
+        print("Enabling", args.service[0], "now")
+        command_output = subprocess.run(
+            ["sudo", "systemctl", "enable", "--now", args.service[0]], check=True
+        )
+
+    print(command_output)
+
+    try:
+        subprocess.run(["journalctl", "-efu", args.service[0], "--output", "cat"])
+    except:
+        pass
+

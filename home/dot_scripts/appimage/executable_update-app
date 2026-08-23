@@ -1,0 +1,165 @@
+#!/bin/bash
+
+# CLI wrapper for updating AppImages by name
+# Usage: update-app [app-name] [options]
+
+# Source the shared library
+# Resolve symlinks to get the actual script directory
+SCRIPT_SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SCRIPT_SOURCE" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+  SCRIPT_SOURCE="$(readlink "$SCRIPT_SOURCE")"
+  [[ $SCRIPT_SOURCE != /* ]] && SCRIPT_SOURCE="$SCRIPT_DIR/$SCRIPT_SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+source "$SCRIPT_DIR/lib/appimage-lib.sh"
+
+# Initialize
+init_directories
+init_config
+
+# Function to display usage
+usage() {
+    cat << EOF
+Usage: $(basename "$0") <app-name> [options]
+
+Arguments:
+  app-name              Name of the configured app to update
+
+Options:
+  -v, --version VER     Specific version to download (default: latest)
+  -d, --desktop         Create desktop entry after installation
+  -a, --all             Update all configured apps
+  -l, --list            List all configured apps
+  -h, --help            Show this help message
+
+Examples:
+  # Update zen-browser
+  $(basename "$0") zen-browser
+
+  # Update with desktop entry
+  $(basename "$0") zen-browser --desktop
+
+  # Update specific version
+  $(basename "$0") t3code --version v0.0.13
+
+  # Update all apps
+  $(basename "$0") --all
+
+  # List all configured apps
+  $(basename "$0") --list
+
+To configure new apps, run: ~/.scripts/appimage-manager
+EOF
+    exit 1
+}
+
+# Check dependencies
+if ! check_dependencies; then
+    exit 1
+fi
+
+# Check if config file exists
+if ! validate_config; then
+    exit 1
+fi
+
+# Parse arguments
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+# Check for --all flag
+if [ "$1" = "-a" ] || [ "$1" = "--all" ]; then
+    local count=$(get_app_count)
+    if [ "$count" -eq 0 ]; then
+        print_error "No apps configured yet"
+        exit 1
+    fi
+
+    print_info "Updating $count app(s)..."
+    echo
+
+    list_apps | while IFS='|' read -r name repo pattern local_name version; do
+        echo -e "${CYAN}➜${NC} Updating ${WHITE}${name}${NC}..."
+
+        local args=()
+        [ -n "$pattern" ] && args+=(--pattern "$pattern")
+        [ -n "$local_name" ] && args+=(--local-name "$local_name")
+
+        "$SCRIPT_DIR/update-appimage" "$repo" "$name" "${args[@]}"
+        echo
+    done
+
+    print_success "All updates completed!"
+    exit 0
+fi
+
+# Check for --list flag
+if [ "$1" = "-l" ] || [ "$1" = "--list" ]; then
+    echo "Configured AppImages:"
+    echo
+    list_apps | while IFS='|' read -r name repo pattern local_name version; do
+        echo "  • $name ($repo)"
+    done
+    exit 0
+fi
+
+# Check for --help flag
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+fi
+
+# Get app name
+APP_NAME="$1"
+shift
+
+# Check for version flag
+VERSION=""
+CREATE_DESKTOP=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -v|--version)
+            VERSION="$2"
+            shift 2
+            ;;
+        -d|--desktop)
+            CREATE_DESKTOP=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+# Look up app in config
+APP_CONFIG=$(get_app_config "$APP_NAME")
+
+if [ -z "$APP_CONFIG" ]; then
+    print_error "App '$APP_NAME' not found in configuration"
+    echo ""
+    echo "Available apps:"
+    list_apps | cut -d'|' -f1 | while read -r app; do
+        echo "  • $app"
+    done
+    echo ""
+    echo "To add a new app, run: ~/.scripts/appimage-manager"
+    exit 1
+fi
+
+# Extract config values
+REPO=$(echo "$APP_CONFIG" | jq -r '.repo')
+PATTERN=$(echo "$APP_CONFIG" | jq -r '.pattern // empty')
+LOCAL_NAME=$(echo "$APP_CONFIG" | jq -r '.local_name // empty')
+
+# Build arguments
+ARGS=()
+[ -n "$VERSION" ] && ARGS+=(--version "$VERSION")
+[ -n "$PATTERN" ] && ARGS+=(--pattern "$PATTERN")
+[ -n "$LOCAL_NAME" ] && ARGS+=(--local-name "$LOCAL_NAME")
+[ "$CREATE_DESKTOP" = true ] && ARGS+=(--desktop)
+
+# Call the update script
+"$SCRIPT_DIR/update-appimage" "$REPO" "$APP_NAME" "${ARGS[@]}"

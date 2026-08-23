@@ -1,0 +1,11 @@
+# Alacritty Focus Highlight Configuration
+
+[colors]
+# Base background color from your Alacritty theme
+# This should match the background color in your kanso.toml
+base = "#101010"
+
+[highlight]
+# Percentage to brighten the background when focused (0.0 to 1.0)
+# 0.15 = 15% brighter
+brightness_percentage = 0.1
