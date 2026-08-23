@@ -1,0 +1,5 @@
+{{- if eq .chezmoi.os "darwin" }}
+{{ template "darwin_tmux.conf" . }}
+{{- else }}
+{{ template "linux_tmux.conf" . }}
+{{- end }}

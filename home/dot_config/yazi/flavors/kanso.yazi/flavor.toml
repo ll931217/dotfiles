@@ -1,0 +1,89 @@
+# Kansō Zen Flavor for Yazi
+# Based on: https://github.com/webhooked/kanso.nvim
+
+# : Manager {{{
+[mgr]
+cwd = { fg = "#7E9CD8" } # Crystal Blue
+
+# Hovered
+hovered         = { reversed = true }
+preview_hovered = { underline = true }
+
+# Find
+find_keyword  = { fg = "#C0A36E", bold = true, italic = true, underline = true } # Boat Yellow
+find_position = { fg = "#D27E99", bg = "reset", bold = true, italic = true }    # Sakura Pink
+
+# Marker
+marker_copied   = { fg = "#76946A", bg = "#76946A" } # Autumn Green
+marker_cut      = { fg = "#C34043", bg = "#C34043" } # Autumn Red
+marker_marked   = { fg = "#7E9CD8", bg = "#7E9CD8" } # Crystal Blue
+marker_selected = { fg = "#C0A36E", bg = "#C0A36E" } # Boat Yellow
+
+# Count
+count_copied   = { fg = "#101010", bg = "#76946A" }
+count_cut      = { fg = "#101010", bg = "#C34043" }
+count_selected = { fg = "#101010", bg = "#C0A36E" }
+
+# Border
+border_symbol = "│"
+border_style  = { fg = "#54546D" } # Cockerel Violet (Muted)
+
+# : }}}
+
+# : Tabs {{{
+[tabs]
+active   = { fg = "#101010", bg = "#7E9CD8", bold = true }
+inactive = { fg = "#7E9CD8", bg = "#1F1F28" }
+# : }}}
+
+# : Mode {{{
+[mode]
+normal_main = { fg = "#101010", bg = "#957FB8", bold = true } # Oni Violet
+normal_alt  = { fg = "#957FB8", bg = "#1F1F28" }
+
+select_main = { fg = "#101010", bg = "#6A9589", bold = true } # Wave Aqua
+select_alt  = { fg = "#6A9589", bg = "#1F1F28" }
+
+unset_main = { fg = "#101010", bg = "#D27E99", bold = true }  # Sakura Pink
+unset_alt  = { fg = "#D27E99", bg = "#1F1F28" }
+# : }}}
+
+# : Status bar {{{
+[status]
+perm_sep   = { fg = "#54546D" }
+perm_type  = { fg = "#7E9CD8" }
+perm_read  = { fg = "#C0A36E" }
+perm_write = { fg = "#C34043" }
+perm_exec  = { fg = "#76946A" }
+
+progress_label  = { fg = "#DCD7BA", bold = true }
+progress_normal = { fg = "#7E9CD8", bg = "#1F1F28" }
+progress_error  = { fg = "#C34043", bg = "#1F1F28" }
+# : }}}
+
+# : Which / Help / Notify {{{
+[which]
+mask            = { bg = "#1F1F28" }
+cand            = { fg = "#7E9CD8" }
+rest            = { fg = "#727169" }
+desc            = { fg = "#957FB8" }
+separator       = "  "
+separator_style = { fg = "#54546D" }
+
+[notify]
+title_info  = { fg = "#76946A" }
+title_warn  = { fg = "#C0A36E" }
+title_error = { fg = "#C34043" }
+# : }}}
+
+# : File-specific styles {{{
+[filetype]
+rules = [
+	{ mime = "image/*", fg = "#6A9589", bold = true },
+	{ mime = "{audio,video}/*", fg = "#C0A36E", bold = true },
+	{ mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", fg = "#957FB8", bold = true },
+	{ mime = "application/{pdf,doc,rtf}", fg = "#76946A", bold = true },
+	{ url = "*/", fg = "#7E9CD8", bold = true },
+	{ url = "*", fg = "#DCD7BA" }
+]
+# : }}}

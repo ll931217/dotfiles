@@ -1,0 +1,29 @@
+[[plugin.deps]]
+use = "Reledia/glow"
+rev = "4e016fa"
+hash = ""
+
+[[plugin.deps]]
+use = "uhs-robert/sshfs"
+rev = "75a025c"
+hash = "e1cebecfee70daef1f97aa083209340c"
+
+[[plugin.deps]]
+use = "Lil-Dank/lazygit"
+rev = "0e56060"
+hash = "ab2e66065a94cca4886b303518e44bd8"
+
+[[plugin.deps]]
+use = "AnirudhG07/rich-preview"
+rev = "7d616ad"
+hash = "d64feec9761392cbc250d199ab4b8a3a"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:piper"
+rev = "c2c16c8"
+hash = "d99cfbc3812e7738505f9e4bedb759cd"
+
+[[flavor.deps]]
+use = "yazi-rs/flavors:dracula"
+rev = "4296a38"
+hash = "eefb18cb038121aed2b6eeaacea5a63e"

@@ -1,0 +1,25 @@
+{
+  "id": "zai-usage",
+  "name": "Z.ai Usage",
+  "version": "1.0.0",
+  "minNoctaliaVersion": "3.6.0",
+  "author": "user",
+  "license": "MIT",
+  "description": "Monitor Z.ai coding plan usage in the status bar",
+  "tags": ["Bar", "Utility"],
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "dependencies": {
+    "plugins": []
+  },
+  "metadata": {
+    "defaultSettings": {
+      "refreshIntervalSeconds": 60,
+      "showSession": true,
+      "showDaily": true,
+      "showSearch": true
+    }
+  }
+}

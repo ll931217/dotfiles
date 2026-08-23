@@ -1,0 +1,5 @@
+{{- if eq .chezmoi.os "darwin" }}
+{{ template "darwin_starship.toml" . }}
+{{- else }}
+{{ template "linux_starship.toml" . }}
+{{- end }}

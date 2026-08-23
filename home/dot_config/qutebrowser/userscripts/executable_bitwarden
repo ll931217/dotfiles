@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: Chris Braun (cryzed) <cryzed@googlemail.com>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+"""
+Insert login information using rbw (Rust Bitwarden CLI) and a dmenu-compatible application
+(e.g. dmenu, rofi -dmenu, ...).
+"""
+
+USAGE = """The domain of the site has to be in the name of the Bitwarden entry, for example: "github.com/cryzed" or
+"websites/github.com".  The login information is inserted by emulating key events using qutebrowser's fake-key command in this manner:
+[USERNAME]<Tab>[PASSWORD], which is compatible with almost all login forms.
+
+If enabled, with the `--totp` flag, it will also move the TOTP code to the
+clipboard, much like the Firefox add-on.
+
+You must log into rbw using `rbw register` and `rbw login` prior to use of this script.
+The database will be unlocked automatically when needed.
+
+To use in qutebrowser, run: `spawn --userscript qute-bitwarden`
+"""
+
+EPILOG = """Dependencies: tldextract (Python 3 module), pyperclip (optional
+Python module, used for TOTP codes), rbw (Rust Bitwarden CLI)
+
+WARNING: The login details are viewable as plaintext in qutebrowser's debug log
+(qute://log) and might be shared if you decide to submit a crash report!"""
+
+import argparse
+import enum
+import functools
+import os
+import shlex
+import subprocess
+import sys
+import json
+import tldextract
+
+argument_parser = argparse.ArgumentParser(
+    description=__doc__,
+    usage=USAGE,
+    epilog=EPILOG,
+)
+argument_parser.add_argument('url', nargs='?', default=os.getenv('QUTE_URL'))
+argument_parser.add_argument('--dmenu-invocation', '-d', default='rofi -dmenu -i -p Bitwarden',
+                             help='Invocation used to execute a dmenu-provider')
+argument_parser.add_argument('--password-prompt-invocation', '-p', default='rofi -dmenu -p "Master Password" -password -lines 0',
+                             help='Invocation used to prompt the user for their Bitwarden master password')
+argument_parser.add_argument('--no-insert-mode', '-n', dest='insert_mode', action='store_false',
+                             help="Don't automatically enter insert mode")
+argument_parser.add_argument('--totp', '-t', action='store_true',
+                             help="Copy TOTP key to clipboard")
+argument_parser.add_argument('--io-encoding', '-i', default='UTF-8',
+                             help='Encoding used to communicate with subprocesses')
+argument_parser.add_argument('--merge-candidates', '-m', action='store_true',
+                             help='Merge pass candidates for fully-qualified and registered domain name')
+group = argument_parser.add_mutually_exclusive_group()
+group.add_argument('--username-only', '-e',
+                   action='store_true', help='Only insert username')
+group.add_argument('--password-only', '-w',
+                   action='store_true', help='Only insert password')
+group.add_argument('--totp-only', '-T',
+                   action='store_true', help='Only insert totp code')
+
+stderr = functools.partial(print, file=sys.stderr)
+
+
+class ExitCodes(enum.IntEnum):
+    SUCCESS = 0
+    FAILURE = 1
+    # 1 is automatically used if Python throws an exception
+    NO_PASS_CANDIDATES = 2
+    COULD_NOT_MATCH_USERNAME = 3
+    COULD_NOT_MATCH_PASSWORD = 4
+
+
+def qute_command(command):
+    with open(os.environ['QUTE_FIFO'], 'w') as fifo:
+        fifo.write(command + '\n')
+        fifo.flush()
+
+
+def ensure_unlocked():
+    """Ensure rbw database is unlocked, prompt for password if needed."""
+    # Check if already unlocked
+    process = subprocess.run(['rbw', 'unlocked'], capture_output=True)
+    if process.returncode == 0:
+        return  # Already unlocked
+    
+    # Need to unlock - rbw will prompt for password automatically
+    process = subprocess.run(['rbw', 'unlock'], capture_output=True)
+    if process.returncode != 0:
+        raise Exception('Could not unlock vault')
+
+
+
+
+def pass_(domain, encoding):
+    ensure_unlocked()
+    process = subprocess.run(
+        ['rbw', 'search', '--raw', domain],
+        capture_output=True,
+    )
+
+    err = process.stderr.decode(encoding).strip()
+    if err:
+        msg = 'rbw returned for {:s} - {:s}'.format(domain, err)
+        stderr(msg)
+
+    if process.returncode:
+        return '[]'
+
+    out = process.stdout.decode(encoding).strip()
+    
+    if not out.strip():
+        return '[]'
+    
+    # rbw search --raw returns JSON, but we need to adapt the structure 
+    # to match what the original script expects
+    try:
+        search_results = json.loads(out)
+        if not isinstance(search_results, list):
+            search_results = [search_results]
+            
+        # Convert rbw search format to bw list format
+        entries = []
+        for result in search_results:
+            # Get full entry details including password
+            detail_process = subprocess.run(
+                ['rbw', 'get', '--raw', result['name']],
+                capture_output=True,
+            )
+            if detail_process.returncode == 0:
+                try:
+                    entry_detail = json.loads(detail_process.stdout.decode(encoding))
+                    # Adapt to expected format - rbw stores login data in 'data' field
+                    login_data = entry_detail.get('data', {})
+                    entry = {
+                        'id': result['id'],
+                        'name': result['name'],
+                        'login': {
+                            'username': login_data.get('username', result.get('user', '')),
+                            'password': login_data.get('password', ''),
+                            'totp': login_data.get('totp')
+                        }
+                    }
+                    entries.append(entry)
+                except json.JSONDecodeError:
+                    pass
+        
+        return json.dumps(entries)
+    except json.JSONDecodeError:
+        return '[]'
+
+
+def get_totp_code(selection_id, domain_name, encoding):
+    ensure_unlocked()
+    # rbw code uses the entry name or ID
+    process = subprocess.run(
+        ['rbw', 'code', selection_id],
+        capture_output=True,
+    )
+
+    err = process.stderr.decode(encoding).strip()
+    if err:
+        # domain_name instead of selection_id to make it more user-friendly
+        msg = 'rbw returned for {:s} - {:s}'.format(domain_name, err)
+        stderr(msg)
+
+    if process.returncode:
+        return ''
+
+    out = process.stdout.decode(encoding).strip()
+
+    return out
+
+
+def dmenu(items, invocation, encoding):
+    command = shlex.split(invocation)
+    process = subprocess.run(command, input='\n'.join(
+        items).encode(encoding), stdout=subprocess.PIPE)
+    return process.stdout.decode(encoding).strip()
+
+
+def fake_key_raw(text):
+    for character in text:
+        # Escape all characters by default, space requires special handling
+        sequence = '" "' if character == ' ' else r'\{}'.format(character)
+        qute_command('fake-key {}'.format(sequence))
+
+
+def main(arguments):
+    if not arguments.url:
+        argument_parser.print_help()
+        return ExitCodes.FAILURE
+
+    extract_result = tldextract.extract(arguments.url)
+
+    # Try to find candidates using targets in the following order: fully-qualified domain name (includes subdomains),
+    # the registered domain name and finally: the IPv4 address if that's what
+    # the URL represents
+    candidates = []
+    for target in filter(None, [
+                extract_result.fqdn,
+                extract_result.registered_domain,
+                extract_result.subdomain + '.' + extract_result.domain,
+                extract_result.domain,
+                extract_result.ipv4]):
+        target_candidates = json.loads(
+            pass_(
+                target,
+                arguments.io_encoding,
+            )
+        )
+        if not target_candidates:
+            continue
+
+        candidates = candidates + target_candidates
+        if not arguments.merge_candidates:
+            break
+    else:
+        if not candidates:
+            stderr('No pass candidates for URL {!r} found!'.format(
+                arguments.url))
+            return ExitCodes.NO_PASS_CANDIDATES
+
+    if len(candidates) == 1:
+        selection = candidates.pop()
+    else:
+        choices = ['{:s} | {:s}'.format(c['name'], c['login']['username']) for c in candidates]
+        choice = dmenu(choices, arguments.dmenu_invocation, arguments.io_encoding)
+        choice_tokens = choice.split('|')
+        choice_name = choice_tokens[0].strip()
+        choice_username = choice_tokens[1].strip()
+        selection = next((c for (i, c) in enumerate(candidates)
+                          if c['name'] == choice_name
+                          and c['login']['username'] == choice_username),
+                         None)
+
+    # Nothing was selected, simply return
+    if not selection:
+        return ExitCodes.SUCCESS
+
+    username = selection['login']['username']
+    password = selection['login']['password']
+    totp = selection['login']['totp']
+
+    if arguments.username_only:
+        fake_key_raw(username)
+    elif arguments.password_only:
+        fake_key_raw(password)
+    elif arguments.totp_only:
+        # No point in moving it to the clipboard in this case
+        fake_key_raw(
+            get_totp_code(
+                selection['id'],
+                selection['name'],
+                arguments.io_encoding,
+            )
+        )
+    else:
+        # Enter username and password using fake-key and <Tab> (which seems to work almost universally), then switch
+        # back into insert-mode, so the form can be directly submitted by
+        # hitting enter afterwards
+        fake_key_raw(username)
+        qute_command('fake-key <Tab>')
+        fake_key_raw(password)
+
+    if arguments.insert_mode:
+        qute_command('mode-enter insert')
+
+    # If it finds a TOTP code, it copies it to the clipboard,
+    # which is the same behavior as the Firefox add-on.
+    if not arguments.totp_only and totp and arguments.totp:
+        # The import is done here, to make pyperclip an optional dependency
+        import pyperclip
+        pyperclip.copy(
+            get_totp_code(
+                selection['id'],
+                selection['name'],
+                arguments.io_encoding,
+            )
+        )
+
+    return ExitCodes.SUCCESS
+
+
+if __name__ == '__main__':
+    arguments = argument_parser.parse_args()
+    sys.exit(main(arguments))

@@ -1,0 +1,375 @@
+set $mod Mod4
+font pango:JetBrainsMonoNL Nerd Font 8
+font pango:JetBrainsMonoNL Nerd Font Medium 8
+floating_modifier $mod
+
+# Some colour variables (Amp theme)
+# set $bg-color #2f343f
+# set $bg-color #1be888
+# set $bg-color #f44336
+# set $bg-color #7aa2f7
+set $bg-color #E7894C
+set $inactive-bg-color #262626
+# set $inactive-bg-color #ef5350
+set $text-color #F2ECDD
+set $inactive-text-color #B8AFA0
+set $urgent-bg-color #D9634F
+
+# variables for workspaces
+set $w1 "1 "
+set $w2 "2 "
+set $w3 "3 "
+set $w4 "4 "
+set $w5 "5 "
+set $w10 "10 "
+
+# set $term alacritty
+# set $term ghostty
+# set $term kitty
+set $term wezterm
+
+bindsym $mod+Return exec $term
+
+bindsym $mod+q kill
+# bindsym $mod+d exec killall rofi || ~/.config/rofi/launchers/type-7/launcher.sh
+bindsym $mod+d exec rofi -show drun
+bindsym $mod+Shift+q exec ~/.config/rofi/scripts/powermenu_t1
+
+# change focus
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# move focused window
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+# bindsym $mod+Shift+semicolon move right
+
+# split in horizontal orientation
+# bindsym $mod+Shift+h split h
+
+# split in vertical orientation
+# bindsym $mod+Shift+v split v
+
+# enter fullscreen mode for the focused container
+bindsym $mod+f fullscreen toggle
+bindsym $mod+s exec --no-startup-id sh -c 'i3-msg "workspace number 9" && (pgrep -x spotify >/dev/null || spotify)'
+
+# change container layout (stacked, tabbed, toggle split)
+# bindsym $mod+s layout stacking
+# bindsym $mod+w layout tabbed
+# bindsym $mod+e layout toggle split
+
+# === BEGIN:scratchpads ===
+for_window [class=".*-scratchpad"] floating enable
+for_window [class=".*-scratchpad"] move scratchpad
+for_window [class=".*-scratchpad"] resize set 1600 800
+
+bindsym $mod+a exec ~/.config/i3/scripts/scratch.sh -t "alacritty" -c "special"
+bindsym $mod+Ctrl+a scratchpad show
+bindsym $mod+Shift+a move scratchpad
+# === END:scratchpads ===
+
+# toggle tiling / floating
+bindsym $mod+Shift+space floating toggle
+
+# change focus between tiling / floating windows
+bindsym $mod+space focus mode_toggle
+
+# focus the parent container
+bindsym $mod+g focus parent
+
+bindsym $mod+Shift+s exec flameshot gui
+# bindsym $mod+Shift+s exec scrot -s -f -e 'xclip -selection clipboard -t image/png -i $f && mv $f ~/Pictures/Screenshots/ && notify-send "Screenshot saved to ~/Pictures/Screenshots/"'
+
+bindsym $mod+o exec /usr/bin/cat ~/.pvt/pw | xclip -selection c
+bindsym $mod+Shift+d exec rofi-rbw
+
+bindsym $mod+v exec ~/.scripts/screen_record.sh start DP-0
+bindsym $mod+Shift+v exec ~/.scripts/screen_record.sh stop
+
+bindsym $mod+Shift+t exec ~/.scripts/randwall.sh
+# bindsym $mod+Shift+t exec ~/.scripts/randwall_new.sh
+bindsym $mod+Shift+n exec ~/.scripts/randwall.sh ~/.pvt/NSFW/
+
+# focus the child container
+#bindsym $mod+d focus child
+
+# switch to workspace
+bindsym $mod+1 workspace 1
+bindsym $mod+2 workspace 2
+bindsym $mod+3 workspace 3
+bindsym $mod+4 workspace 4
+bindsym $mod+5 workspace 5
+bindsym $mod+6 workspace 6
+bindsym $mod+7 workspace 7
+bindsym $mod+8 workspace 8
+bindsym $mod+9 workspace 9
+bindsym $mod+0 workspace 10
+
+# move focused container to workspace
+bindsym $mod+Shift+1 move container to workspace 1
+bindsym $mod+Shift+2 move container to workspace 2
+bindsym $mod+Shift+3 move container to workspace 3
+bindsym $mod+Shift+4 move container to workspace 4
+bindsym $mod+Shift+5 move container to workspace 5
+bindsym $mod+Shift+6 move container to workspace 6
+bindsym $mod+Shift+7 move container to workspace 7
+bindsym $mod+Shift+8 move container to workspace 8
+bindsym $mod+Shift+9 move container to workspace 9
+bindsym $mod+Shift+0 move container to workspace 10
+
+# assign workspaces to certain monitors
+workspace 1 output DP-0
+workspace 2 output DP-0
+workspace 3 output DP-0
+workspace 4 output DP-0
+workspace 5 output DP-0
+workspace 6 output DP-0
+workspace 7 output DP-0
+workspace 8 output DP-0
+workspace 9 output DP-0
+workspace 10 output HDMI-0
+
+# assign programs to certain workspaces
+assign [class="Brave-browser"] 1
+assign [class="Firefox"] 2
+assign [class="zen"] 2
+assign [class="Lutris"] 5
+assign [class="^(steam)"] 5
+assign [class="lutris"] 5
+assign [class="winboat"] 7
+assign [class="Discord"] 8
+assign [class="Spotify"] 9
+assign [class="spotify"] 9
+assign [class="mpv"] 10
+
+# reload the configuration file
+bindsym $mod+Shift+c reload
+# restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
+bindsym $mod+Shift+r restart
+# exit i3 (logs you out of your X session)
+#bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
+
+# i3-gaps
+# gaps inner 10
+gaps inner 5
+gaps outer 0
+# Spacing for polybar
+gaps bottom 30
+# If using polybar, turn this off for better aesthetics
+smart_gaps off
+
+# Disables cursor follow
+focus_follows_mouse yes
+# output|none
+mouse_warping output
+
+# Press $mod+Shift+g to enter the gap mode. Choose o or i for modifying outer/inner gaps. Press one of + / - (in-/decrement for current workspace) or 0 (remove gaps for current workspace). If you also press Shift with these keys, the change will be global for all workspaces.
+set $mode_gaps Gaps: (o) outer, (i) inner
+set $mode_gaps_outer Outer Gaps: +|-|0 (local), Shift + +|-|0 (global)
+set $mode_gaps_inner Inner Gaps: +|-|0 (local), Shift + +|-|0 (global)
+bindsym $mod+Shift+g mode "$mode_gaps"
+
+mode "$mode_gaps" {
+  bindsym o      mode "$mode_gaps_outer"
+  bindsym i      mode "$mode_gaps_inner"
+  bindsym Return mode "default"
+  bindsym Escape mode "default"
+}
+
+mode "$mode_gaps_inner" {
+  bindsym plus  gaps inner current plus 5
+  bindsym minus gaps inner current minus 5
+  bindsym 0     gaps inner current set 0
+
+  bindsym Shift+plus  gaps inner all plus 5
+  bindsym Shift+minus gaps inner all minus 5
+  bindsym Shift+0     gaps inner all set 0
+
+  bindsym Return mode "default"
+  bindsym Escape mode "default"
+}
+
+mode "$mode_gaps_outer" {
+  bindsym plus  gaps outer current plus 5
+  bindsym minus gaps outer current minus 5
+  bindsym 0     gaps outer current set 0
+
+  bindsym Shift+plus  gaps outer all plus 5
+  bindsym Shift+minus gaps outer all minus 5
+  bindsym Shift+0     gaps outer all set 0
+
+  bindsym Return mode "default"
+  bindsym Escape mode "default"
+}
+
+default_border pixel 2
+
+# Window rules
+for_window [class="^(com\.mitchellh\.ghostty|ghostty)$"] floating disable, border none, debug_log
+
+for_window [class="^(winboat)$"] floating enable, border none, move position center
+for_window [class="^(pavucontrol)$"] floating enable, border none, move position center
+for_window [class="^(pwvucontrol)"] floating enable, border none, move position center
+
+# Browsers
+for_window [class="^(zen)$"] border none
+for_window [class="^(Brave-browser)$"] border none
+for_window [class="^(Chromium)$"] border none
+for_window [class="^(qutebrowser)$"] border none
+for_window [class="^(ChatGPT)$"] move to scratchpad
+
+# Gaming windows
+for_window [class="^(steam)"] floating enable, border none, move position center
+for_window [class="^(Lutris)$"] floating enable, border none, move position center
+for_window [class="^(itch)$"] floating enable, border none, move position center
+for_window [class="^(Picture-in-Picture)$"] floating enable, border none, sticky enable, move position center
+for_window [class="^(xwinwrap)$"] floating enable, border none, move position center
+for_window [class="^(awakened-poe-trade)$"] floating enable, border none, move position center
+for_window [title="^(Path of Exile)$"] floating enable, border none, move position center
+for_window [class="^(Emulator)$"] resize 1396 628
+
+# Alacritty window - no border (left border handled by padding script)
+for_window [class="^Alacritty$"] border pixel 4
+for_window [class="wezterm$"] border pixel 4
+# for_window [class="^Alacritty$"] title_format " "
+# default_border normal 2
+# titlebar_position left
+
+# Specialized configuration for mpv
+# for_window [class="mpv"] floating enable, workspace 0, resize 1058 595, move position 8 1282
+# for_window [class="mpv"] resize 1058 595, move position 8 1282
+for_window [class="mpv"] resize 1058 595, move position bottom
+
+# switch to workspace with urgent window automatically
+for_window [urgent=latest] focus
+
+focus_on_window_activation none
+
+# If there is a pop-up when the window is in fullscreen, do something
+popup_during_fullscreen smart
+
+# Quick workspace switching
+workspace_auto_back_and_forth yes
+
+# Autostart programs
+exec --no-startup-id systemctl --user restart pipewire
+# exec --no-startup-id $HOME/.scripts/fcitx5.sh && fcitx5
+exec --no-startup-id fcitx5 -d
+exec --no-startup-id dunst -config $HOME/.config/dunst/dunstrc
+exec --no-startup-id xrandr --output DP-0 --primary --output HDMI-0 --auto --rotate left --left-of DP-0
+exec_always --no-startup-id $HOME/GitHub/i3-alternating-layout/alternating_layouts.py
+exec_always --no-startup-id picom --config $HOME/.config/picom.conf
+exec_always --no-startup-id sh $HOME/.fehbg
+# exec_always --no-startup-id bash $HOME/.scripts/alacritty_border_poll.sh
+# Dynamic picom slide animation for workspace transitions
+# exec --no-startup-id python3 $HOME/.scripts/dynamic_picom_slide.py
+
+# Pulse Audio controls
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume 0 +5% #increase sound volume
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume 0 -5% #decrease sound volume
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute 0 toggle # mute sound
+
+# Sreen brightness controls
+bindsym XF86MonBrightnessUp exec xbacklight -inc 20 # increase screen brightness
+bindsym XF86MonBrightnessDown exec xbacklight -dec 20 # decrease screen brightness
+
+# Media player controls
+bindsym XF86AudioPlay exec playerctl play-pause
+bindsym XF86AudioPause exec playerctl pause
+bindsym XF86AudioNext exec playerctl next
+bindsym XF86AudioPrev exec playerctl previous
+
+# Create Log out, Reboot, Poweroff bindings
+mode "Exit (L)ogout, (R)eboot, (P)oweroff" {
+  bindsym $mod+r exec systemctl reboot
+  bindsym $mod+l exit
+  bindsym $mod+p exec systemctl poweroff
+
+  # back to normal: Enter or Escape
+  bindsym Return mode "default"
+  bindsym Escape mode "default"
+}
+
+bindsym $mod+Shift+e mode "Exit (L)ogout, (R)eboot, (P)oweroff"
+
+# Lock screen settings
+bindsym $mod+Shift+x exec lock
+
+# resize window (you can also use the mouse for that)
+mode "resize" {
+  # These bindings trigger as soon as you enter the resize mode
+
+  # Pressing left will shrink the window’s width.
+  # Pressing right will grow the window’s width.
+  # Pressing up will shrink the window’s height.
+  # Pressing down will grow the window’s height.
+  bindsym h resize shrink width 10 px or 10 ppt
+  bindsym j resize shrink height 10 px or 10 ppt
+  bindsym k resize grow height 10 px or 10 ppt
+  bindsym l resize grow width 10 px or 10 ppt
+
+  # same bindings, but for the arrow keys
+  bindsym Left resize shrink width 10 px or 10 ppt
+  bindsym Up resize grow height 10 px or 10 ppt
+  bindsym Down resize shrink height 10 px or 10 ppt
+  bindsym Right resize grow width 10 px or 10 ppt
+
+  # back to normal: Enter or Escape
+  bindsym Return mode "default"
+  bindsym Escape mode "default"
+}
+
+bindsym $mod+r mode "resize"
+
+# Window colours
+#                         border              background          text                  indicator
+client.focused            $bg-color           $bg-color           $text-color           $00ff00
+client.unfocused          $inactive-bg-color  $inactive-bg-color  $inactive-text-color  $00ff00
+client.focused_inactive   $inactive-bg-color  $bg-color           $text-color           $00ff00
+client.urgent             $urgent-bg-color    $urgent-bg-color    $text-color           $00ff00
+
+# Old i3bar - replaced with Polybar
+# bar {
+#     output HDMI-0
+#     status_command i3status --config ~/.config/i3/i3status.conf
+#     position bottom
+#     workspace_buttons yes
+# 
+#     colors {
+#         background #1e293b
+#         statusline #f1f5f9
+# 
+#         focused_workspace #f1f5f9 #06b6d4
+#         active_workspace #f1f5f9 #16a34a
+#         inactive_workspace #f1f5f9 #64748b
+#         urgent_workspace #f1f5f9 #ef4444
+#     }
+# }
+
+# Launch Polybar
+exec --no-startup-id ~/.config/polybar/launch.sh
+
+# AmpCode themed
+# bar {
+#     output HDMI-0
+#     status_command i3status --config ~/.config/i3/i3status.conf
+#     position bottom
+#     workspace_buttons yes
+#
+#     colors {
+#         background #0F0F0F
+#         statusline #F2ECDD
+#         separator  #262626
+#
+#         # border bg text
+#         focused_workspace  #E7894C #E7894C #0F0F0F
+#         active_workspace   #1A1A1A #1A1A1A #F2ECDD
+#         inactive_workspace #161616 #161616 #B8AFA0
+#         urgent_workspace   #D9634F #D9634F #0F0F0F
+#     }
+# }

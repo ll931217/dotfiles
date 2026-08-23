@@ -1,0 +1,161 @@
+# Dunst Configuration - Styled to match Polybar (Catppuccin Mocha)
+# vim: ft=cfg
+
+[global]
+    ### Display ###
+    monitor = 0
+    follow = mouse
+
+    ### Geometry ###
+    width = 320
+    height = (0, 150)
+    origin = top-right
+    offset = (20, 20)
+    
+    # Notification spacing
+    gap_size = 8
+    
+    # Show indicator for hidden notifications
+    indicate_hidden = yes
+    
+    # Notification transparency (requires compositor)
+    transparency = 5
+
+    ### Borders & Corners ###
+    frame_width = 2
+    frame_color = "#89b4fa"
+    corner_radius = 12
+    
+    # Separator between notifications
+    separator_height = 2
+    separator_color = "#45475a"
+
+    ### Padding ###
+    padding = 16
+    horizontal_padding = 16
+    text_icon_padding = 16
+
+    ### Text ###
+    font = RecMonoLinear Nerd Font Bold 10
+    line_height = 4
+    
+    # Allow basic markup
+    markup = full
+    
+    # Message format: bold summary with body below
+    format = "<b>%s</b>\n%b"
+    
+    # Text alignment
+    alignment = left
+    vertical_alignment = center
+    
+    # Word wrapping
+    word_wrap = yes
+    ellipsize = end
+    
+    # Show age of old messages
+    show_age_threshold = 60
+    
+    # Ignore newlines in notifications
+    ignore_newline = no
+    
+    # Stack duplicate notifications
+    stack_duplicates = true
+    hide_duplicate_count = false
+    
+    # Show URL/action indicators
+    show_indicators = yes
+
+    ### Icons ###
+    icon_position = left
+    min_icon_size = 32
+    max_icon_size = 48
+    icon_corner_radius = 8
+    icon_path = /usr/share/icons/Adwaita/symbolic/status/:/usr/share/icons/Adwaita/symbolic/devices/:/usr/share/icons/hicolor/48x48/apps/
+
+    ### Progress Bar ###
+    progress_bar = true
+    progress_bar_height = 8
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+    progress_bar_corner_radius = 4
+
+    ### History ###
+    sticky_history = yes
+    history_length = 50
+
+    ### Misc ###
+    dmenu = /usr/bin/rofi -dmenu -p dunst:
+    browser = /usr/bin/firefox -new-tab
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+    force_xinerama = false
+    
+    # Idle timeout
+    idle_threshold = 120
+
+    ### Mouse Actions ###
+    mouse_left_click = close_current
+    mouse_middle_click = do_action
+    mouse_right_click = close_all
+
+[experimental]
+    per_monitor_dpi = false
+
+[urgency_low]
+    # Muted style - dark bg with subtle foreground
+    background = "#1e1e2e"
+    foreground = "#a6adc8"
+    frame_color = "#45475a"
+    highlight = "#89b4fa"
+    timeout = 6
+
+[urgency_normal]
+    # Standard style - matches polybar module look
+    background = "#1e1e2e"
+    foreground = "#cdd6f4"
+    frame_color = "#89b4fa"
+    highlight = "#89b4fa"
+    timeout = 8
+
+[urgency_critical]
+    # BOLD Alert style - impossible to miss
+    background = "#f38ba8"
+    foreground = "#1e1e2e"
+    frame_color = "#eba0ac"
+    highlight = "#1e1e2e"
+    timeout = 0
+
+### App-Specific Rules ###
+
+[spotify]
+    appname = Spotify
+    frame_color = "#a6e3a1"
+    timeout = 4
+
+[discord]
+    appname = discord
+    frame_color = "#89b4fa"
+
+[slack]
+    appname = Slack
+    frame_color = "#cba6f7"
+
+[volume]
+    appname = "volume*"
+    highlight = "#f9e2af"
+    timeout = 2
+
+[brightness]
+    appname = "brightness*"
+    highlight = "#f9e2af"
+    timeout = 2
+
+[fullscreen_delay]
+    fullscreen = delay
+
+[fullscreen_critical]
+    msg_urgency = critical
+    fullscreen = show

@@ -1,0 +1,25 @@
+gui:
+  skipDiscardChangeWarning: true
+  # Amp theme
+  theme:
+    activeBorderColor:
+      - "#E7894C"
+      - bold
+    inactiveBorderColor:
+      - "#262626"
+    optionsTextColor:
+      - "#6A9FCC"
+    selectedLineBgColor:
+      - "#3A2614"
+    selectedRangeBgColor:
+      - "#3A2614"
+    cherryPickedCommitBgColor:
+      - "#3A2614"
+    cherryPickedCommitFgColor:
+      - "#E7894C"
+    unstagedChangesColor:
+      - "#D9634F"
+    defaultFgColor:
+      - "#F2ECDD"
+  authorColors:
+    "*": "#E7894C"

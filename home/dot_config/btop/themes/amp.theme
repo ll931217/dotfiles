@@ -1,0 +1,68 @@
+# Amp Theme for btop
+# Palette: bg #0F0F0F  surface #161616  elevated #1A1A1A  border #262626
+#          fg #F2ECDD  muted #B8AFA0  accent #E7894C
+#          red #D9634F  blue #6A9FCC  green #7C9B96  cyan #8FC4C4  yellow #E3A25A
+
+theme[main_bg]="#0F0F0F"
+theme[main_fg]="#F2ECDD"
+theme[title]="#F2ECDD"
+theme[hi_fg]="#E7894C"
+theme[selected_bg]="#1A1A1A"
+theme[selected_fg]="#E7894C"
+theme[inactive_fg]="#B8AFA0"
+theme[graph_text]="#B8AFA0"
+theme[meter_bg]="#262626"
+theme[proc_misc]="#E3A25A"
+
+# Box outlines
+theme[cpu_box]="#E7894C"
+theme[mem_box]="#7C9B96"
+theme[net_box]="#6A9FCC"
+theme[proc_box]="#B8AFA0"
+
+theme[div_line]="#262626"
+
+# Temperature gradient: cool -> warm -> hot
+theme[temp_start]="#7C9B96"
+theme[temp_mid]="#E3A25A"
+theme[temp_end]="#D9634F"
+
+# CPU gradient
+theme[cpu_start]="#7C9B96"
+theme[cpu_mid]="#E3A25A"
+theme[cpu_end]="#E7894C"
+
+# Memory free
+theme[free_start]="#7C9B96"
+theme[free_mid]="#7C9B96"
+theme[free_end]="#7C9B96"
+
+# Memory cached
+theme[cached_start]="#8FC4C4"
+theme[cached_mid]="#8FC4C4"
+theme[cached_end]="#6A9FCC"
+
+# Memory available
+theme[available_start]="#B8AFA0"
+theme[available_mid]="#B8AFA0"
+theme[available_end]="#F2ECDD"
+
+# Memory used
+theme[used_start]="#E3A25A"
+theme[used_mid]="#E7894C"
+theme[used_end]="#D9634F"
+
+# Network download
+theme[download_start]="#6A9FCC"
+theme[download_mid]="#6A9FCC"
+theme[download_end]="#8FC4C4"
+
+# Network upload
+theme[upload_start]="#E3A25A"
+theme[upload_mid]="#E7894C"
+theme[upload_end]="#E7894C"
+
+# Process bars
+theme[process_start]="#7C9B96"
+theme[process_mid]="#E3A25A"
+theme[process_end]="#E7894C"

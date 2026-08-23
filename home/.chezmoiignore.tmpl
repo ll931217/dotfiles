@@ -1,24 +1,41 @@
 # Private and generated files never belong in managed source state.
-dot_config/zsh/keys.zsh
-dot_config/hypr/custom/private.env
-dot_config/btop/btop.log
-dot_config/worktrunk/worktrunk-receipt.json
+.config/zsh/keys.zsh
+.config/hypr/custom/private.env
+.config/btop/btop.log
+.config/worktrunk/worktrunk-receipt.json
 
 # Optional asset bundles are enabled explicitly during migration.
-dot_local/share/fonts
-dot_wallpapers
+.local/share/fonts
+.wallpapers
 
 {{- if ne .chezmoi.os "darwin" }}
 # macOS-only source paths are excluded on Linux.
-dot_aerospace.toml
-dot_config/sketchybar
-dot_config/skhd
+.aerospace.toml
+.zshrc.fzf
+.zshrc.local
+.config/alacritty/alacritty.yml
+.config/htop
+.config/neofetch
+.config/sketchybar
+.config/skhd
 {{- end }}
 
+{{- if ne .chezmoi.os "linux" }}
+# Linux-only window-manager and session paths are excluded on other systems.
+.config/i3
+.config/hypr
+.config/awesome
+.config/polybar
+.config/rofi
+.config/picom.conf
+.config/dunst
+.xprofile
+{{- else }}
 {{- if ne .machine.wm "i3" }}
-dot_config/i3
+.config/i3
 {{- end }}
 
 {{- if ne .machine.wm "hyprland" }}
-dot_config/hypr
+.config/hypr
+{{- end }}
 {{- end }}

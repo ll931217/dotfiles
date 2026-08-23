@@ -1,0 +1,187 @@
+/**
+ *
+ * Kanso Zen - Main Launcher Theme
+ * Based on Kanso Zen by webhooked
+ * Rofi Version: 1.7.3
+ **/
+
+/*****----- Global Properties -----*****/
+* {
+    font:                        "JetBrains Mono Nerd Font 11";
+    background:                  #101010;
+    background-alt:              #16161D;
+    background-selected:         #2D4F67;
+    foreground:                  #DCD7BA;
+    selected:                    #7E9CD8;
+    selected-fg:                 #101010;
+    active:                      #76946A;
+    active-fg:                   #101010;
+    urgent:                      #C34043;
+    urgent-fg:                   #101010;
+}
+
+/*****----- Configuration -----*****/
+configuration {
+    modi:                       "drun,run,filebrowser,window";
+    show-icons:                 true;
+    display-drun:               "Apps";
+    display-run:                "Run";
+    display-filebrowser:        "Files";
+    display-window:             "Windows";
+    drun-display-format:        "{name}";
+    window-format:              "{w} · {c}";
+}
+
+/*****----- Main Window -----*****/
+window {
+    transparency:                "real";
+    location:                    center;
+    anchor:                      center;
+    fullscreen:                  false;
+    width:                       700px;
+    x-offset:                    0px;
+    y-offset:                    0px;
+
+    enabled:                     true;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      1px solid;
+    // border-radius:               12px;
+    border-color:                #2D4F67;
+    cursor:                      "default";
+    background-color:            @background;
+}
+
+/*****----- Main Box -----*****/
+mainbox {
+    enabled:                     true;
+    spacing:                     16px;
+    margin:                      0px;
+    padding:                     24px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                #2D4F67;
+    background-color:            transparent;
+    children:                    [ "inputbar", "listview" ];
+}
+
+/*****----- Inputbar -----*****/
+inputbar {
+    enabled:                     true;
+    spacing:                     12px;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                #2D4F67;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    children:                    [ "prompt", "entry" ];
+}
+
+prompt {
+    enabled:                     true;
+    background-color:            transparent;
+    text-color:                  @selected;
+    font:                        "JetBrains Mono Nerd Font Bold 11";
+}
+
+entry {
+    enabled:                     true;
+    expand:                      true;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      text;
+    placeholder:                 "Search...";
+    placeholder-color:           #727169;
+}
+
+/*****----- Listview -----*****/
+listview {
+    enabled:                     true;
+    columns:                     1;
+    lines:                       10;
+    cycle:                       true;
+    dynamic:                     true;
+    scrollbar:                   false;
+    layout:                      vertical;
+    reverse:                     false;
+    fixed-height:                true;
+    fixed-columns:               true;
+    
+    spacing:                     4px;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                #2D4F67;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      "default";
+}
+
+/*****----- Elements -----*****/
+element {
+    enabled:                     true;
+    spacing:                     12px;
+    margin:                      0px;
+    padding:                     12px 16px;
+    border:                      0px solid;
+    border-radius:               8px;
+    border-color:                transparent;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      pointer;
+}
+
+element normal.normal {
+    background-color:            transparent;
+    text-color:                  @foreground;
+}
+
+element normal.urgent {
+    background-color:            transparent;
+    text-color:                  @urgent;
+}
+
+element normal.active {
+    background-color:            transparent;
+    text-color:                  @active;
+}
+
+element selected.normal {
+    background-color:            @background-selected;
+    text-color:                  @selected-fg;
+    border:                      0px solid;
+    border-color:                @selected;
+}
+
+element selected.urgent {
+    background-color:            @background-selected;
+    text-color:                  @urgent-fg;
+    border:                      0px solid;
+    border-color:                @urgent;
+}
+
+element selected.active {
+    background-color:            @background-selected;
+    text-color:                  @active-fg;
+    border:                      0px solid;
+    border-color:                @active;
+}
+
+element-icon {
+    background-color:            transparent;
+    text-color:                  inherit;
+    size:                        20px;
+    cursor:                      inherit;
+}
+
+element-text {
+    background-color:            transparent;
+    text-color:                  inherit;
+    highlight:                   inherit;
+    cursor:                      inherit;
+    vertical-align:              0.5;
+    horizontal-align:            0.0;
+}

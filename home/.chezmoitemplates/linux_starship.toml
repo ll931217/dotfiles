@@ -1,0 +1,238 @@
+# version: 1.0.0
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = false
+continuation_prompt = "[▸▹ ](#B8AFA0)"
+
+format = """($nix_shell$container$fill$git_metrics\n)$cmd_duration\
+$hostname\
+$localip\
+$shlvl\
+$shell\
+$env_var\
+$jobs\
+$sudo\
+$username\
+$character"""
+
+right_format = """
+$singularity\
+$kubernetes\
+$directory\
+$vcsh\
+$fossil_branch\
+$git_branch\
+$git_commit\
+$git_state\
+$git_status\
+$hg_branch\
+$pijul_channel\
+$docker_context\
+$package\
+$c\
+$cpp\
+$cmake\
+$deno\
+$golang\
+$guix_shell\
+$helm\
+$java\
+$gradle\
+$lua\
+$nodejs\
+$ocaml\
+$perl\
+$pulumi\
+$python\
+$rust\
+$terraform\
+$zig\
+$conda\
+$meson\
+$memory_usage\
+$aws\
+$gcloud\
+$custom\
+$status\
+$os\
+$time"""
+
+[fill]
+symbol = ' '
+
+[character]
+format = "$symbol "
+success_symbol = "[◎](bold italic #E7894C)"
+error_symbol = "[○](italic #D9634F)"
+vimcmd_symbol = "[■](italic #7C9B96)"
+# not supported in zsh
+vimcmd_replace_one_symbol = "◌"
+vimcmd_replace_symbol = "□"
+vimcmd_visual_symbol = "▼"
+
+[env_var.VIMSHELL]
+format = "[$env_value]($style)"
+style = 'italic #7C9B96'
+
+[sudo]
+format = "[$symbol]($style)"
+style = "bold italic #D9634F"
+symbol = "⋈┈"
+disabled = false
+
+[username]
+style_user = "#E7894C bold italic"
+style_root = "#D9634F bold italic"
+format = "[⭘ $user]($style) "
+disabled = false
+show_always = false
+
+[directory]
+home_symbol = "⌂"
+truncation_length = 2
+truncation_symbol = "□ "
+read_only = " ◈"
+use_os_path_sep = true
+style = "italic #6A9FCC"
+format = '[$path]($style)[$read_only]($read_only_style)'
+repo_root_style = 'bold #E7894C'
+repo_root_format = '[$before_root_path]($before_repo_root_style)[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style) [△](bold #E7894C)'
+
+[cmd_duration]
+format = "[◄ $duration ](italic #F2ECDD)"
+
+[jobs]
+format = "[$symbol$number]($style) "
+style = "#F2ECDD"
+symbol = "[▶](#6A9FCC italic)"
+
+[localip]
+ssh_only = true
+format = " ◯[$localipv4](bold #E7894C)"
+disabled = false
+
+[time]
+disabled = false
+format = "[ $time]($style)"
+time_format = "%R"
+utc_time_offset = "local"
+style = "italic #B8AFA0"
+
+[battery]
+format = "[ $percentage $symbol]($style)"
+full_symbol = "█"
+charging_symbol = "[↑](italic bold #7C9B96)"
+discharging_symbol = "↓"
+unknown_symbol = "░"
+empty_symbol = "▃"
+
+[[battery.display]]
+threshold = 20
+style = "italic bold #D9634F"
+
+[[battery.display]]
+threshold = 60
+style = "italic #B8AFA0"
+
+[[battery.display]]
+threshold = 70
+style = "italic #E3A25A"
+
+[git_branch]
+format = " [$branch(:$remote_branch)]($style)"
+symbol = "[△](bold italic #E7894C)"
+style = "italic #E7894C"
+truncation_symbol = "⋯"
+truncation_length = 11
+ignore_branches = ["main", "master"]
+only_attached = true
+
+[git_metrics]
+format = '([▴$added]($added_style))([▿$deleted]($deleted_style))'
+added_style = 'italic #7C9B96'
+deleted_style = 'italic #D9634F'
+ignore_submodules = true
+disabled = false
+
+[git_status]
+style = "bold italic #E7894C"
+format = "([⎪$ahead_behind$staged$modified$untracked$renamed$deleted$conflicted$stashed⎥]($style))"
+conflicted = "[◪◦](italic #E7894C)"
+ahead = "[▴│[${count}](bold #F2ECDD)│](italic #7C9B96)"
+behind = "[▿│[${count}](bold #F2ECDD)│](italic #D9634F)"
+diverged = "[◇ ▴┤[${ahead_count}](regular #F2ECDD)│▿┤[${behind_count}](regular #F2ECDD)│](italic #E7894C)"
+untracked = "[◌◦](italic #E3A25A)"
+stashed = "[◃◈](italic #F2ECDD)"
+modified = "[●◦](italic #E3A25A)"
+staged = "[▪┤[$count](bold #F2ECDD)│](italic #8FC4C4)"
+renamed = "[◎◦](italic #6A9FCC)"
+deleted = "[✕](italic #D9634F)"
+
+[deno]
+format = " [deno](italic) [∫ $version](#7C9B96 bold)"
+version_format = "${raw}"
+
+[lua]
+format = " [lua](italic) [${symbol}${version}]($style)"
+version_format = "${raw}"
+symbol = "⨀ "
+style = "bold #E7894C"
+
+[nodejs]
+format = " [node](italic) [◫ ($version)](bold #7C9B96)"
+version_format = "${raw}"
+detect_files = ["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock"]
+detect_folders = ["node_modules"]
+detect_extensions = []
+
+[python]
+format = " [py](italic) [${symbol}${version}]($style)"
+symbol = "[⌉](bold #6A9FCC)⌊ "
+version_format = "${raw}"
+style = "bold #E7894C"
+
+[rust]
+format = " [rs](italic) [$symbol$version]($style)"
+symbol = "⊃ "
+version_format = "${raw}"
+style = "bold #D9634F"
+
+[package]
+format = " [pkg](italic dimmed) [$symbol$version]($style)"
+version_format = "${raw}"
+symbol = "◨ "
+style = "italic bold #B8AFA0"
+
+[aws]
+disabled = true
+format = " [aws](italic) [$symbol $profile $region]($style)"
+style = "bold #6A9FCC"
+symbol = "▲ "
+
+[c]
+symbol = "ℂ "
+format = " [$symbol($version(-$name))]($style)"
+
+[cpp]
+symbol = "ℂ "
+format = " [$symbol($version(-$name))]($style)"
+
+[conda]
+symbol = "◯ "
+format = " conda [$symbol$environment]($style)"
+
+[docker_context]
+symbol = "◧ "
+format = " docker [$symbol$context]($style)"
+
+[golang]
+symbol = "∩ "
+format = " go [$symbol($version )]($style)"
+
+[java]
+symbol = "∪ "
+format = " java [${symbol}(${version} )]($style)"
+
+[memory_usage]
+symbol = "▪▫▪ "
+format = " mem [${ram}( ${swap})]($style)"

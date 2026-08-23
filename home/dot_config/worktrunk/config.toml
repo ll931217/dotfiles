@@ -1,0 +1,24 @@
+# Worktrunk hooks for tmux integration
+
+# Smart tmux session/window management when worktree is created
+# Runs in background (post-start) so blocking project hooks complete first
+[post-start]
+tmux = """SESSION_NAME="{{ worktree_name | replace(\".\", \"_\") }}"; \
+if [ -n "$TMUX" ]; then \
+  tmux new-window -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
+else \
+  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then \
+    tmux attach-session -t "$SESSION_NAME" \\; new-window -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
+  else \
+    tmux new-session -s "$SESSION_NAME" -c "{{ worktree_path }}" \\; send-keys "claude" Enter; \
+  fi; \
+fi"""
+
+# Kill tmux window when worktree is removed
+[pre-remove]
+tmux = "tmux kill-window -t '{{ worktree_name | replace(\".\", \"_\") }}:{{ branch }}' 2>/dev/null || true"
+
+[projects]
+
+[projects."github.com/ll931217/sunnyvale"]
+approved-commands = ["pnpm install --frozen-lockfile", "pnpm run dev"]

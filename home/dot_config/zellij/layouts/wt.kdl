@@ -1,0 +1,30 @@
+layout {
+  pane split_direction="vertical" {
+    pane {
+      name "AI"
+      command "opencode"
+    }
+    pane split_direction="horizontal" {
+      pane {
+        name "IDE"
+        command "nvim"
+      }
+      pane {
+        name "FE"
+        cwd "frontend"
+        command "npm"
+        args "run dev"
+      }
+      pane {
+        name "BE"
+        cwd "backend"
+        command "fastapi"
+        args "dev app/main.py --host 0.0.0.0 --port $FASTAPI_PORT"
+        env {
+          // FASTAPI_PORT=3000 zellij --layout wt.kdl
+          FASTAPI_PORT "8000" // Default is 8000
+        }
+      }
+    }
+  }
+}
