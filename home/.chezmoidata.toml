@@ -1,0 +1,42 @@
+[machine]
+type = "desktop"
+wm = "hyprland"
+install_packages = false
+install_optional = false
+
+[packages.linux.arch]
+official = [
+  "base-devel",
+  "bat",
+  "btop",
+  "curl",
+  "direnv",
+  "eza",
+  "fd",
+  "fzf",
+  "git",
+  "jq",
+  "neovim",
+  "ripgrep",
+  "starship",
+  "tmux",
+  "zsh",
+]
+aur = []
+
+[packages.darwin]
+brew = [
+  "bat",
+  "btop",
+  "direnv",
+  "eza",
+  "fd",
+  "fzf",
+  "git",
+  "neovim",
+  "ripgrep",
+  "starship",
+  "tmux",
+  "zsh",
+]
+cask = []
