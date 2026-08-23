@@ -61,97 +61,79 @@ For complete documentation on the Claude AI setup, see:
 
 ## Architecture
 
-### Installation System
+### Chezmoi Source State
 
-This dotfiles repository features a **registry-driven modular installation system** that functions as a dependency graph resolver rather than a simple collection of scripts.
+The repository is migrating to chezmoi for home-directory configuration
+management. The source root is `home/`, selected by `.chezmoiroot`.
 
-#### Registry-Driven Design
+Portable content is rendered into the home directory:
 
-The core of the installation system is a central component registry (`.scripts/installer-registry.sh`) that defines all installable components as associative arrays. Each component declares:
-
-- **Dependencies** and **conflicts** for automatic resolution
-- **Packages** to install (including AUR support via `yay`)
-- **Detection methods** (command availability + file existence checks)
-- **Target paths** for symlink creation
-
-This enables the installer to automatically resolve complex dependency relationships and handle mutual exclusivity (e.g., window managers).
-
-#### Hybrid Detection Strategy
-
-Components are detected using a multi-tier fallback system:
-
-1. **Command availability** (primary) - e.g., `command -v nvim`
-2. **File/symlink existence** (secondary) - e.g., `~/.config/nvim/init.lua`
-3. **Directory existence** (tertiary)
-
-This handles edge cases where packages are installed but not configured, or where configs exist without packages.
-
-#### Installation Library
-
-The `.scripts/` directory contains the core installation library:
-
-```
-.scripts/
-├── install-lib.sh              # Core utilities (logging, colors, etc.)
-├── installer-registry.sh       # Component registry (associative arrays)
-├── installer-modules.sh        # Execution engine for components
-├── install-state.sh            # State tracking and snapshots
-├── install-health.sh           # Health check system
-└── fzf-helpers.sh              # Interactive UI helpers
+```text
+home/dot_zshrc       -> ~/.zshrc
+home/dot_tmux.conf   -> ~/.tmux.conf
+home/dot_config/     -> ~/.config/
+home/dot_scripts/    -> ~/.scripts/
 ```
 
-#### Adding New Components
+`migration/source-manifest.yaml` records the intended source-to-target mapping
+and identifies private, generated, platform-specific, and review-required
+content.
 
-To add a new component, edit `installer-registry.sh` and define an associative array:
+### Installation
+
+Use the repository entrypoint:
 
 ```bash
-declare -A COMPONENT_NAME=(
-    [category]="category-name"           # Group for display
-    [description]="Human-readable desc"
-    [packages]="pkg1 pkg2"               # Pacman packages
-    [aur]="aur-pkg1 aur-pkg2"            # AUR packages (optional)
-    [symlinks]="src:dest src2:dest2"     # Symlink pairs (optional)
-    [conflicts]="OTHER_COMPONENT"        # Mutually exclusive (optional)
-    [dependencies]="DEP1 DEP2"           # Required components (optional)
-    [detect]="cmd_name"                  # Detection command (optional)
-)
+./install.sh
 ```
 
-### State Management
+The entrypoint delegates to `bootstrap/install.sh`, which:
 
-Installation state is tracked in `.install-state.json`:
+1. Installs chezmoi into a user-local location when necessary.
+2. Initializes chezmoi against this repository.
+3. Shows `chezmoi diff`.
+4. Applies changes only after confirmation.
 
-- Installed versions for each component
-- File checksums for change detection
-- Backup locations for rollback capability
-- Snapshot IDs for point-in-time restoration
+Useful modes:
 
-The snapshot system creates pre-installation backups, enabling rollback to any previous state via `./install.sh --rollback <id>`.
+```bash
+./install.sh --dry-run
+./install.sh --no-apply
+./install.sh --force
+```
 
-### Symlink Management
+Package installation is disabled by default. Configure
+`home/.chezmoidata.toml` with `machine.install_packages = true` before
+enabling the package hook. Optional AUR/Homebrew packages require
+`machine.install_optional = true`.
 
-Unlike GNU stow, this system uses custom symlink creation with:
+### Provisioning Hooks
 
-- Timestamped backups before replacing files
-- Intelligent handling of existing symlinks
-- Dry-run mode for preview
-- Conflict resolution
+Chezmoi manages content; lifecycle hooks handle narrowly scoped side effects:
 
-### Health Check System
+- `run_onchange_before_10-install-packages.sh.tmpl` installs declared packages.
+- `run_after_20-refresh-font-cache.sh.tmpl` refreshes Linux font caches.
+- `run_onchange_after_30-install-tmux-plugins.sh.tmpl` optionally updates TPM.
 
-`./install.sh --health` provides two modes:
+The older registry/state installer remains under `scripts/` during migration,
+but it is no longer the default entrypoint. It should not be used alongside
+chezmoi for the same targets.
 
-- **Quick check**: Validates symlinks exist and commands are available
-- **Comprehensive**: Validates configs and tests system integration
+### Platform and Private Configuration
 
-### Key Architectural Patterns
+Machine policy lives in chezmoi data rather than the legacy
+`~/.config/dotfiles` state directory. OS and window-manager-specific content
+is controlled with templates and `.chezmoiignore.tmpl`.
 
-**Window Manager Exclusivity**: i3-gaps and Hyprland cannot be installed simultaneously. The registry declares conflicts (`[conflicts]="HYPRLAND"` for i3 items), and the installer enforces mutual exclusion automatically.
+Plaintext credentials are excluded from source state. In particular,
+`.config/zsh/keys.zsh` must be rotated and replaced with password-manager
+backed template data before secret migration.
 
-**Theme Consistency**: Catppuccin theme used across all terminals (alacritty, kitty, wezterm, ghostty) with multiple flavor variants (mocha, latte, frappe, macchiato).
+### Existing Configuration Patterns
 
-**Zsh Modularity**:
+**Theme consistency:** Catppuccin and Tokyo Night variants are shared across
+terminal, editor, and utility configurations.
 
-- `~/.zshrc` redirects to `~/.config/zsh/.zshrc`
-- Config split into: `options.zsh`, `aliases.zsh`, `functions.zsh`, `keybinds.zsh`, `theme.zsh`, `fzf.zsh`, `env.zsh`
-- Private configs in `~/.config/zsh/private/` (gitignored)
+**Zsh modularity:** `~/.zshrc` delegates to `~/.config/zsh/.zshrc`, which loads
+the modular `options.zsh`, `aliases.zsh`, `functions.zsh`, `keybinds.zsh`,
+`theme.zsh`, `fzf.zsh`, `env.zsh`, and `utility.zsh` files.
