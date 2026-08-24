@@ -467,7 +467,7 @@ static Shortcut shortcuts[] = {
 	#endif // EXTERNALPIPEIN_PATCH
 	#endif // EXTERNALPIPE_PATCH
 	#if KEYBOARDSELECT_PATCH
-	{ TERMMOD,              XK_Escape,      keyboard_select, { 0 } },
+	{ MODKEY | ShiftMask,     XK_V,           keyboard_select, { 0 } },
 	#endif // KEYBOARDSELECT_PATCH
 	#if KEYBOARDSELECT_PATCH && REFLOW_PATCH
 	{ TERMMOD,              XK_F,           searchforward,   { 0 } },
