@@ -36,6 +36,9 @@ HISTFILE="$HOME/.zsh_history"
 HISTSIZE=50000
 SAVEHIST=50000
 
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=60
+
 setopt appendhistory              # Append, don't overwrite
 setopt sharehistory               # Share history between sessions
 setopt inc_append_history         # Write commands immediately
@@ -162,6 +165,7 @@ eval "$(gt completion zsh)"
 # Add required zsh plugins if not already present
 if [[ ! " ${plugins[@]} " =~ " zsh-autosuggestions " ]]; then
     plugins+=(zsh-autosuggestions)
+    ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 fi
 if [[ ! " ${plugins[@]} " =~ " zsh-syntax-highlighting " ]]; then
     plugins+=(zsh-syntax-highlighting)
