@@ -74,12 +74,15 @@ about people, companies, decisions, projects, or past context:
 - Test files and mocks
   Do not assume a single grep caught everything. Prefer `ast-grep` for structural renames.
 
-2. ALWAYS use CLI tools available in your arsenal instead of writing Python code that does exactly what CLI tools are meant for, such as `sed`, `awk` or the ones listed in the [tools](#tools) section
+1. ALWAYS use CLI tools available in your arsenal instead of writing Python code that does exactly what CLI tools are meant for, such as `sed`, `awk` or the ones listed in the [tools](#tools) section
 
 # Agentic Workflow
 
 - When defining tasks, always spawn 5 agent teammates that will define what the definition of done (DoD) is, the orchestrator agent will ask these teammates to verify if the implementation is exactly what is DoD, if not then keep fixing.
 - Subagents are used to do research.
+- All beads issues should always have an accompanying jira task/subtask, if not then create one.
+- Always keep beads and jira tasks/subtasks in sync
+- If there is a related task/subtask for the unmapped beads issue then ask the user if they want to map it
 
 # VICI Company Internal Infrastructure
 
@@ -158,6 +161,23 @@ These are tools I prefer to use during development. If you think a tool is a gre
 - `rg` — instead of `grep`
 - `ast-grep` — structural codebase search
 - `gopass` - use this to get tokens, keys, and passwords for various services I maintain. For example my authentik credentials are `liangshih.lin` and password is `liang_pw` from gopass
+
+## VICI Related
+
+One of our KPI sections are about:
+
+- How we use agents?
+- Did we use agents?
+
+Reason behind this is to let LLM and AI agents help us with our work, such as:
+
+- Automate repetitive work
+- Use agents to improve our workflow
+- Use agents to increase our productivity
+- Use agents to improve our code quality
+- Use agents to find solutions that can have a great impact on the company
+
+Whenever you work on something, you should think about all of this, you can get more context of the company or of what I have worked on in gbrain. When you have suggestions, feel free to let me know, lets improve together, help me get a high KPI score.
 
 @RTK.md
 
