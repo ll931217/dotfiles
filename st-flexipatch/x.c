@@ -3657,6 +3657,11 @@ kpress(XEvent *ev)
 				}
 			}
 		}
+		if ((e->state & ControlMask) && (ksym == XK_u || ksym == XK_d)) {
+			/* vim-style half-page scroll */
+			win.mode ^= kbds_keyboardhandler(ksym == XK_u ? -4 : -5, buf, len, 0);
+			return;
+		}
 		if (match(XK_NO_MOD, e->state) ||
 			(XK_Shift_L | XK_Shift_R) & e->state )
 			win.mode ^= kbds_keyboardhandler(ksym, buf, len, 0);

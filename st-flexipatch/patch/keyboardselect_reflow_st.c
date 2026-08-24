@@ -656,6 +656,19 @@ kbds_keyboardhandler(KeySym ksym, char *buf, int len, int forcequit)
 		kbds_moveto(kbds_c.x, alt ? term.row-1
 		                          : MIN(term.c.y + term.scr, term.row-1));
 		break;
+	case -4: /* Ctrl+u: half page up */
+		prevscr = term.scr;
+		kscrollup(&((Arg){ .i = term.row/2 }));
+		kbds_moveto(kbds_c.x, alt ? 0
+		                          : MAX(0, kbds_c.y - term.row/2 + term.scr - prevscr));
+		break;
+	case -5: /* Ctrl+d: half page down */
+		prevscr = term.scr;
+		kscrolldown(&((Arg){ .i = term.row/2 }));
+		kbds_moveto(kbds_c.x, alt ? term.row-1
+		                          : MIN(MIN(term.c.y + term.scr, term.row-1),
+		                                    kbds_c.y + term.row/2 + term.scr - prevscr));
+		break;
 	case XK_Page_Up:
 	case XK_KP_Page_Up:
 	case XK_K:
