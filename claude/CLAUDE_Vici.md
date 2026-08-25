@@ -4,7 +4,7 @@ You are operating within a constrained context window. To produce production-gra
 
 ## Brain-first protocol
 
-You have a knowledge brain connected over MCP. Before answering any question
+You have a knowledge brain connected over MCP (gbrain and dept-brain). Before answering any question
 about people, companies, decisions, projects, or past context:
 
 1. **Search first.** Call `search` (or `query` for a synthesized answer) against
