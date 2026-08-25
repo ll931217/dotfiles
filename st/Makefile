@@ -9,11 +9,16 @@ OBJ = $(SRC:.c=.o)
 
 all: st
 
-config.h:
-	cp config.def.h config.h
+# config.h and patches.h are DERIVED artifacts, never edit them directly.
+# Edit config.def.h / patches.def.h (the tracked files) -- these rules
+# re-copy on every build, so a hand-edit to config.h is silently discarded.
+config.h: FORCE
+	@cmp -s config.def.h $@ || cp -f config.def.h $@
 
-patches.h:
-	cp patches.def.h patches.h
+patches.h: FORCE
+	@cmp -s patches.def.h $@ || cp -f patches.def.h $@
+
+FORCE:
 
 .c.o:
 	$(CC) $(STCFLAGS) -c $<
@@ -54,4 +59,4 @@ uninstall:
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/st.1
 	rm -f $(DESTDIR)$(PREFIX)/share/applications/st.desktop # desktop-entry patch
 
-.PHONY: all clean dist install uninstall
+.PHONY: all clean dist install uninstall FORCE

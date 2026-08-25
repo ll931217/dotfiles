@@ -5,7 +5,7 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "Liberation Mono:pixelsize=12:antialias=true:autohint=true";
+static char *font = "JetBrainsMonoNL Nerd Font:size=11:style=Bold:antialias=true:autohint=true";
 #if FONT2_PATCH
 /* Spare fonts */
 static char *font2[] = {
@@ -34,7 +34,7 @@ static int borderpx = 2;
 
 #if OPENURLONCLICK_PATCH
 /* modkey options: ControlMask, ShiftMask or XK_ANY_MOD */
-static uint url_opener_modkey = XK_ANY_MOD;
+static uint url_opener_modkey = ControlMask;
 static char *url_opener = "xdg-open";
 #endif // OPENURLONCLICK_PATCH
 
@@ -88,7 +88,7 @@ int allowaltscreen = 1;
 
 /* allow certain non-interactive (insecure) window operations such as:
    setting the clipboard text */
-int allowwindowops = 0;
+int allowwindowops = 1;
 
 /*
  * draw latency range in ms - from new content/keypress/etc until drawing.
@@ -187,32 +187,34 @@ char *xdndescchar = " !\"#$&'()*;<>?[\\]^`{|}~";
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
 	/* 8 normal colors */
-	"black",
-	"red3",
-	"green3",
-	"yellow3",
-	"blue2",
-	"magenta3",
-	"cyan3",
-	"gray90",
+	"#1A1A1A", /* black   */
+	"#D9634F", /* red     */
+	"#7C9B96", /* green   */
+	"#E3A25A", /* yellow  */
+	"#6A9FCC", /* blue    */
+	"#E7894C", /* magenta */
+	"#8FC4C4", /* cyan    */
+	"#F2ECDD", /* white   */
 
 	/* 8 bright colors */
-	"gray50",
-	"red",
-	"green",
-	"yellow",
-	"#5c5cff",
-	"magenta",
-	"cyan",
-	"white",
+	"#7A7367", /* black   */
+	"#D9634F", /* red     */
+	"#7C9B96", /* green   */
+	"#E3A25A", /* yellow  */
+	"#6A9FCC", /* blue    */
+	"#E7894C", /* magenta */
+	"#8FC4C4", /* cyan    */
+	"#F2ECDD", /* white   */
 
 	[255] = 0,
 
 	/* more colors can be added after 255 to use with DefaultXX */
-	"#add8e6", /* 256 -> cursor */
-	"#555555", /* 257 -> rev cursor*/
-	"#000000", /* 258 -> bg */
-	"#e5e5e5", /* 259 -> fg */
+	"#E7894C", /* 256 -> cursor           */
+	"#0F0F0F", /* 257 -> cursor text      */
+	"#0F0F0F", /* 258 -> background       */
+	"#F2ECDD", /* 259 -> foreground       */
+	"#3A2614", /* 260 -> selection bg     */
+	"#E3A25A", /* 261 -> search match bg  */
 };
 
 
@@ -231,15 +233,15 @@ unsigned int defaultcs = 256;
 unsigned int defaultrcs = 257;
 #if SELECTION_COLORS_PATCH
 unsigned int selectionfg = 258;
-unsigned int selectionbg = 259;
+unsigned int selectionbg = 260;
 /* If 0 use selectionfg as foreground in order to have a uniform foreground-color */
 /* Else if 1 keep original foreground-color of each cell => more colors :) */
 static int ignoreselfg = 1;
 #endif // SELECTION_COLORS_PATCH
 #if KEYBOARDSELECT_PATCH && REFLOW_PATCH
 /* Foreground and background color of search results */
-unsigned int highlightfg = 15;
-unsigned int highlightbg = 160;
+unsigned int highlightfg = 258;
+unsigned int highlightbg = 261;
 #endif // KEYBOARDSELECT_PATCH
 
 #if BLINKING_CURSOR_PATCH
@@ -273,8 +275,8 @@ static unsigned int cursorshape = 2;
  * Default columns and rows numbers
  */
 
-static unsigned int cols = 80;
-static unsigned int rows = 24;
+static unsigned int cols = 120;
+static unsigned int rows = 38;
 
 #if ANYGEOMETRY_PATCH
 /*
@@ -467,7 +469,8 @@ static Shortcut shortcuts[] = {
 	#endif // EXTERNALPIPEIN_PATCH
 	#endif // EXTERNALPIPE_PATCH
 	#if KEYBOARDSELECT_PATCH
-	{ MODKEY | ShiftMask,     XK_V,           keyboard_select, { 0 } },
+	{ TERMMOD,              XK_Escape,      keyboard_select, { 0 } },
+	{ Mod1Mask|ShiftMask,   XK_V,           keyboard_select, { 0 } },
 	#endif // KEYBOARDSELECT_PATCH
 	#if KEYBOARDSELECT_PATCH && REFLOW_PATCH
 	{ TERMMOD,              XK_F,           searchforward,   { 0 } },

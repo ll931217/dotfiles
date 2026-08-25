@@ -81,7 +81,7 @@
  * This patch makes st set CLIPBOARD on selection.
  * https://st.suckless.org/patches/clipboard/
  */
-#define CLIPBOARD_PATCH 1
+#define CLIPBOARD_PATCH 0
 
 /* This patch allows st to be resized without cutting off text when the terminal window is
  * made larger again. Text does not wrap when the terminal window is made smaller, you may
@@ -320,7 +320,7 @@
  *
  * https://www.reddit.com/r/suckless/comments/cc83om/st_open_url/
  */
-#define OPENURLONCLICK_PATCH 0
+#define OPENURLONCLICK_PATCH 1
 
 /* This patch allows st to fetch the current working directory through the OSC 7 escape
  * sequence emitted by shells. Must be used with newterm patch.
@@ -359,13 +359,13 @@
 /* Scroll back through terminal output using Shift+{PageUp, PageDown}.
  * https://st.suckless.org/patches/scrollback/
  */
-#define SCROLLBACK_PATCH 1
+#define SCROLLBACK_PATCH 0
 
 /* Scroll back through terminal output using Shift+MouseWheel.
  * This variant depends on SCROLLBACK_PATCH being enabled.
  * https://st.suckless.org/patches/scrollback/
  */
-#define SCROLLBACK_MOUSE_PATCH 1
+#define SCROLLBACK_MOUSE_PATCH 0
 
 /* Scroll back through terminal output using mouse wheel (when not in MODE_ALTSCREEN).
  * This variant depends on SCROLLBACK_PATCH being enabled.
@@ -378,7 +378,7 @@
  * with the mouse. This removes the default behaviour which would simply reverse the colors.
  * https://st.suckless.org/patches/selectioncolors/
  */
-#define SELECTION_COLORS_PATCH 0
+#define SELECTION_COLORS_PATCH 1
 
 /* This patch works with selectioncolors and alpha patches to make selection
  * background color transparent.
@@ -405,7 +405,7 @@
  *
  * https://gist.github.com/saitoha/70e0fdf22e3e8f63ce937c7f7da71809
  */
-#define SIXEL_PATCH 0
+#define SIXEL_PATCH 1
 
 /* This patch allows clients to embed into the st window and is useful if you tend to
  * start X applications from the terminal. For example:
