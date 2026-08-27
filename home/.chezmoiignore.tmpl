@@ -39,3 +39,10 @@
 .config/hypr
 {{- end }}
 {{- end }}
+
+{{- if not .machine.secrets }}
+# Secret-backed files are skipped on machines without the gopass
+# dotfiles-secrets/ namespace populated. Set machine.secrets = true
+# in ~/.config/chezmoi/chezmoi.toml once the entries exist.
+.config/zsh/private
+{{- end }}

@@ -1,0 +1,187 @@
+/**
+ *
+ * Amp - Main Launcher Theme
+ * Palette mirrors tmux-amp-theme / alacritty amp.toml (dark, warm)
+ * Rofi Version: 1.7.3
+ **/
+
+/*****----- Global Properties -----*****/
+* {
+    font:                        "RecMonoLinear Nerd Font Propo 11";
+    background:                  #0F0F0F;
+    background-alt:              #161616;
+    background-selected:         #E7894C;
+    foreground:                  #F2ECDD;
+    selected:                    #E7894C;
+    selected-fg:                 #0F0F0F;
+    active:                      #7C9B96;
+    active-fg:                   #0F0F0F;
+    urgent:                      #D9634F;
+    urgent-fg:                   #0F0F0F;
+}
+
+/*****----- Configuration -----*****/
+configuration {
+    modi:                       "drun,run,filebrowser,window";
+    show-icons:                 true;
+    display-drun:               "Apps";
+    display-run:                "Run";
+    display-filebrowser:        "Files";
+    display-window:             "Windows";
+    drun-display-format:        "{name}";
+    window-format:              "{w} · {c}";
+}
+
+/*****----- Main Window -----*****/
+window {
+    transparency:                "real";
+    location:                    center;
+    anchor:                      center;
+    fullscreen:                  false;
+    width:                       700px;
+    x-offset:                    0px;
+    y-offset:                    0px;
+
+    enabled:                     true;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      4px solid;
+    // border-radius:               12px;
+    border-color:                #E7894C;
+    cursor:                      "default";
+    background-color:            @background;
+}
+
+/*****----- Main Box -----*****/
+mainbox {
+    enabled:                     true;
+    spacing:                     16px;
+    margin:                      0px;
+    padding:                     8px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                #E7894C;
+    background-color:            transparent;
+    children:                    [ "inputbar", "listview" ];
+}
+
+/*****----- Inputbar -----*****/
+inputbar {
+    enabled:                     true;
+    spacing:                     12px;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                #E7894C;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    children:                    [ "prompt", "entry" ];
+}
+
+prompt {
+    enabled:                     true;
+    background-color:            transparent;
+    text-color:                  @selected;
+    font:                        "RecMonoLinear Nerd Font Propo Bold 11";
+}
+
+entry {
+    enabled:                     true;
+    expand:                      true;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      text;
+    placeholder:                 "Search...";
+    placeholder-color:           #7A7367;
+}
+
+/*****----- Listview -----*****/
+listview {
+    enabled:                     true;
+    columns:                     1;
+    lines:                       10;
+    cycle:                       true;
+    dynamic:                     true;
+    scrollbar:                   false;
+    layout:                      vertical;
+    reverse:                     false;
+    fixed-height:                true;
+    fixed-columns:               true;
+
+    spacing:                     4px;
+    margin:                      0px;
+    padding:                     0px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                #E7894C;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      "default";
+}
+
+/*****----- Elements -----*****/
+element {
+    enabled:                     true;
+    spacing:                     12px;
+    margin:                      0px;
+    padding:                     6px 10px;
+    border:                      0px solid;
+    border-radius:               0px;
+    border-color:                transparent;
+    background-color:            transparent;
+    text-color:                  @foreground;
+    cursor:                      pointer;
+}
+
+element normal.normal {
+    background-color:            transparent;
+    text-color:                  @foreground;
+}
+
+element normal.urgent {
+    background-color:            transparent;
+    text-color:                  @urgent;
+}
+
+element normal.active {
+    background-color:            transparent;
+    text-color:                  @active;
+}
+
+element selected.normal {
+    background-color:            @background-selected;
+    text-color:                  @selected-fg;
+    border:                      0px solid;
+    border-color:                @selected;
+}
+
+element selected.urgent {
+    background-color:            @background-selected;
+    text-color:                  @urgent-fg;
+    border:                      0px solid;
+    border-color:                @urgent;
+}
+
+element selected.active {
+    background-color:            @background-selected;
+    text-color:                  @active-fg;
+    border:                      0px solid;
+    border-color:                @active;
+}
+
+element-icon {
+    background-color:            transparent;
+    text-color:                  inherit;
+    size:                        20px;
+    cursor:                      inherit;
+}
+
+element-text {
+    background-color:            transparent;
+    text-color:                  inherit;
+    highlight:                   inherit;
+    cursor:                      inherit;
+    vertical-align:              0.5;
+    horizontal-align:            0.0;
+}

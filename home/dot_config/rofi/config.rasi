@@ -1,0 +1,14 @@
+configuration {
+    modi: "drun,run,window";
+    display-drun: "Apps";
+    display-run: "Run";
+    display-window: "Windows";
+    show-icons: true;
+    icon-theme: "Papirus";
+    drun-display-format: "{name}";
+    font: "JetBrains Mono 10";
+    terminal: "kitty";
+    fallback-icon: "application-x-executable";
+}
+
+@theme "amp"

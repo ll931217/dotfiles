@@ -3,6 +3,7 @@ type = "desktop"
 wm = "hyprland"
 install_packages = false
 install_optional = false
+secrets = false
 
 [packages.linux.arch]
 official = [
