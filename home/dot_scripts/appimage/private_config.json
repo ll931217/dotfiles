@@ -1,0 +1,67 @@
+{
+  "apps": [
+    {
+      "repo": "zen-browser/desktop",
+      "name": "zen-browser",
+      "pattern": "zen-x86_64.AppImage",
+      "local_name": "zen-browser",
+      "version": "1.21.15b"
+    },
+    {
+      "repo": "pingdotgg/t3code",
+      "name": "t3code",
+      "pattern": "T3-Code-*.AppImage",
+      "local_name": "t3code",
+      "version": "v0.0.34"
+    },
+    {
+      "repo": "coollabsio/jean",
+      "name": "jean",
+      "pattern": "Jean_*_amd64.AppImage",
+      "local_name": "jean",
+      "version": "v0.1.73"
+    },
+    {
+      "repo": "ll931217/superset",
+      "name": "superset",
+      "pattern": "superset*.AppImage",
+      "local_name": "superset",
+      "version": "desktop-linux-557644b"
+    },
+    {
+      "repo": "obsidianmd/obsidian-releases",
+      "name": "obsidian",
+      "pattern": "Obsidian-!(*-arm64).AppImage",
+      "local_name": "obsidian",
+      "version": "v1.13.6"
+    },
+    {
+      "repo": "siddharthvaddem/openscreen",
+      "name": "openscreen",
+      "pattern": "Openscreen-Linux-*.AppImage",
+      "local_name": "openscreen",
+      "version": "v1.5.0"
+    },
+    {
+      "repo": "imputnet/helium-linux",
+      "name": "helium",
+      "pattern": "helium-*-x86_64.AppImage",
+      "local_name": "helium",
+      "version": "0.15.7.1"
+    },
+    {
+      "repo": "getpaseo/paseo",
+      "name": "paseo",
+      "pattern": "Paseo-*-x86_64.AppImage",
+      "local_name": "paseo",
+      "version": "v0.1.91"
+    },
+    {
+      "repo": "stablyai/orca",
+      "name": "orca",
+      "pattern": "orca-linux.AppImage",
+      "local_name": "orca",
+      "version": "v1.4.188"
+    }
+  ]
+}

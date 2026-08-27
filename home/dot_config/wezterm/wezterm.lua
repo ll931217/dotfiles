@@ -1,5 +1,6 @@
 local wezterm = require("wezterm")
 -- local theme = wezterm.plugin.require("https://github.com/neapsix/wezterm").moon
+local theme = require("lua/amp")
 -- local theme = require("lua/rose-pine-moon")
 -- local theme = require("lua/rose-pine")
 
@@ -12,17 +13,19 @@ local font_name = "JetBrainsMonoNL NF"
 
 local config = {
 	-- OpenGL for GPU acceleration, Software for CPU
-	front_end = "OpenGL",
+	-- front_end = "OpenGL",
+	front_end = "Software",
 
 	color_scheme_dirs = {
-		"/home/ll931217/.config/wezterm/colors",
+		"/home/liangshih.lin/GitHub/dotfiles/.config/wezterm/colors",
 	},
 
-	-- colors = theme.colors(),
-	-- window_frame = theme.window_frame(),
+	colors = theme.colors(),
+	window_frame = theme.window_frame(),
 
+	color_scheme = "Amp",
 	-- color_scheme = "Catppuccin Mocha",
-	color_scheme = "rose-pine-moon",
+	-- color_scheme = "rose-pine-moon",
 	-- color_scheme = "dracula",
 
 	-- Font config
@@ -45,6 +48,9 @@ local config = {
 	font_size = 10,
 	line_height = 1.0,
 	dpi = 96.0,
+
+	-- Default shell
+	default_prog = { "/bin/zsh", "-l" },
 
 	-- Cursor style
 	default_cursor_style = "BlinkingBlock",
@@ -152,14 +158,14 @@ local config = {
 	bold_brightens_ansi_colors = true,
 	-- Padding
 	window_padding = {
-		left = 25,
-		right = 25,
-		top = 15,
-		bottom = 15,
+		left = 0,
+		right = 0,
+		top = 0,
+		bottom = 0,
 	},
 
 	-- Tab Bar
-	enable_tab_bar = true,
+	enable_tab_bar = false,
 	hide_tab_bar_if_only_one_tab = true,
 	show_tab_index_in_tab_bar = false,
 	tab_bar_at_bottom = false,
@@ -173,7 +179,5 @@ local config = {
 	window_close_confirmation = "NeverPrompt",
 	-- window_frame = { active_titlebar_bg = "#45475a", font = font_with_fallback(font_name, { bold = true }) },
 }
-
-config.enable_wayland = os.getenv("XDG_CURRENT_DESKTOP") == "Hyprland"
 
 return config

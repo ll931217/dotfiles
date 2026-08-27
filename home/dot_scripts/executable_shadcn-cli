@@ -1,69 +1,71 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from "fs";
+import path from "path";
+import { execSync } from "child_process";
+
+const proxy = "http://172.21.10.22:8888/";
 
 // ANSI color codes
 const colors = {
-  reset: '\x1b[0m',
-  green: '\x1b[32m',
-  blue: '\x1b[34m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
+  reset: "\x1b[0m",
+  green: "\x1b[32m",
+  blue: "\x1b[34m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  cyan: "\x1b[36m",
 };
 
-function log(message, color = 'reset') {
+function log(message, color = "reset") {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
 function error(message) {
-  log(`× ${message}`, 'red');
+  log(`× ${message}`, "red");
 }
 
 function success(message) {
-  log(`√ ${message}`, 'green');
+  log(`√ ${message}`, "green");
 }
 
 function info(message) {
-  log(`i ${message}`, 'cyan');
+  log(`i ${message}`, "cyan");
 }
 
 // Check if we're in a Node.js project
 function isNodeProject() {
-  return fs.existsSync(path.join(process.cwd(), 'package.json'));
+  return fs.existsSync(path.join(process.cwd(), "package.json"));
 }
 
 // Check if components.json exists
 function hasComponentsJson() {
-  return fs.existsSync(path.join(process.cwd(), 'components.json'));
+  return fs.existsSync(path.join(process.cwd(), "components.json"));
 }
 
 // Create components.json
 function createComponentsJson() {
   const componentsConfig = {
-    "$schema": "https://ui.shadcn.com/schema.json",
-    "style": "default",
-    "rsc": false,
-    "tsx": true,
-    "tailwind": {
-      "config": "tailwind.config.js",
-      "css": "src/index.css",
-      "baseColor": "slate",
-      "cssVariables": true
+    $schema: "https://ui.shadcn.com/schema.json",
+    style: "default",
+    rsc: false,
+    tsx: true,
+    tailwind: {
+      config: "tailwind.config.js",
+      css: "src/index.css",
+      baseColor: "slate",
+      cssVariables: true,
     },
-    "aliases": {
-      "components": "@/components",
-      "utils": "@/lib/utils"
-    }
+    aliases: {
+      components: "@/components",
+      utils: "@/lib/utils",
+    },
   };
 
   fs.writeFileSync(
-    path.join(process.cwd(), 'components.json'),
-    JSON.stringify(componentsConfig, null, 2)
+    path.join(process.cwd(), "components.json"),
+    JSON.stringify(componentsConfig, null, 2),
   );
-  success('Created components.json');
+  success("Created components.json");
 }
 
 // Ensure directory exists
@@ -77,7 +79,7 @@ function ensureDir(dirPath) {
 // Get shadcn-ui source directory
 function getShadcnSourceDir() {
   const homeDir = process.env.HOME || process.env.USERPROFILE;
-  return path.join(homeDir, 'GitHub', 'shadcn-ui');
+  return path.join(homeDir, "GitHub", "shadcn-ui");
 }
 
 // Find component file in shadcn-ui repo
@@ -86,10 +88,18 @@ function findComponentFile(componentName, sourceDir) {
   // $HOME/GitHub/shadcn-ui/apps/v4/registry/new-york-v4/ui
 
   const possiblePaths = [
-    path.join(sourceDir, 'apps', 'v4', 'registry', 'new-york-v4', 'ui', `${componentName}.tsx`),
+    path.join(
+      sourceDir,
+      "apps",
+      "v4",
+      "registry",
+      "new-york-v4",
+      "ui",
+      `${componentName}.tsx`,
+    ),
   ];
 
-  info(`Possible Paths: ${possiblePaths}`)
+  info(`Possible Paths: ${possiblePaths}`);
 
   for (const filePath of possiblePaths) {
     if (fs.existsSync(filePath)) {
@@ -102,7 +112,7 @@ function findComponentFile(componentName, sourceDir) {
 
 // Extract dependencies from component file
 function extractDependencies(filePath) {
-  const content = fs.readFileSync(filePath, 'utf-8');
+  const content = fs.readFileSync(filePath, "utf-8");
   const dependencies = new Set();
 
   // Match import statements
@@ -111,9 +121,9 @@ function extractDependencies(filePath) {
 
   while ((match = importRegex.exec(content)) !== null) {
     const importPath = match[1];
-    
+
     // Only capture external dependencies (not relative imports)
-    if (!importPath.startsWith('.') && !importPath.startsWith('@/')) {
+    if (!importPath.startsWith(".") && !importPath.startsWith("@/")) {
       dependencies.add(importPath);
     }
   }
@@ -125,48 +135,55 @@ function extractDependencies(filePath) {
 function installDependencies(deps) {
   if (deps.length === 0) return;
 
-  info(`Installing dependencies: ${deps.join(', ')}`);
-  
+  info(`Installing dependencies: ${deps.join(", ")}`);
+
   try {
     // Detect package manager
-    const hasYarnLock = fs.existsSync(path.join(process.cwd(), 'yarn.lock'));
-    const hasPnpmLock = fs.existsSync(path.join(process.cwd(), 'pnpm-lock.yaml'));
-    
+    const hasYarnLock = fs.existsSync(path.join(process.cwd(), "yarn.lock"));
+    const hasPnpmLock = fs.existsSync(
+      path.join(process.cwd(), "pnpm-lock.yaml"),
+    );
+    const hasBunLock = fs.existsSync(path.join(process.cwd(), "bun.lock"));
+
     let installCmd;
     if (hasPnpmLock) {
-      installCmd = `pnpm add ${deps.join(' ')}`;
+      installCmd = `pnpm add ${deps.join(" ")}`;
     } else if (hasYarnLock) {
-      installCmd = `yarn add ${deps.join(' ')}`;
+      installCmd = `yarn add ${deps.join(" ")}`;
+    } else if (hasBunLock) {
+      installCmd = `bun add ${deps.join(" ")}`;
     } else {
-      installCmd = `npm install ${deps.join(' ')}`;
+      installCmd = `npm install ${deps.join(" ")}`;
     }
 
-    execSync(installCmd, { stdio: 'inherit' });
-    success('Dependencies installed');
+    execSync(installCmd, { stdio: "inherit" });
+    success("Dependencies installed");
   } catch (err) {
-    error('Failed to install dependencies');
+    error("Failed to install dependencies");
     console.error(err.message);
   }
 }
 
 // Read components.json to get aliases
 function getAliases() {
-  const componentsJsonPath = path.join(process.cwd(), 'components.json');
+  const componentsJsonPath = path.join(process.cwd(), "components.json");
   if (fs.existsSync(componentsJsonPath)) {
     try {
-      const config = JSON.parse(fs.readFileSync(componentsJsonPath, 'utf-8'));
-      return config.aliases || {
-        components: "@/components",
-        utils: "@/lib/utils"
-      };
+      const config = JSON.parse(fs.readFileSync(componentsJsonPath, "utf-8"));
+      return (
+        config.aliases || {
+          components: "@/components",
+          utils: "@/lib/utils",
+        }
+      );
     } catch (err) {
-      error('Failed to parse components.json');
+      error("Failed to parse components.json");
     }
   }
-  
+
   return {
     components: "@/components",
-    utils: "@/lib/utils"
+    utils: "@/lib/utils",
   };
 }
 
@@ -179,44 +196,47 @@ function convertImportsToAliases(content, aliases) {
     /from\s+["']@\/registry\/[^\/]+\/ui\/(.+?)["']/g,
     (match, componentPath) => {
       return `from "${aliases.components}/ui/${componentPath}"`;
-    }
+    },
   );
-  
+
   // Convert relative imports for components
   // e.g., from "../ui/button" or "./button" to "@/components/ui/button"
   converted = converted.replace(
     /from\s+['"](\.\.?\/)+(.+?)['"]/g,
     (match, dots, importPath) => {
       // Check if it's a UI component import
-      if (importPath.includes('ui/') || importPath.startsWith('ui')) {
-        const componentPath = importPath.replace(/^ui\//, '');
+      if (importPath.includes("ui/") || importPath.startsWith("ui")) {
+        const componentPath = importPath.replace(/^ui\//, "");
         return `from "${aliases.components}/ui/${componentPath}"`;
       }
       // Check if it's a lib/utils import
-      else if (importPath.includes('lib/utils') || importPath.includes('utils')) {
+      else if (
+        importPath.includes("lib/utils") ||
+        importPath.includes("utils")
+      ) {
         return `from "${aliases.utils}"`;
       }
       // Check if it's importing from lib
-      else if (importPath.includes('lib/')) {
-        const libPath = importPath.replace(/.*lib\//, '');
+      else if (importPath.includes("lib/")) {
+        const libPath = importPath.replace(/.*lib\//, "");
         return `from "@/lib/${libPath}"`;
       }
-      
+
       return match;
-    }
+    },
   );
-  
+
   return converted;
 }
 
 // Ensure utils file exists
 function ensureUtilsFile() {
-  const libDir = path.join(process.cwd(), 'src', 'lib');
-  const utilsFile = path.join(libDir, 'utils.ts');
-  
+  const libDir = path.join(process.cwd(), "src", "lib");
+  const utilsFile = path.join(libDir, "utils.ts");
+
   if (!fs.existsSync(utilsFile)) {
     ensureDir(libDir);
-    
+
     const utilsContent = `import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -224,41 +244,41 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 `;
-    
+
     fs.writeFileSync(utilsFile, utilsContent);
-    success('Created lib/utils.ts');
-    
-    return ['clsx', 'tailwind-merge'];
+    success("Created lib/utils.ts");
+
+    return ["clsx", "tailwind-merge"];
   }
-  
+
   return [];
 }
 
 // Copy component
 function copyComponent(componentName, sourceDir, targetDir) {
   const sourceFile = findComponentFile(componentName, sourceDir);
-  
+
   if (!sourceFile) {
     error(`Component "${componentName}" not found in ${sourceDir}`);
     return null;
   }
 
   const targetFile = path.join(targetDir, `${componentName}.tsx`);
-  
+
   try {
     // Read the component file
-    let content = fs.readFileSync(sourceFile, 'utf-8');
-    
+    let content = fs.readFileSync(sourceFile, "utf-8");
+
     // Get aliases from components.json
     const aliases = getAliases();
-    
+
     // Convert relative imports to path aliases
     content = convertImportsToAliases(content, aliases);
-    
+
     // Write the modified content
     fs.writeFileSync(targetFile, content);
     success(`Added component: ${componentName}`);
-    
+
     // Extract and return dependencies
     return extractDependencies(sourceFile);
   } catch (err) {
@@ -269,8 +289,8 @@ function copyComponent(componentName, sourceDir, targetDir) {
 
 // Configure Tailwind
 function configureTailwind() {
-  const tailwindConfigPath = path.join(process.cwd(), 'tailwind.config.js');
-  
+  const tailwindConfigPath = path.join(process.cwd(), "tailwind.config.js");
+
   const tailwindConfig = `/** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -351,23 +371,23 @@ module.exports = {
 `;
 
   fs.writeFileSync(tailwindConfigPath, tailwindConfig);
-  success('Configured tailwind.config.js');
+  success("Configured tailwind.config.js");
 }
 
 // Add CSS variables
 function addCSSVariables() {
   const possibleCssPaths = [
-    path.join(process.cwd(), 'src', 'index.css'),
-    path.join(process.cwd(), 'src', 'App.css'),
-    path.join(process.cwd(), 'src', 'styles', 'globals.css'),
-    path.join(process.cwd(), 'app', 'globals.css'),
+    path.join(process.cwd(), "src", "index.css"),
+    path.join(process.cwd(), "src", "App.css"),
+    path.join(process.cwd(), "src", "styles", "globals.css"),
+    path.join(process.cwd(), "app", "globals.css"),
   ];
 
-  let cssPath = possibleCssPaths.find(p => fs.existsSync(p));
-  
+  let cssPath = possibleCssPaths.find((p) => fs.existsSync(p));
+
   if (!cssPath) {
     // Create default CSS file
-    cssPath = path.join(process.cwd(), 'src', 'index.css');
+    cssPath = path.join(process.cwd(), "src", "index.css");
     ensureDir(path.dirname(cssPath));
   }
 
@@ -438,28 +458,28 @@ function addCSSVariables() {
 
 // Initialize project
 function initProject() {
-  log('\n🚀 Initializing shadcn/ui...', 'blue');
+  log("\n🚀 Initializing shadcn/ui...", "blue");
 
   // Check if we're in a Node.js project
   if (!isNodeProject()) {
-    error('Not in a Node.js project. package.json not found.');
+    error("Not in a Node.js project. package.json not found.");
     process.exit(1);
   }
 
-  info('Detected Node.js project');
+  info("Detected Node.js project");
 
   // Create components.json
   if (!hasComponentsJson()) {
     createComponentsJson();
   } else {
-    info('components.json already exists, skipping...');
+    info("components.json already exists, skipping...");
   }
 
   // Ensure directories
   const projectRoot = process.cwd();
-  const componentsDir = path.join(projectRoot, 'src', 'components', 'ui');
-  const libDir = path.join(projectRoot, 'src', 'lib');
-  
+  const componentsDir = path.join(projectRoot, "src", "components", "ui");
+  const libDir = path.join(projectRoot, "src", "lib");
+
   ensureDir(componentsDir);
   ensureDir(libDir);
 
@@ -467,80 +487,338 @@ function initProject() {
   const utilsDeps = ensureUtilsFile();
 
   // Configure Tailwind
-  log('\nConfiguring Tailwind CSS...', 'blue');
+  log("\nConfiguring Tailwind CSS...", "blue");
   configureTailwind();
 
   // Add CSS variables
-  log('\nAdding CSS variables...', 'blue');
+  log("\nAdding CSS variables...", "blue");
   addCSSVariables();
 
   // Install dependencies
   const baseDependencies = [
-    'tailwindcss',
-    'tailwindcss-animate',
-    'class-variance-authority',
-    ...utilsDeps
+    "tailwindcss",
+    "tailwindcss-animate",
+    "class-variance-authority",
+    ...utilsDeps,
   ];
 
-  log('\nInstalling dependencies...', 'blue');
+  log("\nInstalling dependencies...", "blue");
   installDependencies(baseDependencies);
 
-  log('\n✨ Initialization complete!', 'green');
-  log('\nYou can now add components:', 'cyan');
-  log('  shadcn-cli add button card dialog', 'cyan');
+  log("\n✨ Initialization complete!", "green");
+  log("\nYou can now add components:", "cyan");
+  log("  shadcn-cli add button card dialog", "cyan");
+}
+
+// Get list of installed components
+function getInstalledComponents() {
+  const projectRoot = process.cwd();
+  const componentsDir = path.join(projectRoot, "src", "components", "ui");
+
+  if (!fs.existsSync(componentsDir)) {
+    return [];
+  }
+
+  const files = fs.readdirSync(componentsDir);
+  return files
+    .filter((file) => file.endsWith(".tsx"))
+    .map((file) => file.replace(".tsx", ""));
+}
+
+// Check if component has changes
+function hasComponentChanges(componentName, sourceDir, targetDir) {
+  const sourceFile = findComponentFile(componentName, sourceDir);
+  const targetFile = path.join(targetDir, `${componentName}.tsx`);
+
+  if (!sourceFile || !fs.existsSync(targetFile)) {
+    return { hasChanges: false, reason: "file_not_found" };
+  }
+
+  // Read source and transform it
+  let sourceContent = fs.readFileSync(sourceFile, "utf-8");
+  const aliases = getAliases();
+  sourceContent = convertImportsToAliases(sourceContent, aliases);
+
+  // Read target
+  const targetContent = fs.readFileSync(targetFile, "utf-8");
+
+  // Compare (normalize whitespace for comparison)
+  const normalizedSource = sourceContent.trim();
+  const normalizedTarget = targetContent.trim();
+
+  return {
+    hasChanges: normalizedSource !== normalizedTarget,
+    reason: normalizedSource !== normalizedTarget ? "content_changed" : "same",
+  };
+}
+
+// Update components
+function updateComponents(componentsToUpdate, options = {}) {
+  const { force = false, dryRun = false } = options;
+  const sourceDir = getShadcnSourceDir();
+  const projectRoot = process.cwd();
+  const targetDir = path.join(projectRoot, "src", "components", "ui");
+
+  if (!fs.existsSync(sourceDir)) {
+    error(`shadcn-ui directory not found at: ${sourceDir}`);
+    info("Cloning shadcn-ui repository...");
+    execSync(
+      `HTTPS_PROXY=${proxy} git clone https://github.com/shadcn-ui/ui ~/GitHub/shadcn-ui`,
+      { stdio: "inherit" },
+    );
+  } else {
+    info("Pulling latest shadcn-ui changes...");
+    try {
+      execSync(`cd ${sourceDir} && HTTPS_PROXY=${proxy} git pull`, {
+        stdio: "inherit",
+      });
+    } catch (err) {
+      error("Failed to pull latest changes, continuing with existing files...");
+    }
+  }
+
+  const allDependencies = new Set();
+  const updatedComponents = [];
+  const skippedComponents = [];
+
+  for (const componentName of componentsToUpdate) {
+    const sourceFile = findComponentFile(componentName, sourceDir);
+
+    if (!sourceFile) {
+      error(`Component "${componentName}" not found in source`);
+      skippedComponents.push({ name: componentName, reason: "not_found" });
+      continue;
+    }
+
+    const changeInfo = hasComponentChanges(componentName, sourceDir, targetDir);
+
+    if (!changeInfo.hasChanges && !force) {
+      info(`${componentName}: already up to date`);
+      skippedComponents.push({ name: componentName, reason: "up_to_date" });
+      continue;
+    }
+
+    if (dryRun) {
+      log(`Would update: ${componentName}`, "yellow");
+      updatedComponents.push(componentName);
+      continue;
+    }
+
+    // Copy the component (same logic as add)
+    const deps = copyComponent(componentName, sourceDir, targetDir);
+    if (deps) {
+      deps.forEach((dep) => allDependencies.add(dep));
+      updatedComponents.push(componentName);
+    }
+  }
+
+  return { updatedComponents, skippedComponents, dependencies: allDependencies };
+}
+
+// List command - show installed components and their status
+function listComponents() {
+  log("\n📦 Installed Components", "blue");
+
+  const installedComponents = getInstalledComponents();
+
+  if (installedComponents.length === 0) {
+    info("No components installed yet.");
+    info("Run 'shadcn-cli add <component>' to add components.");
+    return;
+  }
+
+  const sourceDir = getShadcnSourceDir();
+  const projectRoot = process.cwd();
+  const targetDir = path.join(projectRoot, "src", "components", "ui");
+
+  log("");
+  for (const componentName of installedComponents.sort()) {
+    const sourceFile = findComponentFile(componentName, sourceDir);
+
+    if (!sourceFile) {
+      log(`  ${componentName} (local only - not in source)`, "yellow");
+    } else {
+      const changeInfo = hasComponentChanges(componentName, sourceDir, targetDir);
+      if (changeInfo.hasChanges) {
+        log(`  ${componentName} (update available)`, "cyan");
+      } else {
+        log(`  ${componentName}`, "green");
+      }
+    }
+  }
+
+  log(`\nTotal: ${installedComponents.length} components`, "reset");
 }
 
 // Main function
 function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0) {
-    log('Usage:', 'yellow');
-    log('  shadcn-cli init                                      Initialize shadcn/ui', 'cyan');
-    log('  shadcn-cli add <component1> [component2] ...         Add components', 'cyan');
+    log("Usage:", "yellow");
+    log(
+      "  shadcn-cli init                                      Initialize shadcn/ui",
+      "cyan",
+    );
+    log(
+      "  shadcn-cli add <component1> [component2] ...         Add components",
+      "cyan",
+    );
+    log(
+      "  shadcn-cli update [component1] [component2] ...      Update components (all if none specified)",
+      "cyan",
+    );
+    log(
+      "  shadcn-cli update --all                              Update all installed components",
+      "cyan",
+    );
+    log(
+      "  shadcn-cli update --force                            Force update even if no changes",
+      "cyan",
+    );
+    log(
+      "  shadcn-cli update --dry-run                          Show what would be updated",
+      "cyan",
+    );
+    log(
+      "  shadcn-cli list                                      List installed components",
+      "cyan",
+    );
     process.exit(1);
   }
 
   const command = args[0];
 
-  if (command === 'init') {
+  if (command === "init") {
     initProject();
     return;
   }
 
-  if (command !== 'add') {
+  if (command === "list") {
+    listComponents();
+    return;
+  }
+
+  if (command === "update") {
+    // Check if we're in a Node.js project
+    if (!isNodeProject()) {
+      error("Not in a Node.js project. package.json not found.");
+      process.exit(1);
+    }
+
+    info("Detected Node.js project");
+
+    // Parse options
+    const updateArgs = args.slice(1);
+    const force = updateArgs.includes("--force") || updateArgs.includes("-f");
+    const dryRun = updateArgs.includes("--dry-run") || updateArgs.includes("-n");
+    const updateAll = updateArgs.includes("--all") || updateArgs.includes("-a");
+
+    // Filter out flags to get component names
+    const componentArgs = updateArgs.filter(
+      (arg) => !arg.startsWith("-") && !arg.startsWith("--"),
+    );
+
+    let componentsToUpdate;
+
+    if (updateAll || componentArgs.length === 0) {
+      // Update all installed components
+      componentsToUpdate = getInstalledComponents();
+      if (componentsToUpdate.length === 0) {
+        info("No components installed to update.");
+        info("Run 'shadcn-cli add <component>' to add components first.");
+        return;
+      }
+      log(`\n🔄 Updating ${componentsToUpdate.length} components...`, "blue");
+    } else {
+      componentsToUpdate = componentArgs;
+      log(`\n🔄 Updating ${componentsToUpdate.length} component(s)...`, "blue");
+    }
+
+    if (dryRun) {
+      log("(Dry run - no changes will be made)", "yellow");
+    }
+
+    const result = updateComponents(componentsToUpdate, { force, dryRun });
+
+    // Summary
+    log("\n📊 Update Summary", "blue");
+
+    if (result.updatedComponents.length > 0) {
+      success(`Updated: ${result.updatedComponents.join(", ")}`);
+    }
+
+    if (result.skippedComponents.length > 0) {
+      const upToDate = result.skippedComponents
+        .filter((c) => c.reason === "up_to_date")
+        .map((c) => c.name);
+      const notFound = result.skippedComponents
+        .filter((c) => c.reason === "not_found")
+        .map((c) => c.name);
+
+      if (upToDate.length > 0) {
+        info(`Already up to date: ${upToDate.join(", ")}`);
+      }
+      if (notFound.length > 0) {
+        error(`Not found in source: ${notFound.join(", ")}`);
+      }
+    }
+
+    // Install dependencies if not dry run
+    if (!dryRun && result.dependencies.size > 0) {
+      log("\nInstalling dependencies...", "blue");
+      installDependencies(Array.from(result.dependencies));
+    }
+
+    log("\n✨ Done!", "green");
+    return;
+  }
+
+  if (command !== "add") {
     error(`Unknown command: ${command}`);
-    log('Available commands: init, add', 'yellow');
+    log("Available commands: init, add, update, list", "yellow");
     process.exit(1);
   }
 
   // Check if we're in a Node.js project
   if (!isNodeProject()) {
-    error('Not in a Node.js project. package.json not found.');
+    error("Not in a Node.js project. package.json not found.");
     process.exit(1);
   }
 
-  info('Detected Node.js project');
+  info("Detected Node.js project");
 
   // Check shadcn-ui source directory
   const sourceDir = getShadcnSourceDir();
   if (!fs.existsSync(sourceDir)) {
     error(`shadcn-ui directory not found at: ${sourceDir}`);
-    error('Please clone the repository: git clone https://github.com/shadcn-ui/ui ~/GitHub/shadcn-ui');
-    process.exit(1);
+    // execSync(
+    //   `HTTPS_PROXY=${proxy} git clone https://github.com/shadcn-ui/ui ~/GitHub/shadcn-ui`,
+    //   { stdio: "inherit" },
+    // );
+    error(
+      "Please clone the repository: git clone https://github.com/shadcn-ui/ui ~/GitHub/shadcn-ui",
+    );
+  } else {
+    info("Pulling latest shadcn-ui changes...");
+    execSync(
+      `cd ~/GitHub/shadcn-ui && HTTPS_PROXY=${proxy} git pull`,
+      { stdio: "inherit" },
+    );
+    info("Latest changes pulled!");
   }
 
   info(`Using shadcn-ui source: ${sourceDir}`);
 
   // Create components.json if it doesn't exist
   if (!hasComponentsJson()) {
-    info('components.json not found, creating...');
+    info("components.json not found, creating...");
     createComponentsJson();
   }
 
   // Ensure target directory exists
   const projectRoot = process.cwd();
-  const targetDir = path.join(projectRoot, 'src', 'components', 'ui');
+  const targetDir = path.join(projectRoot, "src", "components", "ui");
   ensureDir(targetDir);
 
   // Ensure utils file exists and collect its dependencies
@@ -550,22 +828,22 @@ function main() {
   // Process components
   const components = args.slice(1);
 
-  log('\nAdding components...', 'blue');
-  
+  log("\nAdding components...", "blue");
+
   for (const component of components) {
     const deps = copyComponent(component, sourceDir, targetDir);
     if (deps) {
-      deps.forEach(dep => allDependencies.add(dep));
+      deps.forEach((dep) => allDependencies.add(dep));
     }
   }
 
   // Install dependencies
   if (allDependencies.size > 0) {
-    log('\nInstalling dependencies...', 'blue');
+    log("\nInstalling dependencies...", "blue");
     installDependencies(Array.from(allDependencies));
   }
 
-  log('\n✨ Done!', 'green');
+  log("\n✨ Done!", "green");
 }
 
 main();

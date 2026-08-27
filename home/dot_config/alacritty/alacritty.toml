@@ -1,13 +1,15 @@
 [font]
 size = 11.0
-offset = { x = 0, y = -1 } # This moves lines 1px closer together
+# offset = { x = 0, y = -1 } # This moves lines 1px closer together
+offset = { x = 0, y = 0 } # This moves lines 1px closer together
 glyph_offset = { x = 0, y = 0 }
 
 [font.normal]
+# family = "Monocraft"
 family = "JetBrainsMonoNL Nerd Font"
 # family = "RecMonoLinear Nerd Font Propo"
-style = "Regular"
-# style = "Bold"
+# style = "Regular"
+style = "Bold"
 
 [[keyboard.bindings]]
 action = "ToggleViMode"
@@ -42,7 +44,8 @@ mods = "Shift"
 
 [window]
 decorations = "none"
-opacity = 0.8
+# opacity = 0.8
+opacity = 1
 # option_as_alt = "Both"
 dynamic_padding = true
 
@@ -52,7 +55,7 @@ lines = 38
 
 [window.padding]
 x = 2
-y = 2
+y = 0
 
 [general]
 import = [

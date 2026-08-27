@@ -1,184 +1,107 @@
-## ░▀▀█░█▀▀░█░█░█▀▄░█▀▀
-## ░▄▀░░▀▀█░█▀█░█▀▄░█░░
-## ░▀▀▀░▀▀▀░▀░▀░▀░▀░▀▀▀
-##
-## liang's Z-Shell configuration
-## https://github.com/ll931217
-
-# The git prompt's git commands are read-only and should not interfere with
-# other processes. This environment variable is equivalent to running with `git
-# --no-optional-locks`, but falls back gracefully for older versions of git.
-# See git(1) for git-status(1) for a description of that flag.
+# Single source of truth for interactive zsh config.
 #
-# We wrap in a local function instead of exporting the variable directly in
-# order to avoid interfering with manually-run git commands by the user.
+# ZDOTDIR is exported from ~/.zshenv (always read first), so this file is the
+# one zsh reads in EVERY interactive shell — fresh login, tmux, ssh, flow, and
+# nested shells alike. Keep all interactive setup here; ~/.zshrc is only a
+# defensive shim for the case where ZDOTDIR somehow isn't set.
 
-export ZDOTDIR="$HOME/.config/zsh"
+# zack.huang's shell helper
+source "/home/liangshih.lin/.local/share/shell-helper/functions.sh"
 
-# --------------------------------------------
-# Fix x_cmd .zwc compilation issues
-# --------------------------------------------
-# Remove compiled .zwc files before x_cmd loads to prevent alias lookup errors
-find ~/.x-cmd.root -name '*.zwc' -delete 2>/dev/null
+# --- Plugin manager: antigen + oh-my-zsh ------------------------------------
+# Download antigen if you haven't already
+source $HOME/.config/antigen.zsh
 
-# --------------------------------------------
-# Znap: the fast-as-hell plugin manager
-# --------------------------------------------
-if [[ ! -f ~/.znap/znap.zsh ]]; then
-  git clone https://github.com/marlonrichert/zsh-snap.git ~/.znap
-fi
-source ~/.znap/znap.zsh
+# Load the oh-my-zsh's library.
+antigen use oh-my-zsh
 
-# --------------------------------------------
-# Proper ZSH history configuration
-# --------------------------------------------
-HISTFILE="$HOME/.zsh_history"
-HISTSIZE=50000
-SAVEHIST=50000
+# ponytail: don't re-bind autosuggest widgets on every precmd, and skip the
+# suggestion fetch entirely on long lines. See the strategy override after
+# `atuin init` below for the real per-keystroke cost.
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=60
 
-setopt appendhistory              # Append, don't overwrite
-setopt sharehistory               # Share history between sessions
-setopt inc_append_history         # Write commands immediately
-setopt hist_ignore_dups           # Ignore duplicates
-setopt hist_ignore_all_dups
-setopt hist_reduce_blanks         # Clean up whitespace
-setopt hist_verify                # Don't run expanded history immediately
-setopt extended_history           # Save timestamps
-setopt hist_save_no_dups          # Don't save duplicates
+antigen bundle zsh-users/zsh-autosuggestions
+antigen bundle zsh-users/zsh-completions
+antigen bundle zsh-users/zsh-history-substring-search
 
-# --------------------------------------------
-# Plugins (Znap auto-clones, caches & compiles)
-# --------------------------------------------
+antigen bundle MichaelAquilina/zsh-autoswitch-virtualenv
 
-# Change plugin home directory
-zstyle ':znap:*' repos-dir ~/.config/zsh/plugins
+# Bundles from the default repo (robbyrussell's oh-my-zsh).
+antigen bundle git
+antigen bundle heroku
+antigen bundle pip
+antigen bundle lein
+antigen bundle command-not-found
 
-# Git aliases from Oh-My-Zsh without Oh-My-Zsh
-znap source ohmyzsh/ohmyzsh plugins/git/git.plugin.zsh
+# Syntax highlighting bundle.
+antigen bundle zsh-users/zsh-syntax-highlighting
+antigen bundle chrissicool/zsh-256color
 
-# Common Zsh plugins
-znap source zsh-users/zsh-completions
-znap source zsh-users/zsh-autosuggestions
-znap source zsh-users/zsh-syntax-highlighting
-znap source zsh-users/zsh-history-substring-search
-znap source zdharma-continuum/history-search-multi-word
+# antigen theme spaceship-prompt/spaceship-prompt
 
-# Extra utilities
-znap source thewtex/tmux-mem-cpu-load
-znap source Aloxaf/fzf-tab
-znap source hlissner/zsh-autopair
-znap source chrissicool/zsh-256color
-znap source MichaelAquilina/zsh-you-should-use
+# Tell Antigen that you're done.
+antigen apply
 
-# Oh-My-Zsh plugins from Zinit migration
-znap source ohmyzsh/ohmyzsh plugins/colored-man-pages/colored-man-pages.plugin.zsh
-znap source ohmyzsh/ohmyzsh plugins/command-not-found/command-not-found.plugin.zsh
+# --- Modular config ---------------------------------------------------------
+# Keep $PATH free of duplicate entries (and dedupe whatever the login chain
+# accumulated before this rc runs, e.g. .profile sourced twice under xrdp).
+typeset -U path PATH
 
-# External binaries (exa and bat are now available system-wide)
-# These are managed via system package manager instead of Zinit
-
-# --------------------------------------------
-# External tools (moved before completion for better startup)
-# --------------------------------------------
-eval "$(zoxide init zsh)"
-eval "$(direnv hook zsh)"
-eval "$(starship init zsh)"
-eval "$(goose term init zsh)"
-eval "$(atuin init zsh)"
-eval "$(dra completion zsh)"
-
-# --------------------------------------------
-# Source private config files
-# --------------------------------------------
-if [ -d "$ZDOTDIR/private" ]; then
-  for file in "$ZDOTDIR/private"/*.zsh; do
-    [ -f "$file" ] && source "$file"
-  done
-fi
-
-# --------------------------------------------
-# Your extra config files (conditional loading)
-# --------------------------------------------
-
-# Fast startup configs
-[ -f /opt/miniconda3/etc/profile.d/conda.sh ] && source /opt/miniconda3/etc/profile.d/conda.sh
-
-# --------------------------------------------
-# Completion System
-# --------------------------------------------
-# Skip security checks for faster startup (run compinit -C)
-autoload -Uz compinit && compinit -C
-
-# --------------------------------------------
-# External tools - remaining
-# --------------------------------------------
-# Bun completions
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
-
-autoload -U +X bashcompinit && bashcompinit
-complete -o nospace -C /usr/bin/terraform terraform
-
-# --------------------------------------------
-# Source extra config files
-# --------------------------------------------
-# Fixed: Changed from heredoc to array to avoid blank line issue
 files=(
   "env"
-  "keys"
-  "fzf"
-  "theme"
   "aliases"
   "functions"
-  "utility"
   "options"
-  "plugins"
-  "keybinds"
-  "prompt"
+  "proxy"
 )
 
 for file in "${files[@]}"; do
   [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"
 done
 
-eval "$(gt completion zsh)"
-
-# Enable grc
+# --- Tool integrations (must run after modular config) ----------------------
+eval "$(zoxide init zsh)"
+eval "$(starship init zsh)"
+eval "$(direnv hook zsh)"
+eval "$(goose term init zsh)"
 [[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh
+eval "$(atuin init zsh)"
+# ponytail: atuin init prepends itself to ZSH_AUTOSUGGEST_STRATEGY, so every
+# keystroke (and every vicmd movement key) forks `atuin search` — measured
+# ~163ms of CPU per fetch against the 6.9MB history.db. Ctrl-R still uses atuin;
+# inline suggestions fall back to zsh history (sub-ms). Drop this line if you
+# want cross-machine suggestions more than you want a responsive prompt.
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+eval "$(tv init zsh)"
+eval "$(sesh completion zsh)"
+source <(gwq completion zsh)
+eval "$(ast-grep completions)"
+eval "$(gopass completion zsh)"
+# bun completions
+[ -s "/home/liangshih.lin/.bun/_bun" ] && source "/home/liangshih.lin/.bun/_bun"
 
-# Auto activate python venv
-[ -f /usr/share/zsh/plugins/zsh-auto-venv/auto-venv.zsh ] && source /usr/share/zsh/plugins/zsh-auto-venv/auto-venv.zsh
-
-# Command not found with suggestions on how to install
-[ -f /usr/share/doc/pkgfile/command-not-found.zsh ] && source /usr/share/doc/pkgfile/command-not-found.zsh
-
-[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
-
-# vim:ft=zsh:nowrap
-
-# >>> forge initialize >>>
-# !! Contents within this block are managed by 'forge zsh setup' !!
-# !! Do not edit manually - changes will be overwritten !!
-
-# Add required zsh plugins if not already present
-if [[ ! " ${plugins[@]} " =~ " zsh-autosuggestions " ]]; then
-    plugins+=(zsh-autosuggestions)
+# --- xrdp DISPLAY auto-detect (tmux) ----------------------------------------
+# Auto-detect the current DISPLAY from the most recent Xorg process owned by
+# this user. This handles xrdp reconnects where the display number changes and
+# tmux's global environment still holds a stale value.
+if [[ -n "$TMUX" ]]; then
+  # Find the most recently started Xorg process (smallest elapsed time) for this user
+  _xrdp_display=$(ps -u "$USER" -o etimes=,args= 2>/dev/null \
+    | grep '[X]org :[0-9]' \
+    | sort -n \
+    | head -1 \
+    | grep -oP 'Xorg :\K\d+')
+  if [[ -n "$_xrdp_display" ]]; then
+    export DISPLAY=":${_xrdp_display}.0"
+    # Also fix tmux global env so other tools pick it up
+    tmux set-environment -g DISPLAY "$DISPLAY" 2>/dev/null
+  fi
+  unset _xrdp_display
 fi
-if [[ ! " ${plugins[@]} " =~ " zsh-syntax-highlighting " ]]; then
-    plugins+=(zsh-syntax-highlighting)
-fi
 
-# Load forge shell plugin (commands, completions, keybindings) if not already loaded
-if [[ -z "$_FORGE_PLUGIN_LOADED" ]]; then
-    eval "$(forge zsh plugin)"
-fi
-
-# Load forge shell theme (prompt with AI context) if not already loaded
-if [[ -z "$_FORGE_THEME_LOADED" ]]; then
-    eval "$(forge zsh theme)"
-fi
-# <<< forge initialize <<<
-
-. "$HOME/.local/share/../bin/env"
-
-# Vite+ bin (https://viteplus.dev)
-. "$HOME/.vite-plus/env"
+# ponytail: fix unreadable blue-on-green for other-writable dirs (/mnt).
+# Replace (not append) — zsh complist won't override an earlier duplicate entry.
+export LS_COLORS="${LS_COLORS//ow=34;42/ow=01;34}"
+export LS_COLORS="${LS_COLORS//tw=30;42/tw=01;34}"
+zstyle ":completion:*" list-colors "${(s.:.)LS_COLORS}"

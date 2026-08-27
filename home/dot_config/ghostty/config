@@ -1,4 +1,4 @@
-theme = tokyonight-moon
+theme = amp
 # font-family = Geist Mono Bold
 # font-family = "JetBrainsMonoNL Nerd Font"
 font-family = "RecMonoLinear Nerd Font Propo"
@@ -6,7 +6,7 @@ font-size = 11.0
 font-style = Bold
 gtk-titlebar = false
 
-background-opacity = 0.7
+background-opacity = 1.0
 background-blur = true
 
 window-padding-x = 10
@@ -73,3 +73,4 @@ custom-shader = "$HOME/GitHub/ghostty-shaders/starfield.glsl"
 # # Note: Ctrl+Shift+O conflicts with new_split:right default
 # keybind = ctrl+shift+o=unbind
 # keybind = ctrl+shift+o=write_scrollback_file:open
+config-file = ?tode/keybinds.ghostty

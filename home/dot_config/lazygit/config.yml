@@ -23,3 +23,6 @@ gui:
       - "#F2ECDD"
   authorColors:
     "*": "#E7894C"
+
+git:
+  externalDiffCommand: "lumen draft"

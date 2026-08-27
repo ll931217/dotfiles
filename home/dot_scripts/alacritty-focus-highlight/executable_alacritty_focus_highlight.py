@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/liangshih.lin/.rye/shims/python
 """
 Alacritty Focus Highlight Daemon
 
@@ -7,6 +7,7 @@ and per-window IPC configuration.
 """
 
 import os
+import signal
 import subprocess
 import time
 import tomllib
@@ -21,19 +22,39 @@ class AlacrittyFocusHighlight:
 
     def __init__(self, config_path: Path):
         """Initialize the daemon with configuration."""
-        self.config = self._load_config(config_path)
-        self.base_color = self.config["colors"]["base"]
-        self.brightness_pct = self.config["highlight"]["brightness_percentage"]
+        self.config_path = config_path
+        self._load_and_apply_config()
 
         # Track state: {window_id: {"original_color": str, "socket": Path}}
         self.focused_windows = {}
         self.previous_focus = None
 
+        # Setup signal handler for config reload
+        signal.signal(signal.SIGUSR1, self._handle_reload_signal)
+
+    def _load_and_apply_config(self):
+        """Load configuration from file."""
+        self.config = self._load_config(self.config_path)
+        self.base_color = self.config["colors"]["base"]
+        self.highlight_color = self.config["colors"].get("highlight")
+        self.brightness_pct = self.config["highlight"]["brightness_percentage"]
+
+    def _handle_reload_signal(self, signum, frame):
+        """Handle SIGUSR1 signal to reload configuration."""
+        self._load_and_apply_config()
+        # Re-apply highlight to currently focused window if any
+        if self.previous_focus and self.previous_focus in self.focused_windows:
+            state = self.focused_windows[self.previous_focus]
+            state["original_color"] = self.base_color
+            self.send_alacritty_color(
+                state["socket"], self.get_highlight_color(), self.previous_focus
+            )
+
     def _load_config(self, config_path: Path) -> dict:
         """Load configuration from TOML file with fallback defaults."""
         default_config = {
             "colors": {"base": "#101010"},
-            "highlight": {"brightness_percentage": 0.15}
+            "highlight": {"brightness_percentage": 0.15},
         }
 
         if not config_path.exists():
@@ -57,7 +78,7 @@ class AlacrittyFocusHighlight:
             Brightened hex color string
         """
         # Remove '#' and parse RGB
-        hex_color = hex_color.lstrip('#')
+        hex_color = hex_color.lstrip("#")
         r = int(hex_color[0:2], 16)
         g = int(hex_color[2:4], 16)
         b = int(hex_color[4:6], 16)
@@ -84,7 +105,7 @@ class AlacrittyFocusHighlight:
                 ["/usr/bin/xprop", "-id", str(window_id), "_NET_WM_PID"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             # Output format: "_NET_WM_PID(CARDINAL) = 12345"
             if "=" in result.stdout:
@@ -121,7 +142,9 @@ class AlacrittyFocusHighlight:
 
         return None
 
-    def find_alacritty_socket(self, pid: int, max_retries: int = 5, delay: float = 0.1) -> Optional[Path]:
+    def find_alacritty_socket(
+        self, pid: int, max_retries: int = 5, delay: float = 0.1
+    ) -> Optional[Path]:
         """
         Find the Alacritty IPC socket for a given PID with retry logic.
 
@@ -162,17 +185,25 @@ class AlacrittyFocusHighlight:
                 [
                     "alacritty",
                     "msg",
-                    "--socket", str(socket),
+                    "--socket",
+                    str(socket),
                     "config",
-                    "--window-id", str(window_id),
-                    f"colors.primary.background='{color}'"
+                    "--window-id",
+                    str(window_id),
+                    f"colors.primary.background='{color}'",
                 ],
                 capture_output=True,
-                check=True
+                check=True,
             )
             return True
         except subprocess.CalledProcessError:
             return False
+
+    def get_highlight_color(self) -> str:
+        """Get the highlight color, either from config or by brightening base."""
+        if self.highlight_color:
+            return self.highlight_color
+        return self.brighten_color(self.base_color, self.brightness_pct)
 
     def on_window_focus(self, i3: i3ipc.Connection, event: i3ipc.Event):
         """
@@ -188,9 +219,7 @@ class AlacrittyFocusHighlight:
         if self.previous_focus and self.previous_focus in self.focused_windows:
             prev_state = self.focused_windows[self.previous_focus]
             self.send_alacritty_color(
-                prev_state["socket"],
-                prev_state["original_color"],
-                self.previous_focus
+                prev_state["socket"], prev_state["original_color"], self.previous_focus
             )
             del self.focused_windows[self.previous_focus]
 
@@ -206,13 +235,12 @@ class AlacrittyFocusHighlight:
                 self.previous_focus = window_id
                 return
 
-            # Store state and apply brightened color
-            bright_color = self.brighten_color(self.base_color, self.brightness_pct)
+            # Store state and apply highlight color
             self.focused_windows[window_id] = {
                 "original_color": self.base_color,
-                "socket": socket
+                "socket": socket,
             }
-            self.send_alacritty_color(socket, bright_color, window_id)
+            self.send_alacritty_color(socket, self.get_highlight_color(), window_id)
 
         self.previous_focus = window_id
 
@@ -238,12 +266,13 @@ class AlacrittyFocusHighlight:
             if pid:
                 socket = self.find_alacritty_socket(pid)
                 if socket:
-                    bright_color = self.brighten_color(self.base_color, self.brightness_pct)
                     self.focused_windows[window_id] = {
                         "original_color": self.base_color,
-                        "socket": socket
+                        "socket": socket,
                     }
-                    self.send_alacritty_color(socket, bright_color, window_id)
+                    self.send_alacritty_color(
+                        socket, self.get_highlight_color(), window_id
+                    )
                     self.previous_focus = window_id
 
     def run(self):

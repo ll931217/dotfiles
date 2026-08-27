@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Ensure we're in a valid working directory
+cd "$HOME" || exit 1
+
 # Kill existing polybar instances
 killall -q polybar
 
@@ -9,11 +12,7 @@ while pgrep -u $UID -x polybar >/dev/null; do sleep 1; done
 # Launch polybar on all connected monitors
 if type "polybar" >/dev/null 2>&1; then
     for m in $(polybar --list-monitors | cut -d":" -f1); do
-        if [[ "$m" == "DP-0" ]]; then
-            MONITOR=$m polybar --reload main &
-        else
-            MONITOR=$m polybar --reload external &
-        fi
+        MONITOR=$m polybar --reload main &
     done
 else
     echo "Polybar not found"

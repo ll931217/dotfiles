@@ -1,24 +1,23 @@
-# Worktrunk hooks for tmux integration
+# Worktrunk hooks for Zellij integration
+# tmux backup: ~/.config/worktrunk/config.toml.tmux-backup
 
-# Smart tmux session/window management when worktree is created
+worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
+
+[commit.generation]
+command = "CLAUDECODE= MAX_THINKING_TOKENS=0 claude -p --no-session-persistence --model=haiku --tools='' --disable-slash-commands --setting-sources='' --system-prompt=''"
+# command = "llm"
+# args = ["-m", "claude-haiku-4.5"]
+
+# Open a new Zellij tab for the worktree and start claude
 # Runs in background (post-start) so blocking project hooks complete first
 [post-start]
-tmux = """SESSION_NAME="{{ worktree_name | replace(\".\", \"_\") }}"; \
-if [ -n "$TMUX" ]; then \
-  tmux new-window -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
-else \
-  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then \
-    tmux attach-session -t "$SESSION_NAME" \\; new-window -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "claude" Enter; \
-  else \
-    tmux new-session -s "$SESSION_NAME" -c "{{ worktree_path }}" \\; send-keys "claude" Enter; \
-  fi; \
+zellij = """if [ -n "$ZELLIJ" ]; then \
+  zellij action new-tab --name "{{ branch }}" --cwd "{{ worktree_path }}" && \
+  sleep 0.3 && \
+  zellij action write-chars "claude" && \
+  zellij action write-chars $'\\n'; \
 fi"""
 
-# Kill tmux window when worktree is removed
+# Zellij has no CLI to close a tab by name — close manually or use Ctrl+w
 [pre-remove]
-tmux = "tmux kill-window -t '{{ worktree_name | replace(\".\", \"_\") }}:{{ branch }}' 2>/dev/null || true"
-
-[projects]
-
-[projects."github.com/ll931217/sunnyvale"]
-approved-commands = ["pnpm install --frozen-lockfile", "pnpm run dev"]
+zellij = "true"

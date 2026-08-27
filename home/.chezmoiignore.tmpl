@@ -1,5 +1,8 @@
 # Private and generated files never belong in managed source state.
 .config/zsh/keys.zsh
+# env.zsh holds 33 live API keys in plaintext on this machine.
+# Keep it out of source state until the secrets move to gopass.
+.config/zsh/env.zsh
 .config/hypr/custom/private.env
 .config/btop/btop.log
 .config/worktrunk/worktrunk-receipt.json
