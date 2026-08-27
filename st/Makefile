@@ -4,7 +4,7 @@
 
 include config.mk
 
-SRC = st.c x.c $(LIGATURES_C) $(SIXEL_C)
+SRC = st.c x.c $(LIGATURES_C) $(SIXEL_C) $(GRAPHICS_C)
 OBJ = $(SRC:.c=.o)
 
 all: st
@@ -23,8 +23,9 @@ FORCE:
 .c.o:
 	$(CC) $(STCFLAGS) -c $<
 
-st.o: config.h st.h win.h
-x.o: arg.h config.h st.h win.h $(LIGATURES_H)
+st.o: config.h st.h win.h $(GRAPHICS_H)
+x.o: arg.h config.h st.h win.h $(LIGATURES_H) $(GRAPHICS_H)
+graphics.o: config.h st.h win.h $(GRAPHICS_H)
 
 $(OBJ): config.h config.mk patches.h
 
@@ -37,7 +38,7 @@ clean:
 dist: clean
 	mkdir -p st-$(VERSION)
 	cp -R FAQ LEGACY TODO LICENSE Makefile README config.mk\
-		config.def.h st.info st.1 arg.h st.h win.h $(LIGATURES_H) $(SRC)\
+		config.def.h st.info st.1 arg.h st.h win.h $(LIGATURES_H) $(GRAPHICS_H) $(SRC)\
 		st-$(VERSION)
 	tar -cf - st-$(VERSION) | gzip > st-$(VERSION).tar.gz
 	rm -rf st-$(VERSION)

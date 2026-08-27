@@ -57,3 +57,7 @@ void xclearwin(void);
 #if REFLOW_PATCH && KEYBOARDSELECT_PATCH
 void xdrawglyph(Glyph, int, int);
 #endif // KEYBOARDSELECT_PATCH
+#if KITTY_GRAPHICS_PATCH
+void xstartimagedraw(int *dirty, int rows);
+void xfinishimagedraw(void);
+#endif // KITTY_GRAPHICS_PATCH

@@ -20,6 +20,9 @@
 
 #include "st.h"
 #include "win.h"
+#if KITTY_GRAPHICS_PATCH
+#include "graphics.h"
+#endif // KITTY_GRAPHICS_PATCH
 
 #if KEYBOARDSELECT_PATCH
 #include <X11/keysym.h>
@@ -48,6 +51,11 @@
 #endif // UNDERCURL_PATCH
 #define STR_BUF_SIZ   ESC_BUF_SIZ
 #define STR_ARG_SIZ   ESC_ARG_SIZ
+#if KITTY_GRAPHICS_PATCH
+/* PUA character used as an image placeholder */
+#define IMAGE_PLACEHOLDER_CHAR 0x10EEEE
+#define IMAGE_PLACEHOLDER_CHAR_OLD 0xEEEE
+#endif // KITTY_GRAPHICS_PATCH
 #define STR_TERM_ST   "\033\\"
 #define STR_TERM_BEL  "\007"
 
@@ -267,6 +275,12 @@ static const uchar utfbyte[UTF_SIZ + 1] = {0x80,    0, 0xC0, 0xE0, 0xF0};
 static const uchar utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8};
 static const Rune utfmin[UTF_SIZ + 1] = {       0,    0,  0x80,  0x800,  0x10000};
 static const Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
+
+#if KITTY_GRAPHICS_PATCH
+/* Converts a diacritic to a row/column/etc number. The result is 1-base, 0
+ * means "couldn't convert". Defined in rowcolumn_diacritics_helpers.c */
+uint16_t diacritic_to_num(uint32_t code);
+#endif // KITTY_GRAPHICS_PATCH
 
 #include "patch/st_include.h"
 
@@ -749,6 +763,14 @@ getsel(void)
 			if (gp->mode & ATTR_WDUMMY)
 				continue;
 
+			#if KITTY_GRAPHICS_PATCH
+			if (gp->mode & ATTR_IMAGE) {
+				/* TODO: copy the diacritics as well */
+				ptr += utf8encode(IMAGE_PLACEHOLDER_CHAR, ptr);
+				continue;
+			}
+			#endif // KITTY_GRAPHICS_PATCH
+
 			ptr += utf8encode(gp->u, ptr);
 		}
 
@@ -979,7 +1001,15 @@ ttyread(void)
 {
 	static char buf[BUFSIZ];
 	static int buflen = 0;
+	#if KITTY_GRAPHICS_PATCH
+	static int already_processing = 0;
+	int ret, written = 0;
+
+	if (buflen >= LEN(buf))
+		return 0;
+	#else
 	int ret, written;
+	#endif // KITTY_GRAPHICS_PATCH
 
 	/* append read bytes to unprocessed bytes */
 	#if SYNC_PATCH
@@ -999,7 +1029,28 @@ ttyread(void)
 		#else
 		buflen += ret;
 		#endif // SYNC_PATCH
+		#if KITTY_GRAPHICS_PATCH
+		if (already_processing) {
+			/* Avoid a recursive call to twrite() */
+			return ret;
+		}
+		already_processing = 1;
+		while (1) {
+			int buflen_before_processing = buflen;
+			written += twrite(buf + written, buflen - written, 0);
+			/* If buflen changed during the call to twrite there is
+			 * new data and we need to keep processing, otherwise we
+			 * can exit. This will not loop forever because the
+			 * buffer is limited, and we don't clean it in this
+			 * loop, so at some point ttywrite will have to drop
+			 * some data. */
+			if (buflen_before_processing == buflen)
+				break;
+		}
+		already_processing = 0;
+		#else
 		written = twrite(buf, buflen, 0);
+		#endif // KITTY_GRAPHICS_PATCH
 		buflen -= written;
 		/* keep any incomplete UTF-8 byte sequence for the next call */
 		if (buflen > 0)
@@ -1045,6 +1096,9 @@ ttywriteraw(const char *s, size_t n)
 	fd_set wfd, rfd;
 	ssize_t r;
 	size_t lim = 256;
+	#if KITTY_GRAPHICS_PATCH
+	int retries_left = 100;
+	#endif // KITTY_GRAPHICS_PATCH
 
 	/*
 	 * Remember that we are using a pty, which might be a modem line.
@@ -1053,6 +1107,11 @@ ttywriteraw(const char *s, size_t n)
 	 * FIXME: Migrate the world to Plan 9.
 	 */
 	while (n > 0) {
+		#if KITTY_GRAPHICS_PATCH
+		if (retries_left-- <= 0)
+			goto too_many_retries;
+		#endif // KITTY_GRAPHICS_PATCH
+
 		FD_ZERO(&wfd);
 		FD_ZERO(&rfd);
 		FD_SET(cmdfd, &wfd);
@@ -1094,6 +1153,10 @@ ttywriteraw(const char *s, size_t n)
 
 write_error:
 	die("write error on tty: %s\n", strerror(errno));
+#if KITTY_GRAPHICS_PATCH
+too_many_retries:
+	fprintf(stderr, "Could not write %zu bytes to tty\n", n);
+#endif // KITTY_GRAPHICS_PATCH
 }
 
 void
@@ -1211,7 +1274,11 @@ tcursor(int mode)
 void
 tresetcursor(void)
 {
-	term.c = (TCursor){ { .mode = ATTR_NULL, .fg = defaultfg, .bg = defaultbg },
+	term.c = (TCursor){ { .mode = ATTR_NULL, .fg = defaultfg, .bg = defaultbg,
+	                      #if KITTY_GRAPHICS_PATCH
+	                      .decor = DECOR_DEFAULT_COLOR,
+	                      #endif // KITTY_GRAPHICS_PATCH
+	                    },
 	                    .x = 0, .y = 0, .state = CURSOR_DEFAULT };
 }
 
@@ -1269,7 +1336,11 @@ treset(void)
 void
 tnew(int col, int row)
 {
-	term = (Term){ .c = { .attr = { .fg = defaultfg, .bg = defaultbg } } };
+	term = (Term){ .c = { .attr = { .fg = defaultfg, .bg = defaultbg,
+	                                #if KITTY_GRAPHICS_PATCH
+	                                .decor = DECOR_DEFAULT_COLOR,
+	                                #endif // KITTY_GRAPHICS_PATCH
+	                              } } };
 	tresize(col, row);
 	treset();
 }
@@ -1615,12 +1686,31 @@ tsetchar(Rune u, const Glyph *attr, int x, int y)
 		term.line[y][x-1].mode &= ~ATTR_WIDE;
 	}
 
+	#if KITTY_GRAPHICS_PATCH
+	if (u == ' ' && term.line[y][x].mode & ATTR_IMAGE &&
+	    tgetisclassicplaceholder(&term.line[y][x])) {
+		/* This is a workaround: don't overwrite classic placement
+		 * placeholders with space symbols (unlike Unicode placeholders
+		 * which must be overwritten by anything). */
+		term.line[y][x].bg = attr->bg;
+		term.dirty[y] = 1;
+		return;
+	}
+	#endif // KITTY_GRAPHICS_PATCH
+
 	term.dirty[y] = 1;
 	term.line[y][x] = *attr;
 	term.line[y][x].u = u;
 	#if REFLOW_PATCH
 	term.line[y][x].mode |= ATTR_SET;
 	#endif // REFLOW_PATCH
+
+	#if KITTY_GRAPHICS_PATCH
+	if (u == IMAGE_PLACEHOLDER_CHAR || u == IMAGE_PLACEHOLDER_CHAR_OLD) {
+		term.line[y][x].u = 0;
+		term.line[y][x].mode |= ATTR_IMAGE;
+	}
+	#endif // KITTY_GRAPHICS_PATCH
 
 	#if BOXDRAW_PATCH
 	if (isboxdraw(u))
@@ -1658,12 +1748,143 @@ tclearregion(int x1, int y1, int x2, int y2)
 				selclear();
 			gp->fg = term.c.attr.fg;
 			gp->bg = term.c.attr.bg;
+			#if KITTY_GRAPHICS_PATCH
+			gp->decor = term.c.attr.decor;
+			#endif // KITTY_GRAPHICS_PATCH
 			gp->mode = 0;
 			gp->u = ' ';
 		}
 	}
 }
 #endif // REFLOW_PATCH
+
+#if KITTY_GRAPHICS_PATCH
+/* TLINE(y) is the visible line y; without scrollback that is just term.line. */
+#if SCROLLBACK_PATCH || REFLOW_PATCH
+#define TVISLINE(y) TLINE(y)
+#else
+#define TVISLINE(y) term.line[y]
+#endif // SCROLLBACK_PATCH | REFLOW_PATCH
+
+/* Fills a rectangular area with an image placeholder. The starting point is the
+ * cursor. Adds empty lines if needed. The placeholder will be marked as
+ * classic. */
+void
+tcreateimgplaceholder(uint32_t image_id, uint32_t placement_id, int cols,
+                      int rows, char do_not_move_cursor, Glyph *text_underneath)
+{
+	int row, col, x, y;
+	Glyph *gp, *to_save, *under;
+
+	for (row = 0; row < rows; ++row) {
+		y = term.c.y;
+		term.dirty[y] = 1;
+		for (col = 0; col < cols; ++col) {
+			x = term.c.x + col;
+			if (x >= term.col)
+				break;
+			gp = &term.line[y][x];
+			#if REFLOW_PATCH
+			if (selected(x, y + term.scr))
+			#else
+			if (selected(x, y))
+			#endif // REFLOW_PATCH
+				selclear();
+			if (text_underneath) {
+				to_save = gp;
+				/* If there is already a classic placeholder,
+				 * use the text underneath it. This will leave
+				 * holes in images, but at least we are
+				 * guaranteed to restore the original text. */
+				if (gp->mode & ATTR_IMAGE &&
+				    tgetisclassicplaceholder(gp)) {
+					under = gr_get_glyph_underneath_image(
+						tgetimgid(gp),
+						tgetimgplacementid(gp),
+						tgetimgcol(gp),
+						tgetimgrow(gp));
+					if (under)
+						to_save = under;
+				}
+				text_underneath[cols * row + col] = *to_save;
+			}
+			gp->mode = ATTR_IMAGE;
+			#if REFLOW_PATCH
+			gp->mode |= ATTR_SET;
+			#endif // REFLOW_PATCH
+			gp->u = 0;
+			tsetimgrow(gp, row + 1);
+			tsetimgcol(gp, col + 1);
+			tsetimgid(gp, image_id);
+			tsetimgplacementid(gp, placement_id);
+			tsetimgdiacriticcount(gp, 3);
+			tsetisclassicplaceholder(gp, 1);
+		}
+		/* If moving the cursor is not allowed and this is the last line
+		 * of the terminal, we are done. */
+		if (do_not_move_cursor && y == term.row - 1)
+			break;
+		/* Move the cursor down, maybe creating a new line. The x is
+		 * preserved (we never change term.c.x in the loop above). */
+		if (row != rows - 1)
+			tnewline(0);
+	}
+	if (do_not_move_cursor) {
+		/* Return the cursor to the original position. */
+		tmoveto(term.c.x, term.c.y - rows + 1);
+	} else {
+		/* Move the cursor beyond the last column, as required by the
+		 * protocol. If the cursor goes beyond the screen edge, insert a
+		 * newline to match the behavior of kitty. */
+		if (term.c.x + cols >= term.col)
+			tnewline(1);
+		else
+			tmoveto(term.c.x + cols, term.c.y);
+	}
+}
+
+void
+gr_for_each_image_cell(int (*callback)(void *data, Glyph *gp), void *data)
+{
+	int row, col;
+	Glyph *gp;
+
+	for (row = 0; row < term.row; ++row) {
+		for (col = 0; col < term.col; ++col) {
+			gp = &TVISLINE(row)[col];
+			if (gp->mode & ATTR_IMAGE) {
+				if (callback(data, gp))
+					term.dirty[row] = 1;
+			}
+		}
+	}
+}
+
+void
+gr_schedule_image_redraw_by_id(uint32_t image_id)
+{
+	int row, col;
+	Glyph *gp;
+
+	for (row = 0; row < term.row; ++row) {
+		if (term.dirty[row])
+			continue;
+		for (col = 0; col < term.col; ++col) {
+			gp = &TVISLINE(row)[col];
+			if (gp->mode & ATTR_IMAGE && tgetimgid(gp) == image_id) {
+				term.dirty[row] = 1;
+				break;
+			}
+		}
+	}
+}
+
+Glyph
+getglyphat(int col, int row)
+{
+	return TVISLINE(row)[col];
+}
+#endif // KITTY_GRAPHICS_PATCH
 
 #if !REFLOW_PATCH
 void
@@ -1807,6 +2028,9 @@ tsetattr(const int *attr, int l)
 				ATTR_STRUCK     );
 			term.c.attr.fg = defaultfg;
 			term.c.attr.bg = defaultbg;
+			#if KITTY_GRAPHICS_PATCH
+			term.c.attr.decor = DECOR_DEFAULT_COLOR;
+			#endif // KITTY_GRAPHICS_PATCH
 			#if UNDERCURL_PATCH
 			term.c.attr.ustyle = -1;
 			term.c.attr.ucolor[0] = -1;
@@ -1833,6 +2057,21 @@ tsetattr(const int *attr, int l)
 				term.c.attr.mode &= ~ATTR_UNDERLINE;
 
 			term.c.attr.mode ^= ATTR_DIRTYUNDERLINE;
+			#elif KITTY_GRAPHICS_PATCH
+			term.c.attr.mode |= ATTR_UNDERLINE;
+			if (i + 1 < l) {
+				idx = attr[++i];
+				if (BETWEEN(idx, 1, 5)) {
+					tsetdecorstyle(&term.c.attr, idx);
+				} else if (idx == 0) {
+					term.c.attr.mode &= ~ATTR_UNDERLINE;
+					tsetdecorstyle(&term.c.attr, 0);
+				} else {
+					fprintf(stderr,
+						"erresc: unknown underline "
+						"style %d\n", idx);
+				}
+			}
 			#else
 			term.c.attr.mode |= ATTR_UNDERLINE;
 			#endif // UNDERCURL_PATCH
@@ -1859,6 +2098,9 @@ tsetattr(const int *attr, int l)
 			break;
 		case 24:
 			term.c.attr.mode &= ~ATTR_UNDERLINE;
+			#if KITTY_GRAPHICS_PATCH && !UNDERCURL_PATCH
+			tsetdecorstyle(&term.c.attr, 0);
+			#endif // KITTY_GRAPHICS_PATCH
 			break;
 		case 25:
 			term.c.attr.mode &= ~ATTR_BLINK;
@@ -1906,6 +2148,14 @@ tsetattr(const int *attr, int l)
 			term.c.attr.ucolor[1] = -1;
 			term.c.attr.ucolor[2] = -1;
 			term.c.attr.mode ^= ATTR_DIRTYUNDERLINE;
+			break;
+		#elif KITTY_GRAPHICS_PATCH
+		case 58:
+			if ((idx = tdefcolor(attr, &i, l)) >= 0)
+				tsetdecorcolor(&term.c.attr, idx);
+			break;
+		case 59:
+			tsetdecorcolor(&term.c.attr, DECOR_DEFAULT_COLOR);
 			break;
 		#else
 		case 58:
@@ -2536,10 +2786,10 @@ csihandle(void)
 	case 's': /* DECSC -- Save cursor position (ANSI.SYS) */
 		tcursor(CURSOR_SAVE);
 		break;
-	#if CSI_22_23_PATCH | SIXEL_PATCH
+	#if CSI_22_23_PATCH | SIXEL_PATCH | KITTY_GRAPHICS_PATCH
 	case 't': /* title stack operations ; XTWINOPS */
 		switch (csiescseq.arg[0]) {
-		#if SIXEL_PATCH
+		#if SIXEL_PATCH || KITTY_GRAPHICS_PATCH
 		case 14: /* text area size in pixels */
 			if (csiescseq.narg > 1)
 				goto unknown;
@@ -2555,7 +2805,7 @@ csihandle(void)
 			n = snprintf(buffer, sizeof buffer, "\033[8;%d;%dt", term.row, term.col);
 			ttywrite(buffer, n, 1);
 			break;
-		#endif // SIXEL_PATCH
+		#endif // SIXEL_PATCH | KITTY_GRAPHICS_PATCH
 		#if CSI_22_23_PATCH
 		case 22: /* pust current title on stack */
 			switch (csiescseq.arg[1]) {
@@ -2584,7 +2834,7 @@ csihandle(void)
 			goto unknown;
 		}
 		break;
-	#endif // CSI_22_23_PATCH | SIXEL_PATCH
+	#endif // CSI_22_23_PATCH | SIXEL_PATCH | KITTY_GRAPHICS_PATCH
 	case 'u': /* DECRC -- Restore cursor position (ANSI.SYS) */
 		if (csiescseq.priv) {
 			goto unknown;
@@ -2602,6 +2852,19 @@ csihandle(void)
 			goto unknown;
 		}
 		break;
+	#if KITTY_GRAPHICS_PATCH
+	case '>':
+		switch (csiescseq.mode[1]) {
+		case 'q': /* XTVERSION -- Print terminal name and version */
+			n = snprintf(buffer, sizeof buffer,
+			             "\033P>|st-graphics(%s)\033\\", VERSION);
+			ttywrite(buffer, n, 0);
+			break;
+		default:
+			goto unknown;
+		}
+		break;
+	#endif // KITTY_GRAPHICS_PATCH
 	}
 }
 
@@ -2936,6 +3199,26 @@ strhandle(void)
 		return;
 		#endif // SIXEL_PATCH | SYNC_PATCH
 	case '_': /* APC -- Application Program Command */
+		#if KITTY_GRAPHICS_PATCH
+		if (gr_parse_command(strescseq.buf, strescseq.len)) {
+			GraphicsCommandResult *res = &graphics_command_result;
+			if (res->create_placeholder) {
+				tcreateimgplaceholder(
+					res->placeholder.image_id,
+					res->placeholder.placement_id,
+					res->placeholder.columns,
+					res->placeholder.rows,
+					res->placeholder.do_not_move_cursor,
+					res->placeholder.text_underneath);
+			}
+			if (res->response[0])
+				ttywrite(res->response, strlen(res->response), 0);
+			if (res->redraw)
+				tfulldirt();
+			return;
+		}
+		#endif // KITTY_GRAPHICS_PATCH
+		return;
 	case '^': /* PM -- Privacy Message */
 		return;
 	}
@@ -3431,6 +3714,9 @@ tputc(Rune u)
 	int control;
 	int width, len;
 	Glyph *gp;
+	#if KITTY_GRAPHICS_PATCH
+	uint16_t num;
+	#endif // KITTY_GRAPHICS_PATCH
 
 	control = ISCONTROL(u);
 	if (u < 127 || !IS_SET(MODE_UTF8))
@@ -3565,6 +3851,44 @@ check_control_code:
 	if (selected(term.c.x, term.c.y))
 		selclear();
 	#endif // REFLOW_PATCH
+
+	#if KITTY_GRAPHICS_PATCH
+	/* wcwidth is broken on some systems, set the width to 0 if it's a known
+	 * diacritic used for images. */
+	num = diacritic_to_num(u);
+	if (num != 0)
+		width = 0;
+	/* Set the width to 1 if it's an image placeholder character. */
+	if (u == IMAGE_PLACEHOLDER_CHAR || u == IMAGE_PLACEHOLDER_CHAR_OLD)
+		width = 1;
+
+	if (width == 0) {
+		/* It's probably a combining char. Combining characters are not
+		 * supported, so we just ignore them, unless it denotes the row
+		 * and column of an image character. */
+		if (term.c.y <= 0 && term.c.x <= 0)
+			return;
+		else if (term.c.x == 0)
+			gp = &term.line[term.c.y-1][term.col-1];
+		else if (term.c.state & CURSOR_WRAPNEXT)
+			gp = &term.line[term.c.y][term.c.x];
+		else
+			gp = &term.line[term.c.y][term.c.x-1];
+		if (num && (gp->mode & ATTR_IMAGE)) {
+			unsigned diaccount = tgetimgdiacriticcount(gp);
+			if (diaccount == 0)
+				tsetimgrow(gp, num);
+			else if (diaccount == 1)
+				tsetimgcol(gp, num);
+			else if (diaccount == 2)
+				tsetimg4thbyteplus1(gp, num);
+			tsetimgdiacriticcount(gp, diaccount + 1);
+			term.dirty[term.c.y] = 1;
+		}
+		term.lastc = u;
+		return;
+	}
+	#endif // KITTY_GRAPHICS_PATCH
 
 	gp = &term.line[term.c.y][term.c.x];
 	if (IS_SET(MODE_WRAP) && (term.c.state & CURSOR_WRAPNEXT)) {
@@ -3841,6 +4165,10 @@ drawregion(int x1, int y1, int x2, int y2)
 {
 	int y;
 
+	#if KITTY_GRAPHICS_PATCH
+	xstartimagedraw(term.dirty, term.row);
+	#endif // KITTY_GRAPHICS_PATCH
+
 	for (y = y1; y < y2; y++) {
 		if (!term.dirty[y])
 			continue;
@@ -3852,6 +4180,10 @@ drawregion(int x1, int y1, int x2, int y2)
 		xdrawline(term.line[y], x1, y, x2);
 		#endif // SCROLLBACK_PATCH
 	}
+
+	#if KITTY_GRAPHICS_PATCH
+	xfinishimagedraw();
+	#endif // KITTY_GRAPHICS_PATCH
 }
 
 #include "patch/st_include.c"

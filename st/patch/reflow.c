@@ -57,6 +57,9 @@ tclearglyph(Glyph *gp, int usecurattr)
 		gp->fg = defaultfg;
 		gp->bg = defaultbg;
 	}
+	#if KITTY_GRAPHICS_PATCH
+	gp->decor = usecurattr ? term.c.attr.decor : DECOR_DEFAULT_COLOR;
+	#endif // KITTY_GRAPHICS_PATCH
 	gp->mode = ATTR_NULL;
 	gp->u = ' ';
 }
@@ -717,6 +720,12 @@ tgetglyphs(char *buf, const Glyph *gp, const Glyph *lgp)
 	while (gp <= lgp)
 		if (gp->mode & ATTR_WDUMMY) {
 			gp++;
+		#if KITTY_GRAPHICS_PATCH
+		} else if (gp->mode & ATTR_IMAGE) {
+			/* TODO: copy the diacritics as well */
+			buf += utf8encode(IMAGE_PLACEHOLDER_CHAR, buf);
+			gp++;
+		#endif // KITTY_GRAPHICS_PATCH
 		} else {
 			buf += utf8encode((gp++)->u, buf);
 		}

@@ -308,6 +308,29 @@ static unsigned int mousebg = 0;
  */
 static unsigned int defaultattr = 11;
 
+#if KITTY_GRAPHICS_PATCH
+/*
+ * Graphics (kitty graphics protocol) configuration
+ */
+/* The template for the cache directory. */
+const char graphics_cache_dir_template[] = "/tmp/st-images-XXXXXX";
+/* The max size of a single image file, in bytes. */
+unsigned graphics_max_single_image_file_size = 20 * 1024 * 1024;
+/* The max size of the cache, in bytes. */
+unsigned graphics_total_file_cache_size = 300 * 1024 * 1024;
+/* The max ram size of an image or placement, in bytes. */
+unsigned graphics_max_single_image_ram_size = 100 * 1024 * 1024;
+/* The max total size of all images loaded into RAM. */
+unsigned graphics_max_total_ram_size = 300 * 1024 * 1024;
+/* The max total number of image placements and images. */
+unsigned graphics_max_total_placements = 4096;
+/* The ratio by which limits can be exceeded. This is to reduce the frequency
+ * of image removal. */
+double graphics_excess_tolerance_ratio = 0.05;
+/* The minimum delay between redraws caused by animations, in milliseconds. */
+unsigned graphics_animation_min_delay = 20;
+#endif // KITTY_GRAPHICS_PATCH
+
 #if XRESOURCES_PATCH
 /*
  * Xresources preferences to load at startup

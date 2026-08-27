@@ -241,6 +241,17 @@
  */
 #define KEYBOARDSELECT_PATCH 1
 
+/* This patch implements a subset of the kitty graphics protocol, which lets
+ * programs display images inline (icat, timg, tode / terminal-browser, image.nvim,
+ * neofetch etc.). Replaces the SIXEL patch - do not enable both.
+ * Requires imlib2, zlib, librt and Xrender; uncomment the corresponding lines
+ * in config.mk when including this patch.
+ *
+ * https://github.com/sergei-grechanik/st-graphics
+ * https://st.suckless.org/patches/kitty-graphics-protocol/
+ */
+#define KITTY_GRAPHICS_PATCH 1
+
 /* This patch adds support for drawing ligatures using the Harfbuzz library to transform
  * original text of a single line to a list of glyphs with ligatures included.
  * This patch depends on the Harfbuzz library and headers to compile.

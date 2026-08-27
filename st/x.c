@@ -19,6 +19,9 @@ char *argv0;
 #include "arg.h"
 #include "st.h"
 #include "win.h"
+#if KITTY_GRAPHICS_PATCH
+#include "graphics.h"
+#endif // KITTY_GRAPHICS_PATCH
 #if LIGATURES_PATCH
 #include "hb.h"
 #endif // LIGATURES_PATCH
@@ -98,6 +101,10 @@ static void xdrawglyphfontspecs(const XftGlyphFontSpec *, Glyph, int, int, int);
 static inline void xresetfontsettings(uint32_t mode, Font **font, int *frcflags);
 #endif // LIGATURES_PATCH
 void xdrawglyph(Glyph, int, int);
+#if KITTY_GRAPHICS_PATCH
+static void xdrawimages(Glyph, Line, int x1, int y1, int x2);
+static void xdrawoneimagecell(Glyph, int x, int y);
+#endif // KITTY_GRAPHICS_PATCH
 static void xclear(int, int, int, int);
 static int xgeommasktogravity(int);
 static int ximopen(Display *);
@@ -1722,6 +1729,11 @@ xinit(int cols, int rows)
 	if (xsel.xtarget == None)
 		xsel.xtarget = XA_STRING;
 
+	#if KITTY_GRAPHICS_PATCH
+	/* Initialize the graphics (image display) module. */
+	gr_init(xw.dpy, xw.vis, xw.cmap);
+	#endif // KITTY_GRAPHICS_PATCH
+
 	#if BOXDRAW_PATCH
 	boxdraw_xinit(xw.dpy, xw.cmap, xw.draw, xw.vis);
 	#endif // BOXDRAW_PATCH
@@ -1753,7 +1765,7 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 	#else
 	float winx = borderpx + x * win.cw, winy = borderpx + y * win.ch, xp, yp;
 	#endif // ANYSIZE_PATCH
-	ushort mode, prevmode = USHRT_MAX;
+	uint32_t mode, prevmode = UINT32_MAX;
 	Font *font = &dc.font;
 	int frcflags = FRC_NORMAL;
 	float runewidth = win.cw * ((glyphs[0].mode & ATTR_WIDE) ? 2.0f : 1.0f);
@@ -1899,6 +1911,13 @@ xmakeglyphfontspecs(XftGlyphFontSpec *specs, const Glyph *glyphs, int len, int x
 		#else // !LIGATURES_PATCH
 		if (mode == ATTR_WDUMMY)
 			continue;
+
+		#if KITTY_GRAPHICS_PATCH
+		/* Draw spaces for image placeholders; the images themselves are
+		 * drawn separately by xdrawimages(). */
+		if (mode & ATTR_IMAGE)
+			rune = ' ';
+		#endif // KITTY_GRAPHICS_PATCH
 
 		/* Determine font for glyph if different from previous glyph. */
 		if (prevmode != mode) {
@@ -2717,6 +2736,13 @@ xdrawglyph(Glyph g, int x, int y)
 		,(g.mode & ATTR_WIDE) ? 2 : 1
 		#endif // LIGATURES_PATCH
 	);
+	#if KITTY_GRAPHICS_PATCH
+	if (g.mode & ATTR_IMAGE) {
+		gr_start_drawing(xw.buf, win.cw, win.ch);
+		xdrawoneimagecell(g, x, y);
+		gr_finish_drawing(xw.buf);
+	}
+	#endif // KITTY_GRAPHICS_PATCH
 }
 
 void
@@ -2754,6 +2780,12 @@ xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og)
 	if (IS_SET(MODE_HIDE))
 		return;
 	#endif // HIDE_TERMINAL_CURSOR_PATCH
+
+	#if KITTY_GRAPHICS_PATCH
+	/* If it's an image, just draw a ballot box for simplicity. */
+	if (g.mode & ATTR_IMAGE)
+		g.u = 0x2610;
+	#endif // KITTY_GRAPHICS_PATCH
 
 	/*
 	 * Select the right color for the right mode.
@@ -2936,6 +2968,155 @@ xdrawcursor(int cx, int cy, Glyph g, int ox, int oy, Glyph og)
 				win.cw, 1);
 	}
 }
+
+#if KITTY_GRAPHICS_PATCH
+#if ANYSIZE_PATCH
+#define GR_HBORDER win.hborderpx
+#define GR_VBORDER win.vborderpx
+#else
+#define GR_HBORDER borderpx
+#define GR_VBORDER borderpx
+#endif // ANYSIZE_PATCH
+
+/* Draw (or queue for drawing) image cells between columns x1 and x2 assuming
+ * that they have the same attributes (and thus the same lower 24 bits of the
+ * image ID and the same placement ID). */
+void
+xdrawimages(Glyph base, Line line, int x1, int y1, int x2)
+{
+	int y_pix = GR_VBORDER + y1 * win.ch;
+	uint32_t image_id_24bits = base.fg & 0xFFFFFF;
+	uint32_t placement_id = tgetimgplacementid(&base);
+	/* Columns and rows are 1-based, 0 means unspecified. */
+	int last_col = 0;
+	int last_row = 0;
+	int last_start_col = 0;
+	int last_start_x = x1;
+	int x, x_pix;
+	uint32_t image_id;
+	/* The most significant byte is also 1-base, subtract 1 before use. */
+	uint32_t last_id_4thbyteplus1 = 0;
+	/* We may need to inherit row/column/4th byte from the previous cell. */
+	Glyph *prev = &line[x1 - 1];
+	if (x1 > 0 && (prev->mode & ATTR_IMAGE) &&
+	    (prev->fg & 0xFFFFFF) == image_id_24bits &&
+	    prev->decor == base.decor) {
+		last_row = tgetimgrow(prev);
+		last_col = tgetimgcol(prev);
+		last_id_4thbyteplus1 = tgetimgid4thbyteplus1(prev);
+		last_start_col = last_col + 1;
+	}
+	for (x = x1; x < x2; ++x) {
+		Glyph *g = &line[x];
+		uint32_t cur_row = tgetimgrow(g);
+		uint32_t cur_col = tgetimgcol(g);
+		uint32_t cur_id_4thbyteplus1 = tgetimgid4thbyteplus1(g);
+		uint32_t num_diacritics = tgetimgdiacriticcount(g);
+		/* If the row is not specified, assume it's the same as the row
+		 * of the previous cell. Note that `cur_row` may contain a value
+		 * imputed earlier, which will be preserved if `last_row` is
+		 * zero (i.e. we don't know the row of the previous cell). */
+		if (last_row && (num_diacritics == 0 || !cur_row))
+			cur_row = last_row;
+		/* If the column is not specified and the row is the same as the
+		 * row of the previous cell, then assume that the column is the
+		 * next one. */
+		if (last_col && (num_diacritics <= 1 || !cur_col) &&
+		    cur_row == last_row)
+			cur_col = last_col + 1;
+		/* If the additional id byte is not specified and the
+		 * coordinates are consecutive, assume the byte is also the
+		 * same. */
+		if (last_id_4thbyteplus1 &&
+		    (num_diacritics <= 2 || !cur_id_4thbyteplus1) &&
+		    cur_row == last_row && cur_col == last_col + 1)
+			cur_id_4thbyteplus1 = last_id_4thbyteplus1;
+		/* If we couldn't infer row and column, start from the top left
+		 * corner. */
+		if (cur_row == 0)
+			cur_row = 1;
+		if (cur_col == 0)
+			cur_col = 1;
+		/* If this cell breaks a contiguous stripe of image cells, draw
+		 * that line and start a new one. */
+		if (cur_col != last_col + 1 || cur_row != last_row ||
+		    cur_id_4thbyteplus1 != last_id_4thbyteplus1) {
+			image_id = image_id_24bits;
+			if (last_id_4thbyteplus1)
+				image_id |= (last_id_4thbyteplus1 - 1) << 24;
+			if (last_row != 0) {
+				x_pix = GR_HBORDER + last_start_x * win.cw;
+				gr_append_imagerect(
+					xw.buf, image_id, placement_id,
+					last_start_col - 1, last_col,
+					last_row - 1, last_row, last_start_x,
+					y1, x_pix, y_pix, win.cw, win.ch,
+					base.mode & ATTR_REVERSE);
+			}
+			last_start_col = cur_col;
+			last_start_x = x;
+		}
+		last_row = cur_row;
+		last_col = cur_col;
+		last_id_4thbyteplus1 = cur_id_4thbyteplus1;
+		/* Populate the missing glyph data to enable inheritance between
+		 * runs and support the naive implementation of tgetimgid. */
+		if (!tgetimgrow(g))
+			tsetimgrow(g, cur_row);
+		/* We cannot save this information if there are > 511 cols. */
+		if (!tgetimgcol(g) && (cur_col & ~0x1ff) == 0)
+			tsetimgcol(g, cur_col);
+		if (!tgetimgid4thbyteplus1(g))
+			tsetimg4thbyteplus1(g, cur_id_4thbyteplus1);
+	}
+	image_id = image_id_24bits;
+	if (last_id_4thbyteplus1)
+		image_id |= (last_id_4thbyteplus1 - 1) << 24;
+	/* Draw the last contiguous stripe. */
+	if (last_row != 0) {
+		x_pix = GR_HBORDER + last_start_x * win.cw;
+		gr_append_imagerect(xw.buf, image_id, placement_id,
+				    last_start_col - 1, last_col, last_row - 1,
+				    last_row, last_start_x, y1, x_pix, y_pix,
+				    win.cw, win.ch, base.mode & ATTR_REVERSE);
+	}
+}
+
+/* Draw just one image cell without inheriting attributes from the left. */
+void
+xdrawoneimagecell(Glyph g, int x, int y)
+{
+	int x_pix, y_pix;
+	uint32_t row, col, placement_id, image_id;
+
+	if (!(g.mode & ATTR_IMAGE))
+		return;
+	x_pix = GR_HBORDER + x * win.cw;
+	y_pix = GR_VBORDER + y * win.ch;
+	row = tgetimgrow(&g) - 1;
+	col = tgetimgcol(&g) - 1;
+	placement_id = tgetimgplacementid(&g);
+	image_id = tgetimgid(&g);
+	gr_append_imagerect(xw.buf, image_id, placement_id, col, col + 1, row,
+			    row + 1, x, y, x_pix, y_pix, win.cw, win.ch,
+			    g.mode & ATTR_REVERSE);
+}
+
+/* Prepare for image drawing. */
+void
+xstartimagedraw(int *dirty, int rows)
+{
+	gr_start_drawing(xw.buf, win.cw, win.ch);
+	gr_mark_dirty_animations(dirty, rows);
+}
+
+/* Draw all queued image cells. */
+void
+xfinishimagedraw(void)
+{
+	gr_finish_drawing(xw.buf);
+}
+#endif // KITTY_GRAPHICS_PATCH
 
 void
 xsetenv(void)
@@ -3161,6 +3342,10 @@ xdrawline(Line line, int x1, int y1, int x2)
 				#endif // SELECTION_COLORS_PATCH
 			if (i > 0 && ATTRCMP(base, new)) {
 				xdrawglyphfontspecs(specs, base, i, ox, y1, dmode);
+				#if KITTY_GRAPHICS_PATCH
+				if (dmode == DRAW_FG && base.mode & ATTR_IMAGE)
+					xdrawimages(base, line, ox, y1, x);
+				#endif // KITTY_GRAPHICS_PATCH
 				specs += i;
 				numspecs -= i;
 				i = 0;
@@ -3173,6 +3358,10 @@ xdrawline(Line line, int x1, int y1, int x2)
 		}
 		if (i > 0)
 			xdrawglyphfontspecs(specs, base, i, ox, y1, dmode);
+		#if KITTY_GRAPHICS_PATCH
+		if (i > 0 && dmode == DRAW_FG && base.mode & ATTR_IMAGE)
+			xdrawimages(base, line, ox, y1, x);
+		#endif // KITTY_GRAPHICS_PATCH
 	}
 
 	#if KEYBOARDSELECT_PATCH && REFLOW_PATCH
@@ -3202,6 +3391,10 @@ xdrawline(Line line, int x1, int y1, int x2)
 			#endif // SELECTION_COLORS_PATCH
 		if (i > 0 && ATTRCMP(base, new)) {
 			xdrawglyphfontspecs(specs, base, i, ox, y1);
+			#if KITTY_GRAPHICS_PATCH
+			if (base.mode & ATTR_IMAGE)
+				xdrawimages(base, line, ox, y1, x);
+			#endif // KITTY_GRAPHICS_PATCH
 			specs += i;
 			numspecs -= i;
 			i = 0;
@@ -3214,6 +3407,10 @@ xdrawline(Line line, int x1, int y1, int x2)
 	}
 	if (i > 0)
 		xdrawglyphfontspecs(specs, base, i, ox, y1);
+	#if KITTY_GRAPHICS_PATCH
+	if (i > 0 && base.mode & ATTR_IMAGE)
+		xdrawimages(base, line, ox, y1, x);
+	#endif // KITTY_GRAPHICS_PATCH
 
 	#if KEYBOARDSELECT_PATCH && REFLOW_PATCH
 	kbds_drawstatusbar(y1);
@@ -3728,6 +3925,9 @@ cmessage(XEvent *e)
 		}
 	} else if (e->xclient.data.l[0] == xw.wmdeletewin) {
 		ttyhangup();
+		#if KITTY_GRAPHICS_PATCH
+		gr_deinit();
+		#endif // KITTY_GRAPHICS_PATCH
 		exit(0);
 	#if DRAG_AND_DROP_PATCH
 	} else if (e->xclient.message_type == xw.XdndEnter) {
@@ -3817,6 +4017,14 @@ run(void)
 		if (XPending(xw.dpy))
 		#endif // SYNC_PATCH
 			timeout = 0;  /* existing events might not set xfd */
+
+		#if KITTY_GRAPHICS_PATCH
+		/* Decrease the timeout if there are active animations. */
+		if (graphics_next_redraw_delay != INT_MAX && IS_SET(MODE_VISIBLE))
+			timeout = timeout < 0
+				? graphics_next_redraw_delay
+				: MIN(timeout, graphics_next_redraw_delay);
+		#endif // KITTY_GRAPHICS_PATCH
 
 		seltv.tv_sec = timeout / 1E3;
 		seltv.tv_nsec = 1E6 * (timeout - 1E3 * seltv.tv_sec);

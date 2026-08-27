@@ -30,6 +30,12 @@ PKG_CONFIG = pkg-config
 #SIXEL_C = sixel.c sixel_hls.c
 #SIXEL_LIBS = `$(PKG_CONFIG) --libs imlib2`
 
+# Uncomment the lines below for the kitty graphics protocol patch / KITTY_GRAPHICS_PATCH
+GRAPHICS_C = rowcolumn_diacritics_helpers.c graphics.c
+GRAPHICS_H = graphics.h khash.h kvec.h
+GRAPHICS_INC = `$(PKG_CONFIG) --cflags imlib2`
+GRAPHICS_LIBS = -lrt -lXrender `$(PKG_CONFIG) --libs imlib2` `$(PKG_CONFIG) --libs zlib`
+
 # Uncomment for the netwmicon patch / NETWMICON_PATCH
 #NETWMICON_LIBS = `$(PKG_CONFIG) --libs gdlib`
 
@@ -37,11 +43,13 @@ PKG_CONFIG = pkg-config
 INCS = -I$(X11INC) \
        `$(PKG_CONFIG) --cflags fontconfig` \
        `$(PKG_CONFIG) --cflags freetype2` \
-       $(LIGATURES_INC)
+       $(LIGATURES_INC) \
+       $(GRAPHICS_INC)
 LIBS = -L$(X11LIB) -lm -lX11 -lutil -lXft ${SIXEL_LIBS} ${XRENDER} ${XCURSOR}\
        `$(PKG_CONFIG) --libs fontconfig` \
        `$(PKG_CONFIG) --libs freetype2` \
        $(LIGATURES_LIBS) \
+       $(GRAPHICS_LIBS) \
        $(NETWMICON_LIBS)
 
 # flags
