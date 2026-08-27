@@ -9,9 +9,6 @@ red       = "#D9634F"
 green     = "#7C9B96"
 yellow    = "#E3A25A"
 blue      = "#6A9FCC"
-magenta   = "#E7894C"
-cyan      = "#8FC4C4"
-white     = "#F2ECDD"
 
 [ui]
 agent_panel_scope = "all"
@@ -53,6 +50,13 @@ navigate_pane_down = ""
 # next_agent = "alt+j"
 # previous_agent = "alt+k"
 
+#### Invalid keys
 # leader+a focuses the agent panel for keyboard browsing
 # (j/k to move, enter to jump, esc to leave) — needs the rebuilt binary
-agent_picker = "prefix+a"
+# agent_picker = "prefix+a"
+# magenta   = "#E7894C"
+# cyan      = "#8FC4C4"
+# white     = "#F2ECDD"
+
+[experimental]
+kitty_graphics = true
