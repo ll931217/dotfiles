@@ -152,7 +152,11 @@ format = '([▴$added]($added_style))([▿$deleted]($deleted_style))'
 added_style = 'italic #7C9B96'
 deleted_style = 'italic #D9634F'
 ignore_submodules = true
-disabled = false
+# ~ is a git repo with no commits, so git_metrics diffs against a missing HEAD
+# and walks the whole home tree (.cargo, .rustup, node_modules, ...): 520ms of a
+# 530ms prompt, rendering nothing. Fires twice per atuin history select.
+# Re-enable if you ever commit in ~ or stop starting shells there.
+disabled = true
 
 [git_status]
 style = "bold italic #E7894C"

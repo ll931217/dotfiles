@@ -1,0 +1,204 @@
+[
+  {
+    "plugin_id": "worktrunk",
+    "name": "Worktrunk",
+    "version": "0.1.0",
+    "min_herdr_version": "0.7.0",
+    "description": "Switch, create, or remove git worktrees via worktrunk",
+    "manifest_path": "/home/liangshih.lin/.config/herdr/plugins/github/worktrunk-7fb519583f31/herdr-plugin.toml",
+    "plugin_root": "/home/liangshih.lin/.config/herdr/plugins/github/worktrunk-7fb519583f31",
+    "enabled": true,
+    "platforms": [
+      "macos",
+      "linux"
+    ],
+    "actions": [
+      {
+        "id": "open",
+        "title": "Worktree: switch / create from default branch",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" picker-default"
+        ]
+      },
+      {
+        "id": "open-current",
+        "title": "Worktree: switch / create from current branch",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" picker-current"
+        ]
+      },
+      {
+        "id": "open-with-remotes",
+        "title": "Worktree: switch / create from local or remote branches",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" picker-with-remotes"
+        ]
+      },
+      {
+        "id": "remove",
+        "title": "Worktree: remove",
+        "contexts": [
+          "workspace"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/open.sh\" remover"
+        ]
+      }
+    ],
+    "panes": [
+      {
+        "id": "picker-current",
+        "title": "Worktrunk — current branch",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/picker.sh\" --create-base=current"
+        ]
+      },
+      {
+        "id": "picker-default",
+        "title": "Worktrunk — default branch",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/picker.sh\" --create-base=default"
+        ]
+      },
+      {
+        "id": "picker-with-remotes",
+        "title": "Worktrunk — local and remote branches",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/picker.sh\" --show-with-remotes"
+        ]
+      },
+      {
+        "id": "remover",
+        "title": "Worktrunk — remove",
+        "placement": "split",
+        "command": [
+          "bash",
+          "-c",
+          "exec bash \"$HERDR_PLUGIN_ROOT/remove.sh\""
+        ]
+      }
+    ],
+    "source": {
+      "kind": "github",
+      "owner": "devashish2203",
+      "repo": "herdr-worktrunk",
+      "resolved_commit": "5d97639834bff49c835923ab5d6bfc23e0686ef1",
+      "managed_path": "/home/liangshih.lin/.config/herdr/plugins/github/worktrunk-7fb519583f31",
+      "installed_unix_ms": 1787710639830
+    }
+  },
+  {
+    "plugin_id": "zenbu-labs.terminal-browser",
+    "name": "Terminal Browser",
+    "version": "0.1.1",
+    "min_herdr_version": "0.8.2",
+    "description": "Open a browser inside herdr",
+    "manifest_path": "/home/liangshih.lin/.local/share/herdr-plugins/terminal-browser/herdr-plugin.toml",
+    "plugin_root": "/home/liangshih.lin/.local/share/herdr-plugins/terminal-browser",
+    "enabled": true,
+    "platforms": [
+      "linux",
+      "macos"
+    ],
+    "build": [
+      {
+        "platforms": [
+          "linux",
+          "macos"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "set -o pipefail; curl -fsSL https://terminal-browser.sh/install | bash"
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "open-split",
+        "title": "Open terminal-browser (right split)",
+        "description": "Split the focused pane and open terminal-browser in it",
+        "contexts": [
+          "global"
+        ],
+        "command": [
+          "bash",
+          "open-split.sh"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "local"
+    }
+  },
+  {
+    "plugin_id": "zenbu-labs.tode",
+    "name": "Terminal Code",
+    "version": "0.1.1",
+    "min_herdr_version": "0.8.2",
+    "description": "Open VS Code inside herdr",
+    "manifest_path": "/home/liangshih.lin/.local/share/herdr-plugins/tode/herdr-plugin.toml",
+    "plugin_root": "/home/liangshih.lin/.local/share/herdr-plugins/tode",
+    "enabled": true,
+    "platforms": [
+      "linux",
+      "macos"
+    ],
+    "build": [
+      {
+        "platforms": [
+          "linux",
+          "macos"
+        ],
+        "command": [
+          "bash",
+          "-c",
+          "set -o pipefail; curl -fsSL https://tode.sh/install | bash"
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "open-split",
+        "title": "Open terminal-code (right split)",
+        "description": "Split the focused pane and open terminal-code in it",
+        "contexts": [
+          "global"
+        ],
+        "command": [
+          "bash",
+          "open-split.sh"
+        ]
+      }
+    ],
+    "source": {
+      "kind": "local"
+    }
+  }
+]

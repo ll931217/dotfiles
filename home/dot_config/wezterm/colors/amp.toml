@@ -1,0 +1,22 @@
+# Amp
+# Converted from alacritty amp.toml — palette mirrors tmux-amp-theme (dark)
+[colors]
+foreground = "#F2ECDD"
+background = "#0F0F0F"
+cursor_bg = "#E7894C"
+cursor_border = "#E7894C"
+cursor_fg = "#0F0F0F"
+compose_cursor = "#6A9FCC"
+selection_bg = "#3A2614"
+selection_fg = "#F2ECDD"
+scrollbar_thumb = "#393552"
+split = "#7A7367"
+
+ansi = ["#1A1A1A", "#D9634F", "#7C9B96", "#E3A25A", "#6A9FCC", "#E7894C", "#8FC4C4", "#F2ECDD"]
+brights = ["#7A7367", "#D9634F", "#7C9B96", "#E3A25A", "#6A9FCC", "#E7894C", "#8FC4C4", "#F2ECDD"]
+
+[metadata]
+aliases = []
+author = "liangshih.lin"
+name = "Amp"
+origin_url = "https://github.com/sourcegraph/amp"

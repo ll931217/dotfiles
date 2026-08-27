@@ -1,0 +1,296 @@
+{
+  "version": 3,
+  "workspaces": [
+    {
+      "id": "w2",
+      "custom_name": "ROM",
+      "identity_cwd": "/home/liangshih.lin/Projects/rom",
+      "public_pane_numbers": {
+        "5": 3,
+        "19": 14,
+        "22": 17,
+        "7": 9,
+        "3": 1,
+        "6": 4,
+        "8": 10
+      },
+      "next_public_pane_number": 18,
+      "public_tab_numbers": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ],
+      "next_public_tab_number": 7,
+      "tabs": [
+        {
+          "custom_name": "AI",
+          "layout": {
+            "Pane": 3
+          },
+          "panes": {
+            "3": {
+              "cwd": "/home/liangshih.lin/Projects/rom"
+            }
+          },
+          "zoomed": false,
+          "focused": 3,
+          "root_pane": 3
+        },
+        {
+          "custom_name": "Shells",
+          "layout": {
+            "Pane": 22
+          },
+          "panes": {
+            "22": {
+              "cwd": "/home/liangshih.lin/Projects/rom"
+            }
+          },
+          "zoomed": false,
+          "focused": 22,
+          "root_pane": 22
+        },
+        {
+          "custom_name": "BE",
+          "layout": {
+            "Pane": 5
+          },
+          "panes": {
+            "5": {
+              "cwd": "/home/liangshih.lin/Projects/rom/backend"
+            }
+          },
+          "zoomed": false,
+          "focused": 5,
+          "root_pane": 5
+        },
+        {
+          "custom_name": "FE",
+          "layout": {
+            "Pane": 6
+          },
+          "panes": {
+            "6": {
+              "cwd": "/home/liangshih.lin/Projects/rom/frontend"
+            }
+          },
+          "zoomed": false,
+          "focused": 6,
+          "root_pane": 6
+        },
+        {
+          "custom_name": "Tools",
+          "layout": {
+            "Split": {
+              "direction": "Horizontal",
+              "ratio": 0.5,
+              "first": {
+                "Split": {
+                  "direction": "Vertical",
+                  "ratio": 0.5,
+                  "first": {
+                    "Pane": 7
+                  },
+                  "second": {
+                    "Pane": 19
+                  }
+                }
+              },
+              "second": {
+                "Pane": 8
+              }
+            }
+          },
+          "panes": {
+            "7": {
+              "cwd": "/home/liangshih.lin/Projects/clickhouse-tools/parquet2ch"
+            },
+            "19": {
+              "cwd": "/home/liangshih.lin/Projects/vici-clickhouse-library/migrations/clickhouse"
+            },
+            "8": {
+              "cwd": "/home/liangshih.lin/Projects/clickhouse-tools/parquet2ch"
+            }
+          },
+          "zoomed": false,
+          "focused": 7,
+          "root_pane": 7
+        }
+      ],
+      "active_tab": 0
+    },
+    {
+      "id": "w8",
+      "custom_name": "Staging",
+      "identity_cwd": "/home/liangshih.lin/Projects/aws-staging",
+      "public_pane_numbers": {
+        "23": 2,
+        "25": 4,
+        "24": 3,
+        "35": 6,
+        "18": 1,
+        "26": 5
+      },
+      "next_public_pane_number": 7,
+      "public_tab_numbers": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "next_public_tab_number": 5,
+      "tabs": [
+        {
+          "custom_name": "AI",
+          "layout": {
+            "Split": {
+              "direction": "Horizontal",
+              "ratio": 0.5,
+              "first": {
+                "Pane": 18
+              },
+              "second": {
+                "Split": {
+                  "direction": "Vertical",
+                  "ratio": 0.5,
+                  "first": {
+                    "Pane": 25
+                  },
+                  "second": {
+                    "Pane": 26
+                  }
+                }
+              }
+            }
+          },
+          "panes": {
+            "25": {
+              "cwd": "/home/liangshih.lin/Projects/aws-staging"
+            },
+            "18": {
+              "cwd": "/home/liangshih.lin/Projects/aws-staging"
+            },
+            "26": {
+              "cwd": "/home/liangshih.lin/Projects/aws-staging"
+            }
+          },
+          "zoomed": true,
+          "focused": 18,
+          "root_pane": 18
+        },
+        {
+          "custom_name": "Shell",
+          "layout": {
+            "Pane": 23
+          },
+          "panes": {
+            "23": {
+              "cwd": "/home/liangshih.lin/Projects/aws-staging"
+            }
+          },
+          "zoomed": false,
+          "focused": 23,
+          "root_pane": 23
+        },
+        {
+          "custom_name": "NVIM",
+          "layout": {
+            "Pane": 24
+          },
+          "panes": {
+            "24": {
+              "cwd": "/home/liangshih.lin/Projects/aws-staging"
+            }
+          },
+          "zoomed": false,
+          "focused": 24,
+          "root_pane": 24
+        },
+        {
+          "custom_name": "Airflow",
+          "layout": {
+            "Pane": 35
+          },
+          "panes": {
+            "35": {
+              "cwd": "/home/liangshih.lin/Projects/aws-staging"
+            }
+          },
+          "zoomed": false,
+          "focused": 35,
+          "root_pane": 35
+        }
+      ],
+      "active_tab": 0
+    },
+    {
+      "id": "w9",
+      "custom_name": null,
+      "identity_cwd": "/home/liangshih.lin/Projects/atlas",
+      "public_pane_numbers": {
+        "29": 3,
+        "28": 2,
+        "27": 1
+      },
+      "next_public_pane_number": 4,
+      "public_tab_numbers": [
+        1,
+        2,
+        3
+      ],
+      "next_public_tab_number": 4,
+      "tabs": [
+        {
+          "custom_name": "AI",
+          "layout": {
+            "Pane": 27
+          },
+          "panes": {
+            "27": {
+              "cwd": "/home/liangshih.lin/Projects/atlas"
+            }
+          },
+          "zoomed": false,
+          "focused": 27,
+          "root_pane": 27
+        },
+        {
+          "custom_name": "Shell",
+          "layout": {
+            "Pane": 28
+          },
+          "panes": {
+            "28": {
+              "cwd": "/home/liangshih.lin/Projects/atlas"
+            }
+          },
+          "zoomed": false,
+          "focused": 28,
+          "root_pane": 28
+        },
+        {
+          "custom_name": "NVIM",
+          "layout": {
+            "Pane": 29
+          },
+          "panes": {
+            "29": {
+              "cwd": "/home/liangshih.lin/Projects/atlas"
+            }
+          },
+          "zoomed": false,
+          "focused": 29,
+          "root_pane": 29
+        }
+      ],
+      "active_tab": 1
+    }
+  ],
+  "active": 1,
+  "selected": 1,
+  "sidebar_width": 26,
+  "sidebar_section_split": 0.5,
+  "collapsed_space_keys": []
+}

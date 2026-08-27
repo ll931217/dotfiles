@@ -1,0 +1,29 @@
+[mgr]
+ratio = [1, 2, 4]
+show_hidden = false
+linemode = "size"
+
+# [plugin]
+# prepend_previewers = [
+#   { url = "*", run = 'piper -- echo "$1"' },
+#   { url = "*.tar*", run = 'piper --format=url -- tar tf "$1"' },
+#   { url = "*/", run = 'piper -- eza -TL=3 --color=always --icons=always --group-directories-first --no-quotes "$1"' },
+#   { url = "*.md", run = 'piper -- CLICOLOR_FORCE=1 glow -w=$w -s=dark "$1"' },
+#   { url = "*.csv", run = 'piper -- bat -p --color=always "$1"' },
+#   { mime = "application/sqlite3", run = 'piper -- sqlite3 "$1" ".schema --indent"' }
+# ]
+
+[opener]
+edit = [{ run = '$EDITOR "$1"', block = true, for = "unix" }, { run = 'jless "$1"', block = true, for = "unix" }]
+reveal = [
+  { run = '''exiftool "$1"; echo "Press enter to exit"; read''', block = true, desc = "Show EXIF", for = "unix" },
+]
+# extract = [{ run = 'unar "$1"', desc = "Extract here", for = "unix" }]
+play = [
+  { run = 'mpv "$@"', block = true, for = "unix" },
+  { run = '''mediainfo "$1"; echo "Press enter to exit"; read''', block = true, desc = "Show media info", for = "unix" },
+]
+image = [
+  { run = 'feh --scale-down --image-bg black "$@"', block = true, for = "unix" },
+]
+pdf = [{ run = 'brave "$@"', block = true, for = "unix" }]
