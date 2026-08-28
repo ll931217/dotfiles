@@ -1,5 +1,4 @@
-{{- if eq .chezmoi.os "darwin" }}
-{{ template "darwin_zshrc" . }}
-{{- else }}
-{{ template "linux_zshrc" . }}
-{{- end }}
+# Defensive fallback. Normally ~/.zshenv sets ZDOTDIR before Zsh looks for
+# ~/.zshrc, so the profile-selected config is loaded directly from there.
+export ZDOTDIR="${ZDOTDIR:-$HOME/.config/zsh}"
+[ -r "$ZDOTDIR/.zshrc" ] && source "$ZDOTDIR/.zshrc"

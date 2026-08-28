@@ -1,0 +1,2 @@
+# Keep interactive Zsh configuration in the XDG config directory.
+export ZDOTDIR="${ZDOTDIR:-$HOME/.config/zsh}"

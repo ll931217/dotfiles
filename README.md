@@ -102,6 +102,17 @@ Useful modes:
 ./install.sh --force
 ```
 
+On first initialization, choose the machine profile independently of the
+operating system:
+
+- `work` renders the Antigen-based Zsh configuration.
+- `personal` (the default) renders the Znap-based Zsh configuration.
+
+The choice is stored only on that machine in
+`~/.config/chezmoi/chezmoi.toml` as `data.machine.profile`. To change an
+existing machine, run `chezmoi init` and select the other profile, or update
+that value directly, then review `chezmoi diff` before applying.
+
 Package installation is disabled by default. Configure
 `home/.chezmoidata.toml` with `machine.install_packages = true` before
 enabling the package hook. Optional AUR/Homebrew packages require
@@ -135,6 +146,6 @@ The former local plaintext file was removed after readback verification.
 **Theme consistency:** Catppuccin and Tokyo Night variants are shared across
 terminal, editor, and utility configurations.
 
-**Zsh modularity:** `~/.zshrc` delegates to `~/.config/zsh/.zshrc`, which loads
-the modular `options.zsh`, `aliases.zsh`, `functions.zsh`, `keybinds.zsh`,
-`theme.zsh`, `fzf.zsh`, `env.zsh`, and `utility.zsh` files.
+**Zsh modularity:** `~/.zshenv` sets `ZDOTDIR`, and chezmoi renders
+`~/.config/zsh/.zshrc` from either the work or personal profile. Both profiles
+then load the portable modules they need from `~/.config/zsh/`.
