@@ -1,0 +1,8 @@
+{{- $profile := dig "machine" "profile" "personal" . -}}
+{{- if eq $profile "work" -}}
+{{ template "work_zshrc" . }}
+{{- else if eq $profile "personal" -}}
+{{ template "personal_zshrc" . }}
+{{- else -}}
+{{ fail (printf "unsupported machine.profile %q: expected personal or work" $profile) }}
+{{- end -}}

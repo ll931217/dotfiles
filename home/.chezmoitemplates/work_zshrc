@@ -1,0 +1,77 @@
+# Single source of truth for the work machine's interactive zsh config.
+
+[ -f "$HOME/.local/share/shell-helper/functions.sh" ] && \
+  source "$HOME/.local/share/shell-helper/functions.sh"
+
+# --- Plugin manager: Antigen + Oh My Zsh -----------------------------------
+if [[ ! -r "$HOME/.config/antigen.zsh" ]]; then
+  print -u2 "antigen is missing: install it at ~/.config/antigen.zsh"
+  return 1
+fi
+source "$HOME/.config/antigen.zsh"
+
+antigen use oh-my-zsh
+
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=60
+
+antigen bundle zsh-users/zsh-autosuggestions
+antigen bundle zsh-users/zsh-completions
+antigen bundle zsh-users/zsh-history-substring-search
+antigen bundle MichaelAquilina/zsh-autoswitch-virtualenv
+antigen bundle git
+antigen bundle heroku
+antigen bundle pip
+antigen bundle lein
+antigen bundle command-not-found
+antigen bundle zsh-users/zsh-syntax-highlighting
+antigen bundle chrissicool/zsh-256color
+antigen apply
+
+# --- Modular config ---------------------------------------------------------
+typeset -U path PATH
+
+files=(
+  "env"
+  "aliases"
+  "functions"
+  "options"
+  "proxy"
+)
+
+for file in "${files[@]}"; do
+  [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"
+done
+
+# --- Tool integrations ------------------------------------------------------
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
+(( $+commands[starship] )) && eval "$(starship init zsh)"
+(( $+commands[direnv] )) && eval "$(direnv hook zsh)"
+(( $+commands[goose] )) && eval "$(goose term init zsh)"
+[[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh
+(( $+commands[atuin] )) && eval "$(atuin init zsh)"
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+(( $+commands[tv] )) && eval "$(tv init zsh)"
+(( $+commands[sesh] )) && eval "$(sesh completion zsh)"
+(( $+commands[gwq] )) && source <(gwq completion zsh)
+(( $+commands[ast-grep] )) && eval "$(ast-grep completions)"
+(( $+commands[gopass] )) && eval "$(gopass completion zsh)"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+# --- xrdp DISPLAY auto-detect (tmux) ---------------------------------------
+if [[ -n "$TMUX" ]]; then
+  _xrdp_display=$(ps -u "$USER" -o etimes=,args= 2>/dev/null \
+    | grep '[X]org :[0-9]' \
+    | sort -n \
+    | head -1 \
+    | grep -oP 'Xorg :\K\d+')
+  if [[ -n "$_xrdp_display" ]]; then
+    export DISPLAY=":${_xrdp_display}.0"
+    tmux set-environment -g DISPLAY "$DISPLAY" 2>/dev/null
+  fi
+  unset _xrdp_display
+fi
+
+export LS_COLORS="${LS_COLORS//ow=34;42/ow=01;34}"
+export LS_COLORS="${LS_COLORS//tw=30;42/tw=01;34}"
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"

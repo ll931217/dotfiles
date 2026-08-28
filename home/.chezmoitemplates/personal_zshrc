@@ -1,0 +1,100 @@
+## liang's personal Zsh configuration
+
+export ZDOTDIR="$HOME/.config/zsh"
+
+# Remove stale x-cmd compilation artifacts before x-cmd loads.
+find "$HOME/.x-cmd.root" -name '*.zwc' -delete 2>/dev/null
+
+# --- Plugin manager: Znap ---------------------------------------------------
+if [[ ! -f "$HOME/.znap/znap.zsh" ]]; then
+  git clone https://github.com/marlonrichert/zsh-snap.git "$HOME/.znap"
+fi
+source "$HOME/.znap/znap.zsh"
+
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=50000
+SAVEHIST=50000
+
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=60
+
+setopt appendhistory
+setopt sharehistory
+setopt inc_append_history
+setopt hist_ignore_dups
+setopt hist_ignore_all_dups
+setopt hist_reduce_blanks
+setopt hist_verify
+setopt extended_history
+setopt hist_save_no_dups
+
+zstyle ':znap:*' repos-dir "$ZDOTDIR/plugins"
+
+znap source ohmyzsh/ohmyzsh plugins/git/git.plugin.zsh
+znap source zsh-users/zsh-completions
+znap source zsh-users/zsh-autosuggestions
+znap source zsh-users/zsh-syntax-highlighting
+znap source zsh-users/zsh-history-substring-search
+znap source zdharma-continuum/history-search-multi-word
+znap source thewtex/tmux-mem-cpu-load
+znap source Aloxaf/fzf-tab
+znap source hlissner/zsh-autopair
+znap source chrissicool/zsh-256color
+znap source MichaelAquilina/zsh-you-should-use
+znap source ohmyzsh/ohmyzsh plugins/colored-man-pages/colored-man-pages.plugin.zsh
+znap source ohmyzsh/ohmyzsh plugins/command-not-found/command-not-found.plugin.zsh
+
+# --- Tool integrations ------------------------------------------------------
+(( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
+(( $+commands[direnv] )) && eval "$(direnv hook zsh)"
+(( $+commands[starship] )) && eval "$(starship init zsh)"
+(( $+commands[goose] )) && eval "$(goose term init zsh)"
+(( $+commands[dra] )) && eval "$(dra completion zsh)"
+(( $+commands[atuin] )) && eval "$(atuin init zsh)"
+
+if [ -d "$ZDOTDIR/private" ]; then
+  for file in "$ZDOTDIR/private"/*.zsh(N); do
+    source "$file"
+  done
+fi
+
+[ -f /opt/miniconda3/etc/profile.d/conda.sh ] && \
+  source /opt/miniconda3/etc/profile.d/conda.sh
+
+autoload -Uz compinit && compinit -C
+
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+
+if (( $+commands[terraform] )); then
+  autoload -U +X bashcompinit && bashcompinit
+  complete -o nospace -C "${commands[terraform]}" terraform
+fi
+
+files=(
+  "env"
+  "fzf"
+  "theme"
+  "aliases"
+  "functions"
+  "utility"
+  "options"
+  "plugins"
+  "keybinds"
+  "prompt"
+)
+
+for file in "${files[@]}"; do
+  [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"
+done
+
+(( $+commands[gt] )) && eval "$(gt completion zsh)"
+[[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh
+[ -f /usr/share/zsh/plugins/zsh-auto-venv/auto-venv.zsh ] && \
+  source /usr/share/zsh/plugins/zsh-auto-venv/auto-venv.zsh
+[ -f /usr/share/doc/pkgfile/command-not-found.zsh ] && \
+  source /usr/share/doc/pkgfile/command-not-found.zsh
+[ -f "$HOME/.x-cmd.root/X" ] && source "$HOME/.x-cmd.root/X"
+[ -f "$HOME/.local/bin/env" ] && source "$HOME/.local/bin/env"
+[ -f "$HOME/.vite-plus/env" ] && source "$HOME/.vite-plus/env"
+
+# vim:ft=zsh:nowrap
