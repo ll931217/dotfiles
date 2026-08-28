@@ -83,6 +83,8 @@ about people, companies, decisions, projects, or past context:
 - All beads issues should always have an accompanying jira task/subtask, if not then create one.
 - Always keep beads and jira tasks/subtasks in sync
 - If there is a related task/subtask for the unmapped beads issue then ask the user if they want to map it
+- Never write an entire story in comments, keep it simple, structured and to the point. We don't need some background of what this code-block or file is about
+- Never leave jira or bead issue IDs in the codebase, including docs and comments
 
 # VICI Company Internal Infrastructure
 
