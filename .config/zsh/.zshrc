@@ -39,11 +39,6 @@ SAVEHIST=50000
 ZSH_AUTOSUGGEST_MANUAL_REBIND=1
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=60
 
-# zsh-vi(vim)-mode: a better and friendly vim mode in zsh
-ZVM_SYSTEM_CLIPBOARD_ENABLED=true
-ZVM_CLIPBOARD_USE_OSC52=true
-ZVM_CLIPBOARD_OSC52_TMUX=true
-
 setopt appendhistory              # Append, don't overwrite
 setopt sharehistory               # Share history between sessions
 setopt inc_append_history         # Write commands immediately
@@ -70,7 +65,6 @@ znap source zsh-users/zsh-autosuggestions
 znap source zsh-users/zsh-syntax-highlighting
 znap source zsh-users/zsh-history-substring-search
 znap source zdharma-continuum/history-search-multi-word
-znap source jeffreytse/zsh-vi-mode
 
 # Extra utilities
 znap source thewtex/tmux-mem-cpu-load
@@ -94,9 +88,7 @@ eval "$(direnv hook zsh)"
 eval "$(starship init zsh)"
 eval "$(goose term init zsh)"
 eval "$(dra completion zsh)"
-zvm_after_init_commands+=(
-  'eval "$(atuin init zsh)"'
-)
+eval "$(atuin init zsh)"
 
 # --------------------------------------------
 # Source private config files
