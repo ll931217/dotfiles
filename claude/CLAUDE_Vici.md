@@ -85,6 +85,8 @@ about people, companies, decisions, projects, or past context:
 - If there is a related task/subtask for the unmapped beads issue then ask the user if they want to map it
 - Never write an entire story in comments, keep it simple, structured and to the point. We don't need some background of what this code-block or file is about
 - Never leave jira or bead issue IDs in the codebase, including docs and comments
+- Default to writing no comments. Never write multi-paragraph docstrings or multi-line comment blocks — one short line max.
+- When there is a PR/MR for the branch, please make sure that you verify E2E, this means that if the pipeline fails then you are required to fix the pipeline and verify again until the pipeline is green
 
 # VICI Company Internal Infrastructure
 
