@@ -4,8 +4,8 @@ source_root: home
 
 managed:
   portable_shell:
-    - source: .zshrc
-      target: ~/.zshrc
+    - source: .zshenv
+      target: ~/.zshenv
       mode: file
     - source: .tmux.conf
       target: ~/.tmux.conf
