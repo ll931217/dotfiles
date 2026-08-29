@@ -47,7 +47,13 @@ done
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 (( $+commands[starship] )) && eval "$(starship init zsh)"
 (( $+commands[direnv] )) && eval "$(direnv hook zsh)"
-(( $+commands[goose] )) && eval "$(goose term init zsh)"
+if (( $+commands[goose] )); then
+  goose() {
+    unfunction goose
+    eval "$(command goose term init zsh)" || return
+    goose "$@"
+  }
+fi
 [[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh
 (( $+commands[atuin] )) && eval "$(atuin init zsh)"
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)

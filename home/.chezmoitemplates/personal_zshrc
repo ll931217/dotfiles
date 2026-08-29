@@ -2,9 +2,6 @@
 
 export ZDOTDIR="$HOME/.config/zsh"
 
-# Remove stale x-cmd compilation artifacts before x-cmd loads.
-find "$HOME/.x-cmd.root" -name '*.zwc' -delete 2>/dev/null
-
 # --- Plugin manager: Znap ---------------------------------------------------
 if [[ ! -f "$HOME/.znap/znap.zsh" ]]; then
   git clone https://github.com/marlonrichert/zsh-snap.git "$HOME/.znap"
@@ -48,7 +45,13 @@ znap source ohmyzsh/ohmyzsh plugins/command-not-found/command-not-found.plugin.z
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 (( $+commands[direnv] )) && eval "$(direnv hook zsh)"
 (( $+commands[starship] )) && eval "$(starship init zsh)"
-(( $+commands[goose] )) && eval "$(goose term init zsh)"
+if (( $+commands[goose] )); then
+  goose() {
+    unfunction goose
+    eval "$(command goose term init zsh)" || return
+    goose "$@"
+  }
+fi
 (( $+commands[dra] )) && eval "$(dra completion zsh)"
 (( $+commands[atuin] )) && eval "$(atuin init zsh)"
 

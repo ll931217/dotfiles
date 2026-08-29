@@ -122,7 +122,7 @@ if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)
 # source "$HOME/programs/kitty/lib/kitty/shell-integration/zsh/completions/_kitty"
 
 # pnpm
-export PNPM_HOME="/home/liangshih.lin/.local/share/pnpm"
+export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;
