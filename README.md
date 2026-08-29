@@ -69,10 +69,11 @@ management. The source root is `home/`, selected by `.chezmoiroot`.
 Portable content is rendered into the home directory:
 
 ```text
-home/dot_zshrc       -> ~/.zshrc
-home/dot_tmux.conf   -> ~/.tmux.conf
-home/dot_config/     -> ~/.config/
-home/dot_scripts/    -> ~/.scripts/
+home/dot_zshenv          -> ~/.zshenv
+home/dot_tmux.conf       -> ~/.tmux.conf
+home/dot_config/zsh/     -> ~/.config/zsh/
+home/dot_config/         -> ~/.config/
+home/dot_scripts/        -> ~/.scripts/
 ```
 
 `migration/source-manifest.yaml` records the intended source-to-target mapping
@@ -146,6 +147,8 @@ The former local plaintext file was removed after readback verification.
 **Theme consistency:** Catppuccin and Tokyo Night variants are shared across
 terminal, editor, and utility configurations.
 
-**Zsh modularity:** `~/.zshenv` sets `ZDOTDIR`, and chezmoi renders
-`~/.config/zsh/.zshrc` from either the work or personal profile. Both profiles
-then load the portable modules they need from `~/.config/zsh/`.
+**Zsh modularity:** the minimal `~/.zshenv` bootstrap sets `ZDOTDIR`; every
+other Zsh startup file lives under `~/.config/zsh/`. Chezmoi renders
+`~/.config/zsh/.zshrc` from either the work or personal profile, and both
+profiles load their portable modules from that directory. There is no
+`~/.zshrc` shim.
