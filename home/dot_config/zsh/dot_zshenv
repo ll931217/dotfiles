@@ -3,3 +3,6 @@
 if [[ -r "$HOME/.vite-plus/env" ]]; then
   source "$HOME/.vite-plus/env"
 fi
+
+export NODE_OPTIONS="--use-system-ca"
+unset NODE_EXTRA_CA_CERTS

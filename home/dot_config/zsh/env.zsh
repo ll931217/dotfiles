@@ -45,9 +45,6 @@ export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 export PAGER=less # more, less
 
 
-export NODE_OPTIONS="--use-system-ca"
-unset NODE_EXTRA_CA_CERTS
-
 export KOMODO_API_URL="https://komodo.data.vici.corp"
 unset KOMODO_API_KEY KOMODO_API_SECRET KOMODO_CLI_KEY KOMODO_CLI_SECRET
 if (( $+commands[gopass] )); then
