@@ -14,6 +14,7 @@ SAVEHIST=50000
 
 ZSH_AUTOSUGGEST_MANUAL_REBIND=1
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=60
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 
 setopt appendhistory
 setopt sharehistory
@@ -75,6 +76,7 @@ fi
 
 files=(
   "env"
+  "completions"
   "fzf"
   "theme"
   "aliases"
