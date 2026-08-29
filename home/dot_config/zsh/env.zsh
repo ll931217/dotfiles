@@ -49,10 +49,19 @@ export NODE_OPTIONS="--use-system-ca"
 export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/portless-ca.crt"
 
 export KOMODO_API_URL="https://komodo.data.vici.corp"
-export KOMODO_API_KEY=$(gopass show -o infra/komodo_api_key)
-export KOMODO_API_SECRET=$(gopass show -o infra/komodo_api_secret)
-export KOMODO_CLI_KEY=$KOMODO_API_KEY
-export KOMODO_CLI_SECRET=$KOMODO_API_SECRET
+if (( $+commands[gopass] )); then
+  _komodo_api_key=$(gopass show -o infra/komodo_api_key 2>/dev/null) || _komodo_api_key=
+  _komodo_api_secret=$(gopass show -o infra/komodo_api_secret 2>/dev/null) || _komodo_api_secret=
+
+  if [[ -n "$_komodo_api_key" && -n "$_komodo_api_secret" ]]; then
+    export KOMODO_API_KEY="$_komodo_api_key"
+    export KOMODO_API_SECRET="$_komodo_api_secret"
+    export KOMODO_CLI_KEY="$KOMODO_API_KEY"
+    export KOMODO_CLI_SECRET="$KOMODO_API_SECRET"
+  fi
+
+  unset _komodo_api_key _komodo_api_secret
+fi
 
 # Trailing /api: the frontend proxy strips one /api before forwarding to the
 # backend, which mounts the External API v2 router at /api/v2 — so the public
