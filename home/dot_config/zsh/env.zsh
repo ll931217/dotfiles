@@ -46,7 +46,7 @@ export PAGER=less # more, less
 
 
 export NODE_OPTIONS="--use-system-ca"
-export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/portless-ca.crt"
+unset NODE_EXTRA_CA_CERTS
 
 export KOMODO_API_URL="https://komodo.data.vici.corp"
 unset KOMODO_API_KEY KOMODO_API_SECRET KOMODO_CLI_KEY KOMODO_CLI_SECRET
