@@ -64,7 +64,8 @@ create_symlink() {
 log "=== Creating symlinks ==="
 
 # Shell configuration
-create_symlink "$REPO_ROOT/.zshrc" "$HOME/.zshrc"
+create_symlink "$REPO_ROOT/home/dot_zshenv" "$HOME/.zshenv"
+create_symlink "$REPO_ROOT/.config/zsh" "${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 
 # Tmux configuration
 create_symlink "$REPO_ROOT/.tmux.conf" "$HOME/.tmux.conf"

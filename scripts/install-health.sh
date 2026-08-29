@@ -121,15 +121,17 @@ check_configs() {
     local errors=0
     local warnings=0
 
-    # Check shell configs
-    if [[ -f "$HOME/.zshrc" ]]; then
-        if zsh -n "$HOME/.zshrc" 2>/dev/null; then
-            log "✓ .zshrc syntax OK"
-        else
-            warn "⚠ .zshrc has syntax errors"
+    # Check the minimal bootstrap and the interactive config under ZDOTDIR.
+    local zsh_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
+    local zsh_config
+    for zsh_config in "$HOME/.zshenv" "$zsh_config_dir/.zshrc"; do
+        if [[ -f "$zsh_config" ]] && ! zsh -n "$zsh_config" 2>/dev/null; then
+            warn "⚠ $zsh_config has syntax errors"
             ((warnings++))
+        elif [[ -f "$zsh_config" ]]; then
+            log "✓ $zsh_config syntax OK"
         fi
-    fi
+    done
 
     # Check tmux config
     if command -v tmux &>/dev/null && [[ -f "$HOME/.tmux.conf" ]]; then
@@ -236,26 +238,28 @@ check_shell_integration() {
     log "Checking shell integration..."
 
     local errors=0
+    local zsh_config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 
-    # Check if ZSH is using the dotfiles config
-    if [[ -L "$HOME/.zshrc" ]]; then
-        local zshrc_target
-        zshrc_target=$(readlink "$HOME/.zshrc")
+    if [[ -f "$HOME/.zshenv" ]] && grep -q "ZDOTDIR" "$HOME/.zshenv"; then
+        log "✓ ZSH bootstrap configures ZDOTDIR"
+    else
+        warn "⚠ ZSH bootstrap is missing or does not configure ZDOTDIR"
+        ((errors++))
+    fi
 
-        if [[ "$zshrc_target" == *"dotfiles"* ]]; then
-            log "✓ ZSH using dotfiles config"
-        else
-            warn "⚠ ZSH config is not from dotfiles"
-            ((errors++))
-        fi
+    if [[ -f "$zsh_config_dir/.zshrc" ]]; then
+        log "✓ ZSH interactive config found under $zsh_config_dir"
+    else
+        warn "⚠ ZSH interactive config missing: $zsh_config_dir/.zshrc"
+        ((errors++))
     fi
 
     # Check if starship is being used
     if command -v starship &>/dev/null; then
-        if grep -q "starship" "$HOME/.zshrc" 2>/dev/null; then
+        if grep -q "starship" "$zsh_config_dir/.zshrc" 2>/dev/null; then
             log "✓ Starship prompt integrated"
         else
-            warn "⚠ Starship installed but not in .zshrc"
+            warn "⚠ Starship installed but not in $zsh_config_dir/.zshrc"
         fi
     fi
 

@@ -35,7 +35,7 @@ error() {
 
 # List of symlinks to remove
 SYMLINKS=(
-    "$HOME/.zshrc"
+    "$HOME/.zshenv"
     "$HOME/.tmux.conf"
     "$HOME/.vimrc"
     "$HOME/.vimrc.bundles"

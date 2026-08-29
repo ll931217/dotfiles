@@ -170,7 +170,7 @@ setup_config() {
       setup_nvim_config "$config_dir" "$agents"
       ;;
     zsh)
-      setup_zsh_config "$config_dir" "$agents"
+      setup_zsh_config "$config_dir" "$agents" "$repo_root"
       ;;
     git)
       setup_git_config "$config_dir" "$agents"
@@ -219,23 +219,26 @@ setup_nvim_config() {
 setup_zsh_config() {
   local config_dir="$1"
   local agents="$2"
+  local repo_root="$3"
 
   log_info "Setting up Zsh configuration (agents: $agents)..."
 
-  # Link zshrc
-  local zshrc_source="$config_dir/.zshrc"
-  local zshrc_target="$HOME/.zshrc"
+  local zshenv_source="$repo_root/home/dot_zshenv"
+  local zshenv_target="$HOME/.zshenv"
+  local zsh_config_target="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 
-  if [[ -f "$zshrc_source" ]]; then
-    if [[ -L "$zshrc_target" ]]; then
-      rm "$zshrc_target"
-    elif [[ -f "$zshrc_target" ]]; then
-      mv "$zshrc_target" "${zshrc_target}.backup.$(date +%s)"
+  for target in "$zshenv_target" "$zsh_config_target"; do
+    if [[ -L "$target" ]]; then
+      rm "$target"
+    elif [[ -e "$target" ]]; then
+      mv "$target" "${target}.backup.$(date +%s)"
     fi
+  done
 
-    ln -s "$zshrc_source" "$zshrc_target"
-    log_success "Zsh configuration linked"
-  fi
+  mkdir -p "$(dirname "$zsh_config_target")"
+  ln -s "$zshenv_source" "$zshenv_target"
+  ln -s "$config_dir" "$zsh_config_target"
+  log_success "Zsh bootstrap and XDG configuration linked"
 
   # Setup znap if not present
   local znap_dir="$HOME/.znap"

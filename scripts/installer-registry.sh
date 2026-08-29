@@ -101,12 +101,12 @@ CATEGORIES=(
 declare -A ITEM_ZSH=(
     [name]="ZSH"
     [category]="shells"
-    [config_path]="$REPO_ROOT/.zshrc"
-    [target_path]="$HOME/.zshrc"
+    [config_path]="$REPO_ROOT/.config/zsh"
+    [target_path]="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
     [detection]="symlink"
     [dependencies]="zsh"
     [packages]="zsh"
-    [description]="ZSH shell configuration with starship prompt"
+    [description]="ZSH configuration under ZDOTDIR with a minimal ~/.zshenv bootstrap"
 )
 
 declare -A ITEM_STARSHIP=(
