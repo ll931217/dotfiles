@@ -1,2 +1,5 @@
 # Keep interactive Zsh configuration in the XDG config directory.
 export ZDOTDIR="${ZDOTDIR:-$HOME/.config/zsh}"
+if [[ -r "$ZDOTDIR/.zshenv" ]]; then
+  source "$ZDOTDIR/.zshenv"
+fi

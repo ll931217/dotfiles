@@ -49,6 +49,7 @@ export NODE_OPTIONS="--use-system-ca"
 export NODE_EXTRA_CA_CERTS="/usr/local/share/ca-certificates/portless-ca.crt"
 
 export KOMODO_API_URL="https://komodo.data.vici.corp"
+unset KOMODO_API_KEY KOMODO_API_SECRET KOMODO_CLI_KEY KOMODO_CLI_SECRET
 if (( $+commands[gopass] )); then
   _komodo_api_key=$(gopass show -o infra/komodo_api_key 2>/dev/null) || _komodo_api_key=
   _komodo_api_secret=$(gopass show -o infra/komodo_api_secret 2>/dev/null) || _komodo_api_secret=
@@ -135,7 +136,7 @@ esac
 export NO_PROXY="$NO_PROXY,172.21.10.105"
 
 # Vite+ bin (https://viteplus.dev)
-. "$HOME/.vite-plus/env"
+[[ -r "$HOME/.vite-plus/env" ]] && source "$HOME/.vite-plus/env"
 
 # Secrets
 # Rendered by chezmoi from gopass (dotfiles-secrets/*); mode 0600 and

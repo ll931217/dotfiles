@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+umask 077
+
+legacy_files=(
+    "$HOME/.zshrc"
+    "$HOME/.zshrc.local"
+    "$HOME/.zshrc.fzf"
+)
+
+has_legacy=false
+for legacy_file in "${legacy_files[@]}"; do
+    if [[ -f "$legacy_file" || -L "$legacy_file" ]]; then
+        has_legacy=true
+    elif [[ -e "$legacy_file" ]]; then
+        printf 'Refusing to migrate non-file path: %s\n' "$legacy_file" >&2
+        exit 1
+    fi
+done
+
+if [[ "$has_legacy" == "true" ]]; then
+    backup_root="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles-backups"
+    mkdir -p "$backup_root"
+    chmod 700 "$backup_root"
+    backup_dir=$(mktemp -d "$backup_root/zsh-legacy.XXXXXXXX")
+
+    for legacy_file in "${legacy_files[@]}"; do
+        if [[ -f "$legacy_file" || -L "$legacy_file" ]]; then
+            mv "$legacy_file" "$backup_dir/"
+        fi
+    done
+fi

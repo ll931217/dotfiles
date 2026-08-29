@@ -91,7 +91,7 @@ alias lg="lazygit"
 alias lz="lazyssh"
 alias pp="purple"
 
-alias zshrc='cd ~ ; $EDITOR $HOME/.zshrc $HOME/.config/zsh/.zshrc $HOME/.config/zsh/aliases.zsh $HOME/.config/zsh/env.zsh $HOME/.config/zsh/functions.zsh ; cd - ; exec zsh'
+alias zshrc='cd "${ZDOTDIR:-$HOME/.config/zsh}" ; $EDITOR .zshrc aliases.zsh env.zsh functions.zsh ; cd - ; exec zsh'
 alias nvrc='cd ~/.config/nvim ; $EDITOR init.lua ; cd -'
 alias i3rc='cd ~/.config/i3/ ; $EDITOR ~/.config/i3/config ; cd -'
 
