@@ -1,6 +1,4 @@
 # config.h / patches.h are generated from *.def.h by the Makefile on every
 # build. Edit the .def.h files -- those are the tracked source of truth.
 *.o
-config.h
-patches.h
 st
