@@ -1,5 +1,4 @@
-# Worktrunk hooks for Zellij integration
-# tmux backup: ~/.config/worktrunk/config.toml.tmux-backup
+# Worktrunk hooks for tmux integration
 
 worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
 
@@ -8,16 +7,84 @@ command = "CLAUDECODE= MAX_THINKING_TOKENS=0 claude -p --no-session-persistence 
 # command = "llm"
 # args = ["-m", "claude-haiku-4.5"]
 
-# Open a new Zellij tab for the worktree and start claude
+# Caches, not config. These are excluded for EVERY repo.
+#
+# Syntax: the entry path copy-ignored lists, trailing slash for a directory. Glob
+# patterns (`.venv/**`) match nothing -- verified with `wt step copy-ignored
+# --dry-run`.
+#
+# .worktrees/ matters most: without it, creating a worktree copies every OTHER
+# worktree into it (measured 1.5G for one atlas worktree). User and project
+# exclude lists accumulate, so a repo can add its own.
+[step.copy-ignored]
+exclude = [
+  ".worktrees/",
+  ".venv/",
+  ".serena/",
+  ".tanstack/",
+]
+
+[pre-start]
+# Strict: copy-ignored failing fails the hook. It is also asserted that the file
+# actually arrived, because a copy step reporting success is not the same fact as
+# the file being there, and a worktree missing this one is a session that cannot
+# tell which ticket its work belongs to.
+jira_issues = '''set -u
+# NOT set -e, and copy-ignored's exit code is not trusted: it stats every ignored
+# path and dies on a filename git quoted (CJK), so it can exit 1 having copied
+# everything asked of it. `git config core.quotepath false` fixes the quoting;
+# this stays tolerant because the fact that matters is whether the file ARRIVED.
+wt step copy-ignored || echo "wt pre-start: copy-ignored reported an error; checking what landed" >&2
+[ -e .claude/jira_issues ] || {
+  echo "wt pre-start: .claude/jira_issues is not here" >&2
+  exit 1
+}
+'''
+
+# Smart tmux session/window management when worktree is created
 # Runs in background (post-start) so blocking project hooks complete first
 [post-start]
-zellij = """if [ -n "$ZELLIJ" ]; then \
-  zellij action new-tab --name "{{ branch }}" --cwd "{{ worktree_path }}" && \
-  sleep 0.3 && \
-  zellij action write-chars "claude" && \
-  zellij action write-chars $'\\n'; \
+tmux = """SESSION_NAME="{{ worktree_name | replace(\".\", \"_\") }}"; \
+if [ -n "$TMUX" ]; then \
+  tmux neww -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "direnv allow ." Enter \\; send-keys "~/.scripts/agent-worker.sh" Enter; \
+else \
+  if tmux has -t "$SESSION_NAME" 2>/dev/null; then \
+    tmux attach -t "$SESSION_NAME" \\; neww -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "direnv allow ." Enter \\; send-keys "~/.scripts/agent-worker.sh" Enter; \
+  else \
+    tmux new -s "$SESSION_NAME" -c "{{ worktree_path }}" -n "{{ branch }}" \\; send-keys "direnv allow ." Enter \\; send-keys "~/.scripts/agent-worker.sh" Enter; \
+  fi; \
 fi"""
 
-# Zellij has no CLI to close a tab by name — close manually or use Ctrl+w
+# Kill the tmux window(s) whose shell is sitting in the worktree being removed.
+# Matched on pane cwd, not window name: the name is set from the branch at
+# creation time and does not follow a later `git branch -m`, so renamed branches
+# left orphan windows behind. Reports to stderr instead of failing, because a
+# missing window must not abort the removal.
 [pre-remove]
-zellij = "true"
+tmux = '''set -eu
+command -v tmux >/dev/null 2>&1 || exit 0
+tmux info >/dev/null 2>&1 || exit 0
+
+wt_path="{{ worktree_path }}"
+
+self_win=""
+if [ -n "${TMUX_PANE:-}" ]; then
+  self_win=$(tmux display -p -t "$TMUX_PANE" '#{window_id}' 2>/dev/null || true)
+fi
+
+targets=$(tmux list-panes -a -F '#{window_id} #{pane_current_path}' \
+  | awk -v p="$wt_path" '$2 == p || index($2, p "/") == 1 { print $1 }' \
+  | sort -u)
+
+killed=0
+for w in $targets; do
+  if [ "$w" = "$self_win" ]; then
+    echo "wt pre-remove: not killing the current window ($w) -- that would abort this removal" >&2
+    continue
+  fi
+  tmux kill-window -t "$w"
+  killed=$((killed + 1))
+done
+
+[ "$killed" -gt 0 ] || echo "wt pre-remove: no tmux window rooted at $wt_path" >&2
+'''

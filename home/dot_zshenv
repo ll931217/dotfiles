@@ -1,4 +1,9 @@
-# Keep interactive Zsh configuration in the XDG config directory.
+# Point zsh at the real config dir. Set here -- in .zshenv, which zsh ALWAYS
+# reads first -- rather than in .zshrc, so $ZDOTDIR/.zshrc is loaded whether or
+# not the shell already inherited ZDOTDIR (fresh login, tmux, ssh, and any other
+# nested shell). Setting it in .zshrc was self-skipping: once ZDOTDIR was
+# exported, a nested zsh read $ZDOTDIR/.zshrc directly and never re-ran the
+# bootstrap in ~/.zshrc, falling back to the default `%m%#` prompt.
 export ZDOTDIR="${ZDOTDIR:-$HOME/.config/zsh}"
 if [[ -r "$ZDOTDIR/.zshenv" ]]; then
   source "$ZDOTDIR/.zshenv"

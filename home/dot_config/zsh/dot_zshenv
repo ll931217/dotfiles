@@ -4,5 +4,13 @@ if [[ -r "$HOME/.vite-plus/env" ]]; then
   source "$HOME/.vite-plus/env"
 fi
 
+# Node trusts the system CA store. The work machine additionally needs the
+# portless CA, which is absent on personal machines -- so key this off the file
+# rather than hardcoding either answer. Unsetting it unconditionally (what this
+# file used to do) broke TLS for portless-backed dev servers.
 export NODE_OPTIONS="--use-system-ca"
-unset NODE_EXTRA_CA_CERTS
+if [[ -r /usr/local/share/ca-certificates/portless-ca.crt ]]; then
+  export NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/portless-ca.crt
+else
+  unset NODE_EXTRA_CA_CERTS
+fi

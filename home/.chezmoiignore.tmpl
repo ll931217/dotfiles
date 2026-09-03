@@ -44,3 +44,10 @@
 # in ~/.config/chezmoi/chezmoi.toml once the entries exist.
 .config/zsh/private
 {{- end }}
+
+{{- if eq .machine.profile "work" }}
+# Znap + fzf-tab policy file. The work profile runs antigen with no fzf-tab
+# (bundles: chrissicool, MichaelAquilina, robbyrussell, spaceship-prompt,
+# zsh-users), and work_zshrc never sources it, so it is dead weight there.
+.config/zsh/completions.zsh
+{{- end }}
