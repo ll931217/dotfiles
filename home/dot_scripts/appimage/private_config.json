@@ -62,6 +62,20 @@
       "pattern": "orca-linux.AppImage",
       "local_name": "orca",
       "version": "v1.4.188"
+    },
+    {
+      "repo": "t8y2/dbx",
+      "name": "dbx",
+      "pattern": "*_amd64.AppImage",
+      "local_name": "dbx",
+      "version": "v0.5.97"
+    },
+    {
+      "repo": "jgraph/drawio-desktop",
+      "name": "drawio",
+      "pattern": "*-x86_64-*.AppImage",
+      "local_name": "drawio",
+      "version": "v31.3.2"
     }
   ]
 }

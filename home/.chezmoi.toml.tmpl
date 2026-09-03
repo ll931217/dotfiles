@@ -1,5 +1,25 @@
+{{- /* Every machine.* key lives here. Anything omitted is LOST on `chezmoi init`,
+       which regenerates this file wholesale -- that is how profile/type/wm/secrets
+       previously vanished from the generated config. */ -}}
 {{- $profiles := list "personal" "work" -}}
 {{- $profile := promptChoiceOnce . "machine.profile" "Machine profile" $profiles "personal" -}}
+{{- $types   := list "desktop" "laptop" -}}
+{{- $type    := promptChoiceOnce . "machine.type" "Machine type" $types "desktop" -}}
+{{- $wms     := list "i3" "hyprland" "none" -}}
+{{- $wm      := promptChoiceOnce . "machine.wm" "Window manager" $wms "hyprland" -}}
+{{- $secrets := promptBoolOnce . "machine.secrets" "gopass dotfiles secrets available" false -}}
+{{- $pkgs    := promptBoolOnce . "machine.install_packages" "Install packages on apply" false -}}
+{{- $opt     := promptBoolOnce . "machine.install_optional" "Install optional/AUR packages" false -}}
+
+{{- /* workingTree, NOT sourceDir: .chezmoiroot makes .chezmoi.sourceDir the
+       `home/` subdir, and writing that back would send chezmoi looking for
+       home/home on the next run. */ -}}
+sourceDir = {{ .chezmoi.workingTree | quote }}
 
 [data.machine]
-profile = {{ $profile | quote }}
+    profile = {{ $profile | quote }}
+    type = {{ $type | quote }}
+    wm = {{ $wm | quote }}
+    secrets = {{ $secrets }}
+    install_packages = {{ $pkgs }}
+    install_optional = {{ $opt }}

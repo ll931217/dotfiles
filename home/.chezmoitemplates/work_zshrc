@@ -12,6 +12,9 @@ source "$HOME/.config/antigen.zsh"
 
 antigen use oh-my-zsh
 
+# Don't re-bind autosuggest widgets on every precmd, and skip the suggestion
+# fetch entirely on long lines. See the strategy override after `atuin init`
+# below for the real per-keystroke cost.
 ZSH_AUTOSUGGEST_MANUAL_REBIND=1
 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=60
 
@@ -29,6 +32,8 @@ antigen bundle chrissicool/zsh-256color
 antigen apply
 
 # --- Modular config ---------------------------------------------------------
+# Keep $PATH free of duplicate entries (and dedupe whatever the login chain
+# accumulated before this rc runs, e.g. .profile sourced twice under xrdp).
 typeset -U path PATH
 
 files=(
@@ -43,6 +48,35 @@ for file in "${files[@]}"; do
   [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"
 done
 
+# Tool completions: write each tool's generated `_<tool>` file into an fpath
+# directory rather than sourcing it. Two reasons:
+#   1. antigen's cached init.zsh installs `compdef () {}` — a no-op stub — and
+#      defers the real compinit to the first precmd. Every `compdef` call made
+#      from this file was therefore silently discarded, so these completions
+#      never registered at all. fpath files bypass compdef entirely.
+#   2. fpath files autoload on first Tab, so none of this is parsed at startup.
+# Regenerates only when the tool's binary is newer than the cached file.
+# ~/.zfunc holds hand-written completions (currently _af). It used to be added
+# by the ~/.zshrc shim, which run_once_before_20-migrate-zsh-to-xdg.sh moves
+# out of the way, so it has to be claimed here instead.
+fpath=("${XDG_CACHE_HOME:-$HOME/.cache}/zsh/completions" "$HOME/.zfunc" $fpath)
+_zcompcache() {
+  local name=$1; shift
+  local f="${fpath[1]}/_$name"
+  local bin=${commands[$1]:-$1}
+  [[ -s $f && ! $bin -nt $f ]] && return
+  mkdir -p ${f:h}
+  "$@" >| $f 2>/dev/null || { rm -f $f; return }
+  # Some generators (gopass) emit a file that only *defines* _<tool> and then
+  # calls compdef. That works when sourced, but is a no-op when autoloaded from
+  # fpath, where the file body IS the function — nothing ever calls it, so Tab
+  # falls back to listing filenames. Append the call when the file has no
+  # autoload-aware guard of its own (gwq/t3 already ship one).
+  if ! grep -qE 'loadautofunc|funcstack\[1\]' $f; then
+    print -r -- "_$name \"\$@\"" >> $f
+  fi
+}
+
 # --- Tool integrations ------------------------------------------------------
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 (( $+commands[starship] )) && eval "$(starship init zsh)"
@@ -56,15 +90,28 @@ if (( $+commands[goose] )); then
 fi
 [[ -s "/etc/grc.zsh" ]] && source /etc/grc.zsh
 (( $+commands[atuin] )) && eval "$(atuin init zsh)"
+# atuin init prepends itself to ZSH_AUTOSUGGEST_STRATEGY, so every keystroke
+# (and every vicmd movement key) forks `atuin search` -- measured ~163ms of CPU
+# per fetch against the 6.9MB history.db. Ctrl-R still uses atuin; inline
+# suggestions fall back to zsh history (sub-ms). Drop this line if you want
+# cross-machine suggestions more than you want a responsive prompt.
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
-(( $+commands[tv] )) && eval "$(tv init zsh)"
-(( $+commands[sesh] )) && eval "$(sesh completion zsh)"
-(( $+commands[gwq] )) && source <(gwq completion zsh)
-(( $+commands[ast-grep] )) && eval "$(ast-grep completions)"
-(( $+commands[gopass] )) && eval "$(gopass completion zsh)"
+(( $+commands[tv] )) && _zcompcache tv tv init zsh
+(( $+commands[sesh] )) && _zcompcache sesh sesh completion zsh
+(( $+commands[gwq] )) && _zcompcache gwq gwq completion zsh
+(( $+commands[ast-grep] )) && _zcompcache ast-grep ast-grep completions
+(( $+commands[gopass] )) && _zcompcache gopass gopass completion zsh
+[ -x "$HOME/.vite-plus/bin/t3" ] && _zcompcache t3 "$HOME/.vite-plus/bin/t3" --completions zsh
+# Upstream t3 bug: its generated spec defines slot 1 twice (a bare positional
+# plus '1:command:->command'), which makes _arguments abort with "doubled
+# argument definition" and kills subcommand completion. Drop the bare one.
+[[ -s ${fpath[1]}/_t3 ]] && sed -i "/^    ':[^']*:'$/d" ${fpath[1]}/_t3
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # --- xrdp DISPLAY auto-detect (tmux) ---------------------------------------
+# Auto-detect the current DISPLAY from the most recent Xorg process owned by
+# this user. This handles xrdp reconnects where the display number changes and
+# tmux's global environment still holds a stale value.
 if [[ -n "$TMUX" ]]; then
   _xrdp_display=$(ps -u "$USER" -o etimes=,args= 2>/dev/null \
     | grep '[X]org :[0-9]' \
@@ -78,6 +125,11 @@ if [[ -n "$TMUX" ]]; then
   unset _xrdp_display
 fi
 
+# Fix unreadable blue-on-green for other-writable dirs (/mnt). Replace (not
+# append) -- zsh complist won't override an earlier duplicate entry.
 export LS_COLORS="${LS_COLORS//ow=34;42/ow=01;34}"
 export LS_COLORS="${LS_COLORS//tw=30;42/tw=01;34}"
+# Also from the retired ~/.zshrc shim: arrow-key selection in the completion
+# menu. Nothing else in this profile sets it.
+zstyle ':completion:*' menu select
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"

@@ -3,6 +3,7 @@ export TERMINAL=alacritty
 export ENVIRONMENT=development
 # Limit vitest concurrency
 export VITEST_MAX_THREADS=4
+export LCG_SHADOW_ASK=1
 
 export GTK_USE_PORTAL=0
 export XDG_CURRENT_DESKTOP=i3 # helps with defaults
@@ -47,9 +48,21 @@ export PAGER=less # more, less
 
 export KOMODO_API_URL="https://komodo.data.vici.corp"
 unset KOMODO_API_KEY KOMODO_API_SECRET KOMODO_CLI_KEY KOMODO_CLI_SECRET
+# Two `gopass show` calls cost ~730ms of every shell start (GPG decrypt).
+# Cache them in $XDG_RUNTIME_DIR: tmpfs, mode 0600, wiped on logout — the
+# secrets never touch disk. `komodo-creds-refresh` re-reads gopass after a
+# rotation.
+_komodo_creds="${XDG_RUNTIME_DIR:-/run/user/$UID}/komodo-creds"
+komodo-creds-refresh() {
+  ( umask 077
+    print -r -- "${(q)$(gopass show -o infra/komodo_api_key 2>/dev/null)}
+${(q)$(gopass show -o infra/komodo_api_secret 2>/dev/null)}" >| "$_komodo_creds" )
+}
 if (( $+commands[gopass] )); then
-  _komodo_api_key=$(gopass show -o infra/komodo_api_key 2>/dev/null) || _komodo_api_key=
-  _komodo_api_secret=$(gopass show -o infra/komodo_api_secret 2>/dev/null) || _komodo_api_secret=
+  [[ -s $_komodo_creds ]] || komodo-creds-refresh
+  { read -r _komodo_api_key; read -r _komodo_api_secret } < "$_komodo_creds"
+  _komodo_api_key=${(Q)_komodo_api_key}
+  _komodo_api_secret=${(Q)_komodo_api_secret}
 
   if [[ -n "$_komodo_api_key" && -n "$_komodo_api_secret" ]]; then
     export KOMODO_API_KEY="$_komodo_api_key"
