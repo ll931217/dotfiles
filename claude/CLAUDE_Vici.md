@@ -111,7 +111,7 @@ The flow, always, no shortcuts:
 
 # Agentic Workflow
 
-- When defining tasks, always spawn 5 agent teammates that will define what the definition of done (DoD) is, the orchestrator agent will ask these teammates to verify if the implementation is exactly what is DoD, if not then keep fixing.
+- When defining tasks, spawn DoD teammates: 4 core lenses always (intent, tests, discipline, prefs) plus 1-3 domain lenses chosen from the agent pool in `~/.claude/agents/` to match what the task touches (UI work gets frontend/UX reviewers, backend gets architect, SQL gets sql-pro, auth gets security-reviewer, and so on). They define the definition of done (DoD); the orchestrator asks them to verify the implementation matches it, and keeps fixing until every lens passes.
 - Subagents are used to do research.
 - ISSUE TIERING — not every issue needs Jira. Decide by size and urgency, and say which tier you picked:
   - **Jira + beads** — a large bug, an urgent bug, anything another person or team needs to see, anything spanning more than one repo, or anything that will outlive the current branch. Mirror it in beads and add it to `<repo_root>/.claude/jira_issues`.
@@ -120,9 +120,9 @@ The flow, always, no shortcuts:
 - THE LINK IS DIRECTIONAL, and this is what keeps Jira from drifting:
   - **Every Jira key in `.claude/jira_issues` MUST have a beads mirror labelled `jira:<key>`.** That mirror is where the work happens, so Jira status follows it. A Jira key with no labelled bead is an orphan — nothing will ever update it; create the mirror or drop the key.
   - **The reverse does not hold.** A beads issue with no `jira:` label is complete on its own — it is not "unmapped" and needs no Jira parent.
-  - A mirrored bead carries the link **twice, for two different readers**: the `jira:<key>` label (machine — queryable, what an audit keys on) AND a first line in its description carrying the key *with the parent's title*, e.g. `Jira: DE-1765 — [ROM] release tags should reach the remote before the branch push`. A bare key in the body only moves the lookup; the title removes it. If the label and the body disagree, that is a copy-paste error — trust the label and fix the body.
+  - A mirrored bead carries the link **twice, for two different readers**: the `jira:<key>` label (machine — queryable, what an audit keys on) AND a first line in its description carrying the key _with the parent's title_, e.g. `Jira: DE-1765 — [ROM] release tags should reach the remote before the branch push`. A bare key in the body only moves the lookup; the title removes it. If the label and the body disagree, that is a copy-paste error — trust the label and fix the body.
   - Do NOT write bead IDs into Jira. They are repo-local, so `master-cl6` is unresolvable for a teammate — a worse link than none. The MR URL is the return path.
-  - When a Jira issue closes, remove its key from `.claude/jira_issues`; the file lists *in-progress* work, not history.
+  - When a Jira issue closes, remove its key from `.claude/jira_issues`; the file lists _in-progress_ work, not history.
 - ISSUE TITLE FORMAT — `[SYSTEM] <subject/condition> should <expected behaviour>`, e.g. `[AMS] IsFINI = true accounts should be excluded from the nightly settlement run`. A reader must know the system and the condition without opening the ticket. No bare "fix bug" / "update logic" titles.
 - ISSUE DESCRIPTION — cover **why, what, where, when, how** (4W1H), one short line each, no essays:
   - **Why** — the impact if left alone; what broke or what it costs
@@ -136,6 +136,7 @@ The flow, always, no shortcuts:
 - Never leave jira or bead issue IDs in the codebase, including docs and comments
 - Default to writing no comments. Never write multi-paragraph docstrings or multi-line comment blocks — one short line max.
 - When there is a PR/MR for the branch, please make sure that you verify E2E, this means that if the pipeline fails then you are required to fix the pipeline and verify again until the pipeline is green
+- Remove all mannered prose
 
 # VICI Company Internal Infrastructure
 
