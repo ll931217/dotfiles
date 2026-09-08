@@ -4,7 +4,7 @@ You are operating within a constrained context window. To produce production-gra
 
 ## Brain-first protocol
 
-You have a knowledge brain connected over MCP (gbrain and dept-brain). Before answering any question
+You have a knowledge brain connected over MCP (dept-brain). Before answering any question
 about people, companies, decisions, projects, or past context:
 
 1. **Search first.** Call `search` (or `query` for a synthesized answer) against
@@ -232,7 +232,7 @@ Reason behind this is to let LLM and AI agents help us with our work, such as:
 - Use agents to improve our code quality
 - Use agents to find solutions that can have a great impact on the company
 
-Whenever you work on something, you should think about all of this, you can get more context of the company or of what I have worked on in gbrain. When you have suggestions, feel free to let me know, lets improve together, help me get a high KPI score.
+Whenever you work on something, you should think about all of this, you can get more context of the company or of what I have worked on in dept-brain. When you have suggestions, feel free to let me know, lets improve together, help me get a high KPI score.
 
 @RTK.md
 

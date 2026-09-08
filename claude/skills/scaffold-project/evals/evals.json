@@ -1,0 +1,49 @@
+{
+  "skill_name": "scaffold-project",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I'm starting a new REST API for a todo app in Python. Set up the project structure for me — I really like clean separation between the HTTP layer, business logic, and data access, and I want dependency injection so things stay testable.",
+      "expected_output": "FastAPI project with feature-based module layout, a worked reference module (controller/service/repository/DTO/entity), DI through a composition root, exception handler, typed config, and a unit test that mocks the repository. A CLAUDE.md is created with the managed architecture section.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Bootstrap a Go HTTP service for an `orders` API. I want it well-architected — clear modules, services behind interfaces, repositories, and proper wiring. Make it idiomatic Go, not a port of some other language.",
+      "expected_output": "Idiomatic Go service (Echo/Gin + fx or wire) with an orders package separated into controller/service/repository/dto/entity, interfaces for the repository, DI via a composition root, centralized error handling, config loading, and a test mocking the repository. No faked decorators. CLAUDE.md created with the managed section.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Scaffold a TypeScript backend for a `products` catalog API following a NestJS-style layered architecture. There's already a CLAUDE.md in the repo with some conventions — please don't blow it away.",
+      "expected_output": "NestJS products module (module/controller/service/repository/DTO/entity), DI wiring, exception filter, config, and a unit test with a mocked repository. The setup-effect command is run to configure Effect (deps, language service, tsconfig, its managed CLAUDE.md block). The existing CLAUDE.md content is preserved and the managed architecture section is appended between markers (not duplicated, existing content intact).",
+      "files": [
+        "existing-CLAUDE.md"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Set up the initial folder structure for a new React app for browsing `products`. I want it properly organized — feature folders, a clean API layer, not one giant components directory.",
+      "expected_output": "Vite + React + TypeScript skeleton with app shell, typed config, shared api-client, and a worked products feature (components, hooks wrapping TanStack Query, api module with schema-validated responses, types, and a test with the API layer mocked). Components never fetch directly. setup-effect is run for the TypeScript project. CLAUDE.md created with the managed frontend architecture section.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "This repo is laid out totally differently from my other projects. Make it match my conventions.",
+      "expected_output": "Conform mode: reads the repo, determines the track, then produces a conformance report listing structural gaps (logic in handlers, dependencies constructed not injected, no composition root, per-site error handling) and quality gaps against the fixed numbers, followed by an ordered phased plan (<=5 files per phase) — and STOPS for user approval before restructuring. Writes both managed CLAUDE.md blocks. Does not invent a layout different from the scaffold tree.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "routes/handlers.py is 1400 lines and does everything. Split it into proper layers.",
+      "expected_output": "Conform mode on the backend track: pins current behaviour with tests before moving logic, extracts services behind repository abstractions, introduces a composition root, phases the work with type-check/lint/tests green per phase, preserves behaviour (no bug fixes smuggled in), and writes the architecture + quality CLAUDE.md blocks.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Add my code quality rules to this project's CLAUDE.md — file size limits, YAGNI, DRY, that kind of thing.",
+      "expected_output": "Writes assets/claude-md-section-quality.md into CLAUDE.md between the scaffold-project-quality markers with {{SHARED_DIR}} and {{IMMUTABILITY_MECHANISM}} filled for the language. Numbers are copied unchanged (300-line file, 50-line function, 4 params, depth 3, extract on the third duplicate). Does not soften a limit because existing code breaches it.",
+      "files": []
+    }
+  ]
+}
