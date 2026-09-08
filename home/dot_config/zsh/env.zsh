@@ -154,3 +154,8 @@ export NO_PROXY="$NO_PROXY,172.21.10.105"
 [[ -r "${ZDOTDIR:-$HOME/.config/zsh}/private/keys.zsh" ]] && \
   source "${ZDOTDIR:-$HOME/.config/zsh}/private/keys.zsh"
 # export BEADS_DOLT_SERVER_SOCKET=/tmp/mysql.socket
+
+# tmux socket out of /tmp: the nightly /tmp cleanup deletes files older than 7
+# days, and a deleted socket orphans a running server -- it keeps its sessions
+# but no new client can reach it, so the next `tmux` starts a second server.
+export TMUX_TMPDIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
