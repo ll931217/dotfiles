@@ -44,6 +44,30 @@
       "prompt": "Add my code quality rules to this project's CLAUDE.md — file size limits, YAGNI, DRY, that kind of thing.",
       "expected_output": "Writes assets/claude-md-section-quality.md into CLAUDE.md between the scaffold-project-quality markers with {{SHARED_DIR}} and {{IMMUTABILITY_MECHANISM}} filled for the language. Numbers are copied unchanged (300-line file, 50-line function, 4 params, depth 3, extract on the third duplicate). Does not soften a limit because existing code breaches it.",
       "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Scaffold a Python Airflow task that loads daily settlement rows into ClickHouse.",
+      "expected_output": "Pipeline track per references/extra-tracks.md: task entry -> pipeline -> pure transform steps -> source/sink clients behind abstractions; DAG file only wires and schedules (and belongs in misc/airflow); window passed in, never now(); idempotent partition-replace or upsert, never blind append; input and output schema validated; structured logging with the run id; a test per transform plus a double-run idempotency test. Quality + applicable platform blocks written. No Dockerfile or CI YAML — handed off to vici-cicd-onboard.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "Set up a new MCP server in TypeScript that exposes a few read-only tools over our internal API.",
+      "expected_output": "MCP track: thin tool handlers validating arguments against the tool schema, services behind an injected client, model-readable tool descriptions, nothing but protocol frames on stdout (logs to stderr/file), bounded/truncated results, tools read-only by default. setup-effect run for TypeScript. Quality + platform blocks written; tests cover each tool with a fake client plus a tool-list/schema test.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "New FastAPI service for `orders`. I want it to look exactly like my other services.",
+      "expected_output": "Backend track plus the full platform contract in the reference slice: error catalogue module + central handler emitting {error:{code,message,details,request_id}} with the fixed status mapping, cursor-paginated list endpoint, /v1 prefix, /healthz with no dependency checks and /readyz with them, SIGTERM drain wired in the composition root, injected structured JSON logger carrying the request id, OTLP exporter that no-ops when unset, validated frozen config, .env.example committed and .env ignored. Ruff configured with the quality caps, import-linter for dependency direction, .claude/jira_issues empty and gitignored, portless for the dev port, run/test/lint/check commands, git commit made. Handoffs: setup-pre-commit, bd init, vici-cicd-onboard. Verifies type-check/lint/tests and that /healthz returns 200, then check-shape.py exits 0. All three CLAUDE.md blocks written.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "Which of my repos under ~/Projects have drifted from my conventions?",
+      "expected_output": "Runs scripts/check-shape.py --all ~/Projects and reports per-repo gaps with the fix for each (missing managed blocks, missing hygiene files, committed .env, unconfigured caps), non-zero exit when anything drifted. Offers conform mode for the drifted repos rather than editing anything unasked.",
+      "files": []
     }
   ]
 }

@@ -15,6 +15,8 @@ Fixed limits, identical in every repo. **These are checkable, not aspirational**
 
 Generated files, migrations, and lock files are exempt.
 
+**These are lint rules, not prose.** They are configured in `{{LINT_CONFIG}}` and fail `{{CHECK_CMD}}` locally and in CI. A breach is fixed or gets an explicit per-file ignore **with a reason on the same line** — never by lowering a cap.
+
 ### YAGNI
 
 - No abstraction until there are **two real** call sites. One implementation behind an interface is allowed **only** where the layer rules require it (repository/client abstractions) — nowhere else.
@@ -24,7 +26,7 @@ Generated files, migrations, and lock files are exempt.
 ### DRY
 
 - **Third occurrence extracts, not the second.** Two similar blocks are a coincidence; three are a pattern. Extracting at two couples code that was about to diverge.
-- Duplication across features goes to `{{SHARED_DIR}}`. Never reach into another feature to reuse.
+- Duplication across features goes to `{{SHARED_DIR}}` (`shared/` if this project has no other convention). Never reach into another feature to reuse.
 - Copied domain knowledge (a rule, a threshold, a format) is a defect at the *first* duplicate — it must live in exactly one place.
 
 ### SOLID, the parts the layer rules do not already cover
@@ -50,6 +52,10 @@ The layering rules already give SRP (one layer, one job) and DIP (services depen
 - One unit test per service method with a real branch in it. A test that only asserts a value passed straight through is not a test.
 - Test the behaviour through the layer's public surface, not its privates. A test that breaks on a rename of a private helper is a maintenance cost with no value.
 - No test touches another test's state. No ordering dependency.
+
+### Dependency direction
+
+The layer rules are enforced mechanically by `{{BOUNDARY_LINTER}}`, not by review memory. A service importing the ORM, a component importing the HTTP client, or a feature importing another feature's internals fails `{{CHECK_CMD}}`.
 
 ### Comments
 
