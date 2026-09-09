@@ -33,6 +33,9 @@ export BEADS_DOLT_SERVER_HOST=0.0.0.0
 export BEADS_DOLT_SERVER_PORT=3306
 # export BEADS_DOLT_SERVER_USER=root
 # export BEADS_DOLT_PASSWORD=
+# export BEADS_DOLT_SERVER_SOCKET=/tmp/mysql.socket
+# must match `socket:` in ~/.dolt/config.yaml — dolt creates mysql.sock, not mysql.socket
+export BEADS_DOLT_SERVER_SOCKET="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mysql.sock"
 
 # Portless HTTPS by default
 export PORTLESS_HTTPS=1
@@ -153,7 +156,6 @@ export NO_PROXY="$NO_PROXY,172.21.10.105"
 # never committed. Regenerate with `chezmoi apply ~/.config/zsh/private`.
 [[ -r "${ZDOTDIR:-$HOME/.config/zsh}/private/keys.zsh" ]] && \
   source "${ZDOTDIR:-$HOME/.config/zsh}/private/keys.zsh"
-# export BEADS_DOLT_SERVER_SOCKET=/tmp/mysql.socket
 
 # tmux socket out of /tmp: the nightly /tmp cleanup deletes files older than 7
 # days, and a deleted socket orphans a running server -- it keeps its sessions
