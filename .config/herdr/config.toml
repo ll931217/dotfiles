@@ -1,17 +1,33 @@
 onboarding = false
 
 [theme]
-name = "kanagawa"
+# vesper is the closest built-in to the amp palette (near-black bg, warm accent);
+# every visible token is overridden below to amp's exact values.
+name = "vesper"
 
+# amp palette — same source as ~/.config/nvim/colors/amp.lua, tmux-amp-theme, and i3.
 [theme.custom]
-panel_bg  = "#1A1A1A"
-red       = "#D9634F"
-green     = "#7C9B96"
-yellow    = "#E3A25A"
-blue      = "#6A9FCC"
+panel_bg      = "#0F0F0F"
+sidebar_bg    = "#0F0F0F"
+surface0      = "#161616"
+surface1      = "#1E1E1E"
+active_row_bg = "#1E1E1E"
+selection_bg  = "#3A2614"
+accent        = "#E7894C"
+peach         = "#E7894C"
+yellow        = "#E3A25A"
+red           = "#D9634F"
+green         = "#7C9B96"
+mauve         = "#B8AFA0"
+text          = "#F2ECDD"
+subtext0      = "#B8AFA0"
+overlay0      = "#7A7367"
+overlay1      = "#262626"
 
 [ui]
-agent_panel_scope = "all"
+# only the focused space's agents — no cross-referencing against the spaces list
+agent_panel_scope = "current"
+accent = "#E7894C"
 
 [keys]
 # tmux-style bindings (prefix is the leader, default ctrl+b)
@@ -54,9 +70,6 @@ navigate_pane_down = ""
 # leader+a focuses the agent panel for keyboard browsing
 # (j/k to move, enter to jump, esc to leave) — needs the rebuilt binary
 # agent_picker = "prefix+a"
-# magenta   = "#E7894C"
-# cyan      = "#8FC4C4"
-# white     = "#F2ECDD"
 
 [experimental]
 kitty_graphics = true
