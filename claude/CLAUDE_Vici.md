@@ -96,6 +96,7 @@ The flow, always, no shortcuts:
 - Still ask before genuinely destructive or irreversible things (force-push to a shared branch,
   history rewrite, deleting remote branches, merging someone else's MR).
 - After each MR exists, watch the pipeline to green (`~/.scripts/glab-watch-mr.sh`).
+- As soon as an MR is open, spawn a subagent to review it with `/code-review` — do this automatically, without being asked, before handing the MR to me or to automerge.
 - **Simple MRs do not need the user.** A docs / chore / style / test MR that passes the
   eligibility gate (green pipeline, discussions resolved, no CI / migration / dependency /
   infra / secret paths touched, small diff) gets reviewed by a subagent and merged via
