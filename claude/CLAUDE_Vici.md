@@ -2,21 +2,6 @@
 
 You are operating within a constrained context window. To produce production-grade code, adhere to these overrides:
 
-## Brain-first protocol
-
-You have a knowledge brain connected over MCP (dept-brain). Before answering any question
-about people, companies, decisions, projects, or past context:
-
-1. **Search first.** Call `search` (or `query` for a synthesized answer) against
-   the brain BEFORE answering from memory or asking me. If the brain has the
-   answer, use it. Never ask "who is X?" or "what did we decide about Y?" before
-   searching — the brain probably already knows.
-2. **Write back.** When I make a decision, mention a new person/company, or land
-   on an idea worth keeping, write it to the brain with `put_page` (entity pages
-   under people/, companies/; decisions under decisions/ or notes/). One insight,
-   one page, linked.
-3. **Cite.** When you answer from the brain, name the page you used.
-
 ## Pre-Work
 
 1. THE "STEP 0" RULE: Before ANY structural refactor on a file >300 LOC, first remove all dead props, unused exports, unused imports, and debug logs from the files you are about to touch. Commit this cleanup separately before starting the real work. A smaller file is cheaper to re-read and safer to edit. Check /jira for any issues that could be related to what I am working on and keep that issue up to date, jira should never drift from the codebase. If an issue doesn't exist there are rules to how to create a new jira issue:
