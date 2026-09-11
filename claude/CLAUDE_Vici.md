@@ -24,7 +24,7 @@ about people, companies, decisions, projects, or past context:
 - Check if the work is related to some issue then create a subtask, otherwise create it as a task
 - We have epics for each half of a year (H1, H2), make sure to create tickets under those epics
 - We have a dedicated epic for maintenance work which does not belong to the Epics that are the main goals of the H1 or H2. Make sure maintenance work is under those epics for better tracking.
-- Tracked jira issues should be in `<repo_root>/.claude/jira_issues`, this file offers better tracking of which in progress jira issues belong to this repo/project
+- Tracked jira issues should be in `<repo_root>/.claude/jira_issues` — this file lists the in-progress **Jira** issues for this repo. Beads-only issues do NOT belong in it; see the tiering rule under Agentic Workflow.
 
 1. PHASED EXECUTION: Break work into explicit phases. Each phase touches no more than 5 files. Complete the phase, run verification, and commit before starting the next. After each phase, post a one-line status report. If a phase surfaces anything unexpected (architectural problems, errors outside the task's scope, ambiguity in requirements), STOP and report to the user before continuing — do not silently expand the plan.
 
@@ -76,13 +76,62 @@ about people, companies, decisions, projects, or past context:
 
 1. ALWAYS use CLI tools available in your arsenal instead of writing Python code that does exactly what CLI tools are meant for, such as `sed`, `awk` or the ones listed in the [tools](#tools) section
 
+# Git Autonomy (standing authorization)
+
+Committing, pushing, and opening merge requests are NOT gated — do them automatically as part of
+the work, never ask first. This overrides any "conservative / ask before committing" default in a
+repo's Beads block or tool instructions.
+
+**Never push to `main`. Never target an MR at `main` from a feature branch.** The only path to
+`main` is a promotion MR from `staging`.
+
+The flow, always, no shortcuts:
+
+    task → worktree → implement → commit → push → MR into `staging` → promotion MR `staging` → `main`
+
+- One worktree per task (`wt`), branched off `staging`.
+- Verify before pushing: the project's check/lint/type/test command, plus a browser check for UI work.
+- The feature MR targets `staging`. Promoting `staging` to `main` is its own MR, opened separately.
+- If a repo has no `staging` branch, create it from `main` before opening the MR.
+- Still ask before genuinely destructive or irreversible things (force-push to a shared branch,
+  history rewrite, deleting remote branches, merging someone else's MR).
+- After each MR exists, watch the pipeline to green (`~/.scripts/glab-watch-mr.sh`).
+- **Simple MRs do not need the user.** A docs / chore / style / test MR that passes the
+  eligibility gate (green pipeline, discussions resolved, no CI / migration / dependency /
+  infra / secret paths touched, small diff) gets reviewed by a subagent and merged via
+  `<plugin>/scripts/mr-automerge.py --merge <iid> --yes`, then reaped. Everything else still
+  goes to the user. Never widen the gate to fit a particular MR — that is the signal it is
+  not simple.
+- **Once an MR merges, clean up after it in the same breath**: remove the worktree, delete the
+  local branch, and drop any MR-watch cron entry for it. Use
+  `<plugin>/scripts/worktree-reap.py --all` (dry run) then `--reap`. It only
+  touches branches whose MRs are all merged, with a clean tree and nothing unpushed — anything
+  it cannot prove is finished it keeps and reports. A squash-merged branch needs `-D`; the
+  script does that itself, only after those checks pass.
+
 # Agentic Workflow
 
 - When defining tasks, always spawn 5 agent teammates that will define what the definition of done (DoD) is, the orchestrator agent will ask these teammates to verify if the implementation is exactly what is DoD, if not then keep fixing.
 - Subagents are used to do research.
-- All beads issues should always have an accompanying jira task/subtask, if not then create one.
-- Always keep beads and jira tasks/subtasks in sync
-- If there is a related task/subtask for the unmapped beads issue then ask the user if they want to map it
+- ISSUE TIERING — not every issue needs Jira. Decide by size and urgency, and say which tier you picked:
+  - **Jira + beads** — a large bug, an urgent bug, anything another person or team needs to see, anything spanning more than one repo, or anything that will outlive the current branch. Mirror it in beads and add it to `<repo_root>/.claude/jira_issues`.
+  - **beads only** — small, local, self-contained work: a rename, a missing guard, a flaky test, a cleanup found in passing. Do not create Jira noise for these.
+  - Unsure → beads only, and say so. Promoting a beads issue to Jira later is cheap; a backlog full of trivia is not.
+- THE LINK IS DIRECTIONAL, and this is what keeps Jira from drifting:
+  - **Every Jira key in `.claude/jira_issues` MUST have a beads mirror labelled `jira:<key>`.** That mirror is where the work happens, so Jira status follows it. A Jira key with no labelled bead is an orphan — nothing will ever update it; create the mirror or drop the key.
+  - **The reverse does not hold.** A beads issue with no `jira:` label is complete on its own — it is not "unmapped" and needs no Jira parent.
+  - A mirrored bead carries the link **twice, for two different readers**: the `jira:<key>` label (machine — queryable, what an audit keys on) AND a first line in its description carrying the key *with the parent's title*, e.g. `Jira: DE-1765 — [ROM] release tags should reach the remote before the branch push`. A bare key in the body only moves the lookup; the title removes it. If the label and the body disagree, that is a copy-paste error — trust the label and fix the body.
+  - Do NOT write bead IDs into Jira. They are repo-local, so `master-cl6` is unresolvable for a teammate — a worse link than none. The MR URL is the return path.
+  - When a Jira issue closes, remove its key from `.claude/jira_issues`; the file lists *in-progress* work, not history.
+- ISSUE TITLE FORMAT — `[SYSTEM] <subject/condition> should <expected behaviour>`, e.g. `[AMS] IsFINI = true accounts should be excluded from the nightly settlement run`. A reader must know the system and the condition without opening the ticket. No bare "fix bug" / "update logic" titles.
+- ISSUE DESCRIPTION — cover **why, what, where, when, how** (4W1H), one short line each, no essays:
+  - **Why** — the impact if left alone; what broke or what it costs
+  - **What** — the current behaviour vs the expected behaviour
+  - **Where** — system, repo, file or table
+  - **When** — when it triggers (which condition, which schedule, since which change)
+  - **How** — the intended fix or the next investigative step
+- When a task is parked as blocked, log it: `~/.scripts/blocker-log.py block --task <key> --title <short title> --class access|decision|dependency|premise|external|flake|other --reason <why>`. Log `clear --task <key> --by <who>` the moment it frees up — the wait time is the cost number. `report` groups by class; a class with 2+ hits is a process fix, not a ticket fix. Log: `<global-memory>/blocker_log.tsv`.
+- If a beads issue grows past the tiering line (turns out large, urgent, or someone else needs it), ask whether to promote it to Jira — and if a related task/subtask already exists, offer to attach it there instead of opening a new one.
 - Never write an entire story in comments, keep it simple, structured and to the point. We don't need some background of what this code-block or file is about
 - Never leave jira or bead issue IDs in the codebase, including docs and comments
 - Default to writing no comments. Never write multi-paragraph docstrings or multi-line comment blocks — one short line max.
@@ -162,6 +211,7 @@ These are tools I prefer to use during development. If you think a tool is a gre
 - `wt` (Worktrunk CLI) — manage worktrees
 - `bd` (Beads) — track issues instead of the TaskList in Claude Code
 - `http` (HTTPie) — request testing instead of `curl`
+- `~/.scripts/glab-watch-mr.sh` — watch a GitLab MR + its pipeline; notifies on every state change and again when it merges/closes. Use this whenever I ask to monitor/watch an MR or its pipeline (run from inside the repo). `glab-watch-mr.sh [<iid>|<branch>]`, `--once` for a single status, `INTERVAL=<sec>` to change poll rate.
 - `rg` — instead of `grep`
 - `ast-grep` — structural codebase search
 - `gopass` - use this to get tokens, keys, and passwords for various services I maintain. For example my authentik credentials are `liangshih.lin` and password is `liang_pw` from gopass
