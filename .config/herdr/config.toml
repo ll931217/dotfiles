@@ -21,13 +21,52 @@ green         = "#7C9B96"
 mauve         = "#B8AFA0"
 text          = "#F2ECDD"
 subtext0      = "#B8AFA0"
-overlay0      = "#7A7367"
-overlay1      = "#262626"
+# overlay0/overlay1 are FOREGROUNDS here (inactive tab labels), not borders —
+# amp's #262626 border colour is unreadable on #0F0F0F, so both stay in the dim range.
+overlay0      = "#8F877A"
+overlay1      = "#7A7367"
 
 [ui]
-# only the focused space's agents — no cross-referencing against the spaces list
-agent_panel_scope = "current"
+window_title = "{hostname}: {workspace}"
+agent_panel_scope = "all"
+# group the agents list under its space, and make the space name read as the group header
+agent_panel_sort = "spaces"
 accent = "#E7894C"
+
+status_indicators = "symbols"
+
+tab_bar_position = "bottom"
+tab_bar_right = [
+  { type = "zoom" },
+  { type = "hostname" },
+  { type = "datetime", format = "%H:%M" },
+  # { type = "text", text = "prod" },
+  # { type = "command", command = "~/.config/herdr/status.sh", interval_seconds = 5, timeout_seconds = 2 },
+]
+tab_bar_right_separator = " · "
+
+[ui.sidebar.agents]
+row_gap = 0
+rows = [
+  [
+    "state_icon",
+    "machine",
+    { token = "workspace", fg = "#E7894C", bold = true },
+    { token = "tab", fg = "#7A7367" },
+  ],
+  ["agent"],
+  [{ token = "$summary", fg = "#89b4fa", bold = true, dim = false }]
+]
+
+[ui.sidebar.spaces]
+row_gap = 0
+rows = [
+  ["state_icon", "workspace"],
+  ["branch", "git_status"],
+]
+
+[ui.toast]
+delivery = "system"
 
 [keys]
 # tmux-style bindings (prefix is the leader, default ctrl+b)
@@ -71,9 +110,6 @@ navigate_pane_down = ""
 # (j/k to move, enter to jump, esc to leave) — needs the rebuilt binary
 # agent_picker = "prefix+a"
 
-[experimental]
-kitty_graphics = true
-
 [[keys.command]]
 key = "ctrl+h"
 type = "plugin_action"
@@ -115,3 +151,27 @@ key = "prefix+r"
 type = "plugin_action"
 command = "persiyanov.reviewr.toggle"
 description = "reviewr: toggle review pane"
+
+# popup = session-modal terminal floating over the layout; closes when the
+# command exits, and never rearranges the tab's panes.
+[[keys.command]]
+key = "alt+f"
+type = "popup"
+command = "~/.config/herdr/scripts/scratch.sh"
+description = "scratch terminal (per space, persistent)"
+width = "80%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+shift+l"
+type = "popup"
+command = "lazygit"
+description = "lazygit"
+width = "90%"
+height = "90%"
+
+[remote]
+manage_ssh_config = true
+
+[experimental]
+kitty_graphics = true
