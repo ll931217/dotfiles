@@ -10,6 +10,11 @@ PROFILE = Path(__file__).parent
 
 
 class ProfileTests(unittest.TestCase):
+    def test_shared_palette_has_light_foreground(self):
+        palette = (PROFILE / "colors.sh").read_text()
+        self.assertIn("export ITEM_COLOR=0xfff2ecdd", palette)
+        self.assertIn("source", (PROFILE / "appearance.sh").read_text())
+
     def setUp(self):
         self.config = tomllib.loads((PROFILE / "aerospace.toml").read_text())
         self.bindings = self.config["mode"]["main"]["binding"]
@@ -87,6 +92,12 @@ esac
         self.assertIn("click_script=aerospace workspace 10", output)
         self.assertIn("display=1", output)
         self.assertNotIn("display=0", output)
+
+    def test_workspace_has_only_one_number(self):
+        result, output = self.run_update()
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("label.drawing=off", output)
+        self.assertNotIn("label=1\n", output)
 
 
 if __name__ == "__main__":
