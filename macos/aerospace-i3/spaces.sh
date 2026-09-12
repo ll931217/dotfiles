@@ -5,7 +5,7 @@ sketchybar --add item wm_mode left \
   --add item aerospace_anchor left \
   --set aerospace_anchor drawing=off \
   --add item aerospace_dummy left \
-  --set aerospace_dummy drawing=off updates=on update_freq=30 \
+  --set aerospace_dummy drawing=off updates=on update_freq=0 \
     script="/bin/bash \"$CONFIG_DIR/plugins/spaces.sh\"" \
-  --subscribe aerospace_dummy aerospace_workspace_change front_app_switched space_windows_change system_woke display_change
+  --subscribe aerospace_dummy aerospace_workspace_change system_woke display_change
 /bin/bash "$CONFIG_DIR/plugins/spaces.sh"

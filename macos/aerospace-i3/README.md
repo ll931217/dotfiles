@@ -47,10 +47,11 @@ changes do not update that indicator. Reloading the bar clears it.
 
 The bar uses the i3 palette, a solid 30-point background, numbered/lettered
 workspace buttons with one identifier each. Empty workspaces stay clickable.
-Updates query real state instead of trusting optional event variables.
-All workspace mutations are batched; no per-window icon lookup is needed.
-Workspace/app/display/wake events update immediately, with a 30-second repair
-update for missed events and login-order races. Workspace names are restricted
+Full repairs query real state instead of trusting optional event variables.
+Workspace switching directly updates only the previous and focused highlights;
+it does not rebuild buttons or dispatch another SketchyBar event. Full workspace
+mutations are batched, and no per-window icon lookup is needed. Display/wake
+events rebuild state when needed; there is no periodic rebuild. Workspace names are restricted
 to letters, numbers, underscores and hyphens before creating click commands.
 
 Install these mappings only into the existing shell bar, after backing it up:

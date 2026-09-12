@@ -7,7 +7,7 @@ after-startup-command = ['exec-and-forget sketchybar --reload']
 exec-on-workspace-change = [
   '/bin/bash',
   '-c',
-  'sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE PREV_WORKSPACE=$AEROSPACE_PREV_WORKSPACE',
+  'SENDER=aerospace_workspace_change FOCUSED_WORKSPACE="$AEROSPACE_FOCUSED_WORKSPACE" PREV_WORKSPACE="$AEROSPACE_PREV_WORKSPACE" exec /bin/bash "$HOME/.config/sketchybar/plugins/spaces.sh"',
 ]
 
 start-at-login = true

@@ -1,6 +1,29 @@
 #!/bin/bash
 set -euo pipefail
 
+is_safe_workspace_name() {
+  [[ "$1" =~ ^[a-zA-Z0-9_-]+$ ]]
+}
+
+# Workspace switching should never rebuild the bar. AeroSpace supplies both
+# names, so update only the two affected highlights without querying its tree.
+if [ "${SENDER:-}" = "aerospace_workspace_change" ]; then
+  focused=${FOCUSED_WORKSPACE:-}
+  previous=${PREV_WORKSPACE:-}
+  args=()
+
+  if [ "$previous" != "$focused" ] && is_safe_workspace_name "$previous"; then
+    args+=(--set "space.$previous" icon.color=0xfff2ecdd background.drawing=off)
+  fi
+  if is_safe_workspace_name "$focused"; then
+    args+=(--set "space.$focused" icon.color=0xff0f0f0f \
+      background.color=0xffe7894c background.drawing=on)
+  fi
+
+  [ "${#args[@]}" -eq 0 ] || sketchybar "${args[@]}"
+  exit 0
+fi
+
 # Query actual state: forced updates do not contain workspace event variables.
 focused=$(aerospace list-workspaces --focused) || exit 0
 [ -n "$focused" ] || exit 0
@@ -14,7 +37,7 @@ while IFS='|' read -r monitor _; do
   while IFS= read -r sid; do
     [ -n "$sid" ] || continue
     # Workspace names enter both item names and shell click handlers.
-    [[ "$sid" =~ ^[a-zA-Z0-9_-]+$ ]] || continue
+    is_safe_workspace_name "$sid" || continue
     color=0xfff2ecdd
     background=off
     if [ "$sid" = "$focused" ]; then

@@ -44,9 +44,20 @@ class ProfileTests(unittest.TestCase):
         self.assertNotIn("/opt/homebrew/opt", str(self.config))
         self.assertNotIn("close-all-windows-but-current", str(self.config))
 
+    def test_workspace_callback_uses_direct_fast_path(self):
+        callback = " ".join(self.config["exec-on-workspace-change"])
+        self.assertIn("plugins/spaces.sh", callback)
+        self.assertNotIn("--trigger aerospace_workspace_change", callback)
+
+    def test_workspace_bar_has_no_periodic_full_rebuild(self):
+        setup = (PROFILE / "spaces.sh").read_text()
+        self.assertIn("update_freq=0", setup)
+        self.assertNotIn("front_app_switched", setup)
+        self.assertNotIn("space_windows_change", setup)
+
 
 class WorkspaceTests(unittest.TestCase):
-    def run_update(self, focused="2", fail=False):
+    def run_update(self, focused="2", previous="1", sender="", fail=False):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             mock = root / "aerospace"
@@ -65,8 +76,16 @@ esac
             bar.write_text('#!/bin/bash\nprintf "%s\\n" "$@" >> "$BAR_LOG"\n')
             bar.chmod(0o755)
             log = root / "bar.log"
-            env = {**os.environ, "PATH": f"{root}:/usr/bin:/bin", "BAR_LOG": str(log),
-                   "FOCUSED": focused, "FAIL": str(int(fail))}
+            env = {
+                **os.environ,
+                "PATH": f"{root}:/usr/bin:/bin",
+                "BAR_LOG": str(log),
+                "FOCUSED": focused,
+                "FOCUSED_WORKSPACE": focused,
+                "PREV_WORKSPACE": previous,
+                "SENDER": sender,
+                "FAIL": str(int(fail)),
+            }
             result = subprocess.run(["/bin/bash", str(PROFILE / "workspaces.sh")], env=env,
                                     capture_output=True, text=True)
             return result, log.read_text() if log.exists() else ""
@@ -99,6 +118,20 @@ esac
         self.assertIn("label.drawing=off", output)
         self.assertNotIn("label=1\n", output)
         self.assertIn("background.color=0xffe7894c\nbackground.drawing=off", output)
+
+    def test_workspace_switch_only_updates_two_highlights(self):
+        result, output = self.run_update(
+            focused="3",
+            previous="2",
+            sender="aerospace_workspace_change",
+            fail=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("--add\n", output)
+        self.assertNotIn("--remove\n", output)
+        self.assertEqual(output.count("--set\n"), 2)
+        self.assertIn("space.2\n", output)
+        self.assertIn("space.3\n", output)
 
 
 if __name__ == "__main__":
