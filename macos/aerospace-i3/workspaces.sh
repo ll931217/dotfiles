@@ -24,7 +24,7 @@ while IFS='|' read -r monitor _; do
     args+=(--add item "space.$sid" left
       --set "space.$sid" "display=$monitor" "icon=$sid" label="" label.drawing=off icon.padding_left=8 icon.padding_right=8
       "icon.color=$color" "label.color=$color"
-      "background.drawing=$background" background.color=0xffe7894c
+      background.color=0xffe7894c "background.drawing=$background"
       background.corner_radius=4 "click_script=aerospace workspace $sid"
       --move "space.$sid" before aerospace_anchor)
   done <<< "$workspaces"

@@ -98,6 +98,7 @@ esac
         self.assertEqual(result.returncode, 0)
         self.assertIn("label.drawing=off", output)
         self.assertNotIn("label=1\n", output)
+        self.assertIn("background.color=0xffe7894c\nbackground.drawing=off", output)
 
 
 if __name__ == "__main__":
