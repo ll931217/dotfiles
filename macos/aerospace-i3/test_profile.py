@@ -23,6 +23,13 @@ class ProfileTests(unittest.TestCase):
         for shortcut in self.bindings:
             self.assertTrue(shortcut.startswith("alt-"), shortcut)
 
+    def test_current_config_version_has_stable_workspace_order(self):
+        self.assertEqual(self.config["config-version"], 2)
+        self.assertEqual(
+            self.config["persistent-workspaces"],
+            ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "B", "I", "S", "T"],
+        )
+
     def test_i3_workspace_back_and_forth_and_move(self):
         for key, workspace in [(str(n), str(n)) for n in range(1, 10)] + [("0", "10")]:
             self.assertEqual(self.bindings[f"alt-{key}"], f"workspace --auto-back-and-forth {workspace}")

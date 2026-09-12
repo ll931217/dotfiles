@@ -1,5 +1,8 @@
-# i3-inspired profile for AeroSpace 0.12+; Option replaces Linux Mod4.
+# i3-inspired profile for AeroSpace 0.21+; Option replaces Linux Mod4.
 # Keep native Command shortcuts. SketchyBar is managed by launchd.
+config-version = 2
+persistent-workspaces = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'B', 'I', 'S', 'T']
+
 after-login-command = []
 
 after-startup-command = ['exec-and-forget sketchybar --reload']

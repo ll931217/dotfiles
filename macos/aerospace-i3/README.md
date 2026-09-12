@@ -1,6 +1,6 @@
 # i3-inspired AeroSpace profile
 
-Opt-in profile tested on Intel Sonoma with AeroSpace 0.12.0 and SketchyBar
+Opt-in profile tested on Intel Sonoma with AeroSpace 0.21.3 and SketchyBar
 2.23.0. It adapts the navigation and resize behavior in
 `home/dot_config/i3/config`, while keeping native macOS Command shortcuts.
 
@@ -70,6 +70,8 @@ before `"$ITEM_DIR/spaces.sh"`. Preserve executable permission on the front-app
 plugin. Keep SketchyBar registered as a user launchd service; AeroSpace's
 startup command reloads the bar, it does not launch a second daemon.
 Both Homebrew prefixes are included in the AeroSpace subprocess PATH.
+The profile uses config version 2 and explicitly preserves the numbered and
+lettered workspace order instead of relying on legacy workspace inference.
 
 Keep exactly one active AeroSpace config: do not also create `~/.aerospace.toml`.
 Validate before reloading:
@@ -86,11 +88,11 @@ Tests require Python 3.11+ and mock the applications without moving windows.
 
 ## Current-machine rollback
 
-The pre-change files are preserved in
-`~/.config/aerospace-backup.M2mwXi/`. Restore its `aerospace.toml` to the active
-XDG path and its `sketchybar` files to `~/.config/sketchybar`, then validate and
-reload as above. The additional `items/appearance.sh` is inert once the original
-`sketchybarrc` is restored. No app restart or logout is required.
+The pre-profile files are preserved in `~/.config/aerospace-backup.M2mwXi/`.
+The pre-upgrade AeroSpace 0.12 app, Caskroom, config, and login agent are in
+`~/.config/aerospace-upgrade-backup.Bl70Yl/`. Restore the profile files, then
+validate and reload as above. The additional `items/appearance.sh` is inert once
+the original `sketchybarrc` is restored.
 
 This does not reproduce i3 scratchpads, parent-container focus, or native tabbed
 containers: the installed AeroSpace does not provide direct equivalents.
