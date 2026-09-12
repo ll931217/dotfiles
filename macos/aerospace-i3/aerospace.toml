@@ -1,0 +1,195 @@
+# i3-inspired profile for AeroSpace 0.12+; Option replaces Linux Mod4.
+# Keep native Command shortcuts. SketchyBar is managed by launchd.
+after-login-command = []
+
+after-startup-command = ['exec-and-forget sketchybar --reload']
+
+exec-on-workspace-change = [
+  '/bin/bash',
+  '-c',
+  'sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE PREV_WORKSPACE=$AEROSPACE_PREV_WORKSPACE',
+]
+
+start-at-login = true
+
+enable-normalization-flatten-containers = false
+enable-normalization-opposite-orientation-for-nested-containers = false
+
+accordion-padding = 30
+
+default-root-container-layout = 'tiles'
+
+default-root-container-orientation = 'auto'
+
+key-mapping.preset = 'qwerty'
+
+[exec]
+inherit-env-vars = true
+[exec.env-vars]
+PATH = '/usr/local/bin:/usr/local/sbin:/opt/homebrew/bin:/opt/homebrew/sbin:${PATH}'
+
+[gaps]
+inner.horizontal = 8
+inner.vertical = 8
+outer.left = 8
+outer.bottom = 8
+outer.top = 44
+outer.right = 8
+
+[mode.main.binding]
+
+alt-slash = 'layout tiles horizontal vertical'
+alt-comma = 'layout accordion vertical horizontal'
+
+alt-h = 'focus --boundaries all-monitors-outer-frame --boundaries-action stop left'
+alt-j = 'focus --boundaries all-monitors-outer-frame --boundaries-action stop down'
+alt-k = 'focus --boundaries all-monitors-outer-frame --boundaries-action stop up'
+alt-l = 'focus --boundaries all-monitors-outer-frame --boundaries-action stop right'
+
+alt-shift-h = 'move left'
+alt-shift-j = 'move down'
+alt-shift-k = 'move up'
+alt-shift-l = 'move right'
+
+alt-1 = 'workspace --auto-back-and-forth 1'
+alt-2 = 'workspace --auto-back-and-forth 2'
+alt-3 = 'workspace --auto-back-and-forth 3'
+alt-4 = 'workspace --auto-back-and-forth 4'
+alt-5 = 'workspace --auto-back-and-forth 5'
+alt-6 = 'workspace --auto-back-and-forth 6'
+alt-7 = 'workspace --auto-back-and-forth 7'
+alt-8 = 'workspace --auto-back-and-forth 8'
+alt-9 = 'workspace --auto-back-and-forth 9'
+alt-0 = 'workspace --auto-back-and-forth 10'
+alt-i = 'workspace --auto-back-and-forth I'
+alt-s = 'workspace --auto-back-and-forth S'
+alt-b = 'workspace --auto-back-and-forth B'
+alt-t = 'workspace --auto-back-and-forth T'
+
+alt-shift-1 = 'move-node-to-workspace 1'
+alt-shift-2 = 'move-node-to-workspace 2'
+alt-shift-3 = 'move-node-to-workspace 3'
+alt-shift-4 = 'move-node-to-workspace 4'
+alt-shift-5 = 'move-node-to-workspace 5'
+alt-shift-6 = 'move-node-to-workspace 6'
+alt-shift-7 = 'move-node-to-workspace 7'
+alt-shift-8 = 'move-node-to-workspace 8'
+alt-shift-9 = 'move-node-to-workspace 9'
+alt-shift-0 = 'move-node-to-workspace 10'
+alt-shift-i = 'move-node-to-workspace I'
+alt-shift-s = 'move-node-to-workspace S'
+alt-shift-b = 'move-node-to-workspace B'
+alt-shift-t = 'move-node-to-workspace T'
+
+alt-f = 'fullscreen'
+alt-shift-f = 'macos-native-fullscreen'
+alt-enter = 'exec-and-forget open -a Alacritty'
+alt-shift-space = 'layout floating tiling'
+alt-r = ['mode resize', 'exec-and-forget sketchybar --set wm_mode drawing=on label=RESIZE']
+alt-shift-c = 'reload-config'
+alt-g = ['mode join', 'exec-and-forget sketchybar --set wm_mode drawing=on label=JOIN']
+alt-backslash = 'split horizontal'
+alt-v = 'split vertical'
+
+alt-tab = 'workspace-back-and-forth'
+alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+
+alt-shift-semicolon = ['mode service', 'exec-and-forget sketchybar --set wm_mode drawing=on label=SERVICE']
+
+alt-shift-r = ['mode resize', 'exec-and-forget sketchybar --set wm_mode drawing=on label=RESIZE']
+
+[mode.resize.binding]
+h = 'resize width -50'
+j = 'resize height -50'
+k = 'resize height +50'
+l = 'resize width +50'
+left = 'resize width -50'
+right = 'resize width +50'
+down = 'resize height -50'
+up = 'resize height +50'
+
+minus = 'resize smart -50'
+equal = 'resize smart +50'
+
+enter = ['mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+esc = ['mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+
+[mode.service.binding]
+esc = ['reload-config', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+enter = ['mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+r = ['flatten-workspace-tree', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off'] # reset layout
+f = [
+  'layout floating tiling',
+  'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off',
+] # Toggle between floating and tiling layout
+
+
+alt-shift-h = ['join-with left', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+alt-shift-j = ['join-with down', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+alt-shift-k = ['join-with up', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+alt-shift-l = ['join-with right', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+
+[[on-window-detected]]
+if.app-id = 'com.github.wez.wezterm'
+run = "move-node-to-workspace T"
+
+[[on-window-detected]]
+if.app-id = 'net.kovidgoyal.kitty'
+run = "move-node-to-workspace T"
+
+[[on-window-detected]]
+if.app-id = 'com.google.Chrome'
+run = "move-node-to-workspace B"
+
+[[on-window-detected]]
+if.app-id = 'company.thebrowser.Browser'
+run = "move-node-to-workspace B"
+
+[[on-window-detected]]
+if.app-id = 'com.google.android.studio'
+run = "move-node-to-workspace I"
+
+[[on-window-detected]]
+if.app-id = 'com.apple.dt.Xcode'
+run = "move-node-to-workspace I"
+
+[[on-window-detected]]
+if.app-id = 'com.tinyspeck.slackmacgap'
+run = "move-node-to-workspace S"
+
+[[on-window-detected]]
+if.app-id = 'com.apple.iphonesimulator'
+run = "move-node-to-workspace T"
+
+
+[[on-window-detected]]
+if.app-id = 'com.1password.1password'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.finder'
+run = "layout floating"
+
+[[on-window-detected]]
+if.app-id = 'com.apple.ActivityMonitor'
+run = "layout floating"
+
+[[on-window-detected]]
+if.app-id = 'com.todesktop.230313mzl4w4u92'
+run = "move-node-to-workspace V"
+
+[mode.join.binding]
+h = ['join-with left', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+j = ['join-with down', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+k = ['join-with up', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+l = ['join-with right', 'mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+esc = ['mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+enter = ['mode main', 'exec-and-forget sketchybar --set wm_mode drawing=off']
+
+[[on-window-detected]]
+if.app-id = 'com.apple.systempreferences'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.brave.Browser'
+run = 'move-node-to-workspace B'
