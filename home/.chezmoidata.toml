@@ -5,6 +5,24 @@ install_packages = false
 install_optional = false
 secrets = false
 
+[packages.android]
+termux = [
+  "bat",
+  "curl",
+  "direnv",
+  "eza",
+  "fd",
+  "fzf",
+  "git",
+  "gnupg",
+  "jq",
+  "neovim",
+  "ripgrep",
+  "starship",
+  "tmux",
+  "zsh",
+]
+
 [packages.linux.arch]
 official = [
   "base-devel",

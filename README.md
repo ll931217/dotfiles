@@ -115,9 +115,16 @@ existing machine, run `chezmoi init` and select the other profile, or update
 that value directly, then review `chezmoi diff` before applying.
 
 Package installation is disabled by default. Configure
-`home/.chezmoidata.toml` with `machine.install_packages = true` before
-enabling the package hook. Optional AUR/Homebrew packages require
-`machine.install_optional = true`.
+`data.machine.install_packages = true` in
+`~/.config/chezmoi/chezmoi.toml` to enable the package hook. Package lists
+live in `home/.chezmoidata.toml`. Optional AUR/Homebrew packages require
+`data.machine.install_optional = true`.
+
+On Termux, run `bash install.sh`. Bootstrap installs chezmoi with `pkg`
+when it is missing. Chezmoi identifies Termux as `android`; new setups
+default to window manager `none`, and the package hook uses
+`packages.android.termux` with `pkg install` (no sudo). Existing machine
+choices are preserved when running `chezmoi init` again.
 
 ### Provisioning Hooks
 

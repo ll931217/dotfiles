@@ -6,7 +6,11 @@
 {{- $types   := list "desktop" "laptop" -}}
 {{- $type    := promptChoiceOnce . "machine.type" "Machine type" $types "desktop" -}}
 {{- $wms     := list "i3" "hyprland" "none" -}}
-{{- $wm      := promptChoiceOnce . "machine.wm" "Window manager" $wms "hyprland" -}}
+{{- $defaultWM := "hyprland" -}}
+{{- if eq .chezmoi.os "android" -}}
+{{- $defaultWM = "none" -}}
+{{- end -}}
+{{- $wm      := promptChoiceOnce . "machine.wm" "Window manager" $wms $defaultWM -}}
 {{- $secrets := promptBoolOnce . "machine.secrets" "gopass dotfiles secrets available" false -}}
 {{- $pkgs    := promptBoolOnce . "machine.install_packages" "Install packages on apply" false -}}
 {{- $opt     := promptBoolOnce . "machine.install_optional" "Install optional/AUR packages" false -}}

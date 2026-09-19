@@ -5,6 +5,23 @@ if [[ "{{ .machine.install_packages }}" != "true" ]]; then
     exit 0
 fi
 
+{{- if eq .chezmoi.os "android" }}
+if ! command -v pkg >/dev/null 2>&1; then
+    printf '%s\n' 'ERROR: pkg is required for Termux package installation' >&2
+    exit 1
+fi
+
+termux_packages=(
+{{- range .packages.android.termux }}
+    {{ . | quote }}
+{{- end }}
+)
+
+if ((${#termux_packages[@]})); then
+    pkg install -y "${termux_packages[@]}"
+fi
+{{- end }}
+
 {{- if eq .chezmoi.os "linux" }}
 {{- if eq .chezmoi.osRelease.id "arch" }}
 official_packages=(

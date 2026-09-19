@@ -36,6 +36,12 @@ install_chezmoi() {
         return 0
     fi
 
+    if [[ -n "${TERMUX_VERSION:-}" ]]; then
+        log "chezmoi is not installed; installing the Termux package"
+        pkg install -y chezmoi
+        return 0
+    fi
+
     log "chezmoi is not installed; installing a user-local binary"
     local bin_dir="$HOME/.local/bin"
     mkdir -p -- "$bin_dir"

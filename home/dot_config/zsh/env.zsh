@@ -16,6 +16,16 @@ export T3CODE_TELEMETRY_ENABLED=false
 export RTK_TELEMETRY_DISABLED=1
 export MEMKIT_DESTRUCTIVE_MODE=1
 
+# An inherited desktop runtime directory does not exist on Android.
+# Keep credential caching tied to a real runtime directory; only sockets
+# use Termux's private temporary directory as a fallback.
+if [[ -n ${TERMUX_VERSION:-} ]]; then
+  if [[ -n ${XDG_RUNTIME_DIR:-} && ! -d $XDG_RUNTIME_DIR ]]; then
+    unset XDG_RUNTIME_DIR
+  fi
+  export TMPDIR="${TMPDIR:-${PREFIX}/tmp}"
+fi
+
 export PATH=$HOME/.cua/bin:$PATH
 export PATH=$HOME/.local/bin:$PATH
 export PATH=$HOME/.local/bin/arbor/:$PATH
@@ -35,7 +45,7 @@ export BEADS_DOLT_SERVER_PORT=3306
 # export BEADS_DOLT_PASSWORD=
 # export BEADS_DOLT_SERVER_SOCKET=/tmp/mysql.socket
 # must match `socket:` in ~/.dolt/config.yaml — dolt creates mysql.sock, not mysql.socket
-export BEADS_DOLT_SERVER_SOCKET="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/mysql.sock"
+export BEADS_DOLT_SERVER_SOCKET="${XDG_RUNTIME_DIR:-${TMPDIR:-/run/user/$(id -u)}}/mysql.sock"
 
 # Portless HTTPS by default
 export PORTLESS_HTTPS=1
@@ -57,12 +67,20 @@ unset KOMODO_API_KEY KOMODO_API_SECRET KOMODO_CLI_KEY KOMODO_CLI_SECRET
 # rotation.
 _komodo_creds="${XDG_RUNTIME_DIR:-/run/user/$UID}/komodo-creds"
 komodo-creds-refresh() {
+  # Do not create a disk-backed substitute for the private runtime cache.
+  [[ -d ${_komodo_creds:h} && -w ${_komodo_creds:h} ]] || return 0
+  local key secret
+  key=$(gopass show -o infra/komodo_api_key 2>/dev/null) || return 1
+  secret=$(gopass show -o infra/komodo_api_secret 2>/dev/null) || return 1
+  [[ -n $key && -n $secret ]] || return 1
   ( umask 077
-    print -r -- "${(q)$(gopass show -o infra/komodo_api_key 2>/dev/null)}
-${(q)$(gopass show -o infra/komodo_api_secret 2>/dev/null)}" >| "$_komodo_creds" )
+    print -r -- "${(q)key}
+${(q)secret}" >| "$_komodo_creds" )
 }
-if (( $+commands[gopass] )); then
+if (( $+commands[gopass] )) && [[ -d ${_komodo_creds:h} && -w ${_komodo_creds:h} ]]; then
   [[ -s $_komodo_creds ]] || komodo-creds-refresh
+fi
+if [[ -r $_komodo_creds && -s $_komodo_creds ]]; then
   { read -r _komodo_api_key; read -r _komodo_api_secret } < "$_komodo_creds"
   _komodo_api_key=${(Q)_komodo_api_key}
   _komodo_api_secret=${(Q)_komodo_api_secret}
@@ -160,4 +178,4 @@ export NO_PROXY="$NO_PROXY,172.21.10.105"
 # tmux socket out of /tmp: the nightly /tmp cleanup deletes files older than 7
 # days, and a deleted socket orphans a running server -- it keeps its sessions
 # but no new client can reach it, so the next `tmux` starts a second server.
-export TMUX_TMPDIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export TMUX_TMPDIR="${XDG_RUNTIME_DIR:-${TMPDIR:-/run/user/$(id -u)}}"
