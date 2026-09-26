@@ -34,7 +34,10 @@ znap source zsh-users/zsh-autosuggestions
 znap source zsh-users/zsh-syntax-highlighting
 znap source zsh-users/zsh-history-substring-search
 znap source zdharma-continuum/history-search-multi-word
-znap source thewtex/tmux-mem-cpu-load
+# This plugin builds native code and runs sudo; upstream excludes Android.
+if [[ -z ${TERMUX_VERSION:-} ]]; then
+  znap source thewtex/tmux-mem-cpu-load
+fi
 znap source Aloxaf/fzf-tab
 znap source hlissner/zsh-autopair
 znap source chrissicool/zsh-256color
@@ -83,10 +86,11 @@ files=(
   "functions"
   "utility"
   "options"
-  "plugins"
   "keybinds"
-  "prompt"
 )
+
+# Znap and Starship are initialized above. Legacy plugins.zsh/prompt.zsh
+# files may still exist locally and would start a second plugin manager.
 
 for file in "${files[@]}"; do
   [ -f "$ZDOTDIR/$file.zsh" ] && source "$ZDOTDIR/$file.zsh"

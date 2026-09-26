@@ -2,21 +2,6 @@
 
 You are operating within a constrained context window. To produce production-grade code, adhere to these overrides:
 
-## Brain-first protocol
-
-You have a knowledge brain connected over MCP (gbrain and dept-brain). Before answering any question
-about people, companies, decisions, projects, or past context:
-
-1. **Search first.** Call `search` (or `query` for a synthesized answer) against
-   the brain BEFORE answering from memory or asking me. If the brain has the
-   answer, use it. Never ask "who is X?" or "what did we decide about Y?" before
-   searching — the brain probably already knows.
-2. **Write back.** When I make a decision, mention a new person/company, or land
-   on an idea worth keeping, write it to the brain with `put_page` (entity pages
-   under people/, companies/; decisions under decisions/ or notes/). One insight,
-   one page, linked.
-3. **Cite.** When you answer from the brain, name the page you used.
-
 ## Pre-Work
 
 1. THE "STEP 0" RULE: Before ANY structural refactor on a file >300 LOC, first remove all dead props, unused exports, unused imports, and debug logs from the files you are about to touch. Commit this cleanup separately before starting the real work. A smaller file is cheaper to re-read and safer to edit. Check /jira for any issues that could be related to what I am working on and keep that issue up to date, jira should never drift from the codebase. If an issue doesn't exist there are rules to how to create a new jira issue:
@@ -96,6 +81,7 @@ The flow, always, no shortcuts:
 - Still ask before genuinely destructive or irreversible things (force-push to a shared branch,
   history rewrite, deleting remote branches, merging someone else's MR).
 - After each MR exists, watch the pipeline to green (`~/.scripts/glab-watch-mr.sh`).
+- As soon as an MR is open, spawn a subagent to review it with `/code-review` — do this automatically, without being asked, before handing the MR to me or to automerge.
 - **Simple MRs do not need the user.** A docs / chore / style / test MR that passes the
   eligibility gate (green pipeline, discussions resolved, no CI / migration / dependency /
   infra / secret paths touched, small diff) gets reviewed by a subagent and merged via
@@ -232,7 +218,7 @@ Reason behind this is to let LLM and AI agents help us with our work, such as:
 - Use agents to improve our code quality
 - Use agents to find solutions that can have a great impact on the company
 
-Whenever you work on something, you should think about all of this, you can get more context of the company or of what I have worked on in gbrain. When you have suggestions, feel free to let me know, lets improve together, help me get a high KPI score.
+Whenever you work on something, you should think about all of this, you can get more context of the company or of what I have worked on in dept-brain. When you have suggestions, feel free to let me know, lets improve together, help me get a high KPI score.
 
 @RTK.md
 

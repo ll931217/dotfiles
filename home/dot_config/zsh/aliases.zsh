@@ -130,13 +130,20 @@ alias fm='yazi'
 alias ls="eza -lgmM --icons=always --group-directories-first --time-style='+%Y-%m-%d %H:%M:%S'"
 alias la="ls -a"
 alias lt="ls --tree -L"
-alias bat="batcat --color always"
-alias cat="batcat --color=never --pager=never --plain"
+if (( $+commands[batcat] )); then
+  alias bat="batcat --color always"
+  alias cat="batcat --color=never --pager=never --plain"
+elif (( $+commands[bat] )); then
+  alias bat="bat --color always"
+  alias cat="bat --color=never --pager=never --plain"
+fi
 # alias cat="mcat"
 alias grep='grep --color=auto'
 alias mv='mv -v'
 alias cp='cp -vr'
-alias rm='trash'
+if (( $+commands[trash] )); then
+  alias rm='trash'
+fi
 
 alias pull-all='for dir in */; do [ -d "$dir/.git" ] && echo "==> $dir" && git -C "$dir" pull; done'
 alias notes="$EDITOR $HOME/vault/nodes.md"

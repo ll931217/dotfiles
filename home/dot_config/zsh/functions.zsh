@@ -28,10 +28,10 @@ function procproj() {
 function y() {
   local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
   yazi "$@" --cwd-file="$tmp"
-  if cwd="$(/usr/bin/cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+  if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
     cd -- "$cwd"
   fi
-  rm -f -- "$tmp"
+  command rm -f -- "$tmp"
 }
 
 function checkport() {
@@ -357,7 +357,7 @@ function v() {
   # and nothing is shared across instances. Nine project instances therefore
   # meant nine sets of tsserver. This reuses a single server on a fixed socket.
   # Uses nvim's built-in --server/--remote; no nvr dependency.
-  local sock="${XDG_RUNTIME_DIR:-/tmp}/nvim-shared.sock"
+  local sock="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/nvim-shared.sock"
   # Probe rather than trust the socket file: a crashed nvim leaves the inode
   # behind, and connecting to a dead socket just errors out.
   if [[ -S $sock ]] && nvim --server "$sock" --remote-expr 1 >/dev/null 2>&1; then

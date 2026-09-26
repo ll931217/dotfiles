@@ -4,6 +4,12 @@ if [[ -r "$HOME/.vite-plus/env" ]]; then
   source "$HOME/.vite-plus/env"
 fi
 
+# Prefer Android-native packages over inherited paths to old Zinit downloads.
+if [[ -n ${TERMUX_VERSION:-} && -n ${PREFIX:-} ]]; then
+  typeset -U path PATH
+  path=("$PREFIX/bin" $path)
+fi
+
 # Node trusts the system CA store. The work machine additionally needs the
 # portless CA, which is absent on personal machines -- so key this off the file
 # rather than hardcoding either answer. Unsetting it unconditionally (what this
