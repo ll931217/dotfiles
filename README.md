@@ -155,6 +155,10 @@ For headless provisioning, log into i3 afterward. Restart the browser if it
 cached the old picker. Firefox/Zen additionally need
 `widget.use-xdg-desktop-portal.file-picker = 1` in `about:config`.
 
+Lutris launches from the application menu with `GTK_USE_PORTAL=1` via a
+managed user desktop entry. Fully quit and reopen Lutris for it to take
+effect. Direct terminal launches still need `GTK_USE_PORTAL=1 lutris`.
+
 Verify wrapper behavior with `bash scripts/check-yazi-file-picker.sh`.
 For a live check, click a browser file input, select a harmless file in
 Yazi, and confirm the selected filename appears in the page.
