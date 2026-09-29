@@ -23,7 +23,7 @@ exit 0
 MOCK
 cat > "$work/bin/zenity" <<'MOCK'
 #!/bin/bash
-[[ $GTK_USE_PORTAL == 0 && -z $GDK_DEBUG ]] || exit 23
+[[ $GTK_USE_PORTAL == 0 && $GDK_DEBUG == no-portals ]] || exit 23
 printf '%s\0' "$@" > "$MOCK_LOG"
 [[ $MOCK_SAVE_STATUS == 0 ]] || exit "$MOCK_SAVE_STATUS"
 cat -- "$MOCK_SELECTION"

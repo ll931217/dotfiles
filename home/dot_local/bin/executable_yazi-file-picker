@@ -36,7 +36,7 @@ trap 'exit 143' TERM
 # Yazi cannot choose a nonexistent filename or confirm an overwrite.
 # Disable portal use in Zenity to avoid recursively invoking this backend.
 if [[ $save == 1 ]]; then
-    if GTK_USE_PORTAL=0 GDK_DEBUG='' zenity --file-selection --save \
+    if GTK_USE_PORTAL=0 GDK_DEBUG=no-portals zenity --file-selection --save \
         --confirm-overwrite --filename="$path" > "$work/result"; then
         exit 0
     else
