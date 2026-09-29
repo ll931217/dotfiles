@@ -51,3 +51,10 @@
 # zsh-users), and work_zshrc never sources it, so it is dead weight there.
 .config/zsh/completions.zsh
 {{- end }}
+
+{{- if not (and (eq .chezmoi.os "linux") (eq .machine.profile "personal") (eq .machine.wm "i3")) }}
+# Terminal browser file picker is specific to personal i3 desktops.
+.config/xdg-desktop-portal/i3-portals.conf
+.config/xdg-desktop-portal-termfilechooser
+.local/bin/yazi-file-picker
+{{- end }}

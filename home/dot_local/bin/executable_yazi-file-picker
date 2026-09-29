@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# xdg-desktop-portal-termfilechooser: multiple directory save path output debug
+set -euo pipefail
+
+if (( $# != 6 )); then
+    printf 'Usage: %s multiple directory save path output debug\n' "$0" >&2
+    exit 2
+fi
+multiple=$1
+directory=$2
+save=$3
+path=${4:-$HOME}
+out=$5
+# Deliberately do not trace: picker paths may contain private filenames.
+umask 077
+if [[ -L $out || ( -e $out && ! -f $out ) ]]; then
+    printf 'Refusing unsafe picker output file.\n' >&2
+    exit 1
+fi
+# Keep publication on the output filesystem; rename never follows a symlink.
+work=$(mktemp -d "$(dirname -- "$out")/.yazi-file-picker.XXXXXXXX")
+: > "$work/result"
+finish() {
+    local status=$?
+    if (( status != 0 )); then
+        : > "$work/result"
+    fi
+    mv -fT -- "$work/result" "$out" || status=1
+    rm -rf -- "$work"
+    exit "$status"
+}
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+# Yazi cannot choose a nonexistent filename or confirm an overwrite.
+# Disable portal use in Zenity to avoid recursively invoking this backend.
+if [[ $save == 1 ]]; then
+    if GTK_USE_PORTAL=0 GDK_DEBUG='' zenity --file-selection --save \
+        --confirm-overwrite --filename="$path" > "$work/result"; then
+        exit 0
+    else
+        status=$?
+        if [[ $status == 1 ]]; then
+            : > "$work/result"
+            exit 0
+        fi
+        exit "$status"
+    fi
+fi
+
+if command -v st >/dev/null 2>&1; then
+    terminal=(st -c yazi-file-picker -t 'Choose a file' -e)
+elif command -v xterm >/dev/null 2>&1; then
+    terminal=(xterm -class yazi-file-picker -T 'Choose a file' -e)
+else
+    printf 'Yazi file picker requires st or xterm.\n' >&2
+    exit 1
+fi
+args=(--chooser-file="$work/selection")
+if [[ $directory == 1 ]]; then
+    args+=(--cwd-file="$work/cwd")
+fi
+"${terminal[@]}" yazi "${args[@]}" -- "$path"
+
+# Yazi writes cwd on q, but not on Shift+Q. For files, q means cancel.
+selection=$work/selection
+if [[ $directory == 1 && ! -s $selection ]]; then
+    selection=$work/cwd
+fi
+[[ -s $selection ]] || exit 0
+while IFS= read -r selected || [[ -n $selected ]]; do
+    [[ -n $selected ]] || continue
+    if [[ $directory == 1 ]]; then
+        [[ -d $selected ]] || continue
+    else
+        [[ -f $selected ]] || continue
+    fi
+    printf '%s\n' "$selected" >> "$work/result"
+    [[ $multiple == 1 ]] || break
+done < "$selection"

@@ -46,6 +46,16 @@ official = [
 ]
 aur = []
 
+[packages.linux.arch.i3_filechooser]
+official = [
+  "xdg-desktop-portal",
+  "xdg-desktop-portal-gtk",
+  "xterm",
+  "yazi",
+  "zenity",
+]
+aur = ["xdg-desktop-portal-termfilechooser-boydaihungst-git"]
+
 [packages.darwin]
 brew = [
   "bat",

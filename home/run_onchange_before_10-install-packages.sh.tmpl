@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-if [[ "{{ .machine.install_packages }}" != "true" ]]; then
+install_packages={{ .machine.install_packages | quote }}
+if [[ "$install_packages" != "true" ]]; then
     exit 0
 fi
 
@@ -28,6 +29,11 @@ official_packages=(
 {{- range .packages.linux.arch.official }}
     {{ . | quote }}
 {{- end }}
+{{- if and (eq .machine.profile "personal") (eq .machine.wm "i3") }}
+{{- range .packages.linux.arch.i3_filechooser.official }}
+    {{ . | quote }}
+{{- end }}
+{{- end }}
 )
 
 if ! command -v pacman >/dev/null 2>&1; then
@@ -41,6 +47,11 @@ sudo pacman -S --needed --noconfirm "${official_packages[@]}"
 aur_packages=(
 {{- range .packages.linux.arch.aur }}
     {{ . | quote }}
+{{- end }}
+{{- if and (eq .machine.profile "personal") (eq .machine.wm "i3") }}
+{{- range .packages.linux.arch.i3_filechooser.aur }}
+    {{ . | quote }}
+{{- end }}
 {{- end }}
 )
 
