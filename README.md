@@ -126,6 +126,39 @@ default to window manager `none`, and the package hook uses
 `packages.android.termux` with `pkg install` (no sudo). Existing machine
 choices are preserved when running `chezmoi init` again.
 
+### Yazi browser file picker (personal i3 desktops)
+
+On Arch Linux, initialize with `profile = "personal"`, `wm = "i3"`,
+`install_packages = true`, and `install_optional = true`. The package hook
+installs Yazi, the GTK portal, xterm, Zenity, and the AUR package
+`xdg-desktop-portal-termfilechooser-boydaihungst-git` (requires `yay`).
+Keep these values under `[data.machine]` in `~/.config/chezmoi/chezmoi.toml`.
+For an existing checkout, review `chezmoi diff`, then run `chezmoi apply`.
+Package installation remains opt-in; without the optional backend, file
+selection falls back to GTK when `xdg-desktop-portal-gtk` is installed.
+If you disable package installation, install the listed dependencies yourself.
+
+Browser upload/open dialogs use Yazi in a floating `st` window, or xterm
+when st is unavailable. Press Enter to accept a file; use Space to select
+several files, then Enter. Press `q` to cancel a file request. For folder
+requests, enter the folder and press `q` to accept it; `Shift+Q` cancels.
+Save As dialogs use Zenity with overwrite confirmation. This does not
+change the default application for opening folders.
+
+Routing lives in `~/.config/xdg-desktop-portal/i3-portals.conf`; other
+portal interfaces continue to use GTK. The picker configuration and wrapper
+are excluded from work, non-i3, and non-Linux profiles. Other Linux
+distributions need equivalent packages installed manually.
+
+The refresh hook reloads the portals and i3 during an active i3 session.
+For headless provisioning, log into i3 afterward. Restart the browser if it
+cached the old picker. Firefox/Zen additionally need
+`widget.use-xdg-desktop-portal.file-picker = 1` in `about:config`.
+
+Verify wrapper behavior with `bash scripts/check-yazi-file-picker.sh`.
+For a live check, click a browser file input, select a harmless file in
+Yazi, and confirm the selected filename appears in the page.
+
 ### Provisioning Hooks
 
 Chezmoi manages content; lifecycle hooks handle narrowly scoped side effects:
@@ -133,6 +166,7 @@ Chezmoi manages content; lifecycle hooks handle narrowly scoped side effects:
 - `run_onchange_before_10-install-packages.sh.tmpl` installs declared packages.
 - `run_after_20-refresh-font-cache.sh.tmpl` refreshes Linux font caches.
 - `run_onchange_after_30-install-tmux-plugins.sh.tmpl` optionally updates TPM.
+- `run_onchange_after_40-refresh-file-picker.sh.tmpl` refreshes the i3 file picker.
 
 The older registry/state installer remains under `scripts/` during migration,
 but it is no longer the default entrypoint. It should not be used alongside

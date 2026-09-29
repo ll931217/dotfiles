@@ -1,0 +1,3 @@
+[filechooser]
+cmd="$HOME/.local/bin/yazi-file-picker"
+default_dir="$HOME"

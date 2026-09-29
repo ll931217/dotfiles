@@ -260,6 +260,9 @@ for_window [class="^.*"] border pixel 4
 # default_border pixel 4
 
 # Floating
+for_window [class="^yazi-file-picker$"] floating enable, border pixel 2, resize set 70 ppt 70 ppt, move position center
+for_window [class="(?i)^(net[.]lutris[.])?lutris$"] floating enable, border none, move position center
+for_window [class="(?i)^thunar$"] floating enable, border none, move position center
 for_window [class="Picture-in-Picture"] floating enable, border none, sticky enable
 
 # for_window [class="conky"] floating disable, border none
@@ -289,6 +292,8 @@ popup_during_fullscreen smart
 workspace_auto_back_and_forth yes
 
 # Autostart programs
+# Make the X11 session available to D-Bus activated terminal file pickers.
+exec --no-startup-id dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP
 # exec --no-startup-id systemctl --user restart pipewire
 # exec --no-startup-id $HOME/.screenlayout/default.sh
 exec --no-startup-id fcitx5 -d

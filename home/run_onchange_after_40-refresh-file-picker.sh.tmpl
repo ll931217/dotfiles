@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+{{ if and (eq .chezmoi.os "linux") (eq .machine.profile "personal") (eq .machine.wm "i3") -}}
+# Refresh when picker configuration or package opt-ins change.
+# routing: {{ include "dot_config/xdg-desktop-portal/i3-portals.conf" | sha256sum }}
+# backend: {{ include "dot_config/xdg-desktop-portal-termfilechooser/config" | sha256sum }}
+# wrapper: {{ include "dot_local/bin/executable_yazi-file-picker" | sha256sum }}
+# packages: {{ .machine.install_packages }} / {{ .machine.install_optional }}
+# Headless provisioning takes effect at the next graphical login.
+[[ -n ${DISPLAY:-} && ${XDG_CURRENT_DESKTOP:-} == i3 ]] || exit 0
+command -v systemctl >/dev/null 2>&1 || exit 0
+command -v dbus-update-activation-environment >/dev/null 2>&1 || exit 0
+
+dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP
+systemctl --user daemon-reload
+if [[ -x /usr/lib/xdg-desktop-portal-termfilechooser ]]; then
+    systemctl --user try-restart xdg-desktop-portal-termfilechooser.service
+fi
+if [[ -x /usr/lib/xdg-desktop-portal ]]; then
+    systemctl --user restart xdg-desktop-portal.service
+fi
+if command -v i3-msg >/dev/null 2>&1; then
+    i3-msg reload >/dev/null
+fi
+{{ end -}}
