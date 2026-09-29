@@ -302,7 +302,7 @@ exec --no-startup-id fcitx5 -d
 exec --no-startup-id dunst -config $HOME/.config/dunst/dunstrc
 exec_always --no-startup-id $HOME/.scripts/alacritty-focus-highlight/alacritty_focus_highlight.py
 exec_always --no-startup-id $HOME/GitHub/i3-alternating-layout/alternating_layouts.py
-# exec_always --no-startup-id picom --config $HOME/.config/picom.conf
+exec --no-startup-id picom --config $HOME/.config/picom.conf --daemon
 exec_always --no-startup-id sh $HOME/.fehbg
 # exec_always --no-startup-id conky
 
