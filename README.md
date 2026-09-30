@@ -7,13 +7,12 @@
 
 ## Requirements
 
-- Gnome terminal
-- Compton(This is actually optional since I don't use it anymore)
-- Rofi
-- feh
-- Polybar
-- i3-gaps
-- cava
+- i3, Eww, Rofi, and Dunst for the Linux desktop
+- Python 3, libnotify, playerctl, and an existing PipeWire/PulseAudio session
+- JetBrainsMono Nerd Font and Breeze icons
+- Picom and feh for the personal desktop; no compositor for work/VDI
+
+See [the desktop setup](#i3-desktop-and-workvdi-setup) for package and profile instructions.
 
 ## Instructions
 
@@ -118,13 +117,83 @@ Package installation is disabled by default. Configure
 `data.machine.install_packages = true` in
 `~/.config/chezmoi/chezmoi.toml` to enable the package hook. Package lists
 live in `home/.chezmoidata.toml`. Optional AUR/Homebrew packages require
-`data.machine.install_optional = true`.
+`data.machine.install_optional = true`. Eww is a required AUR package for
+Arch i3 desktops and installs through `yay` even when optional packages
+are disabled, provided package installation is enabled.
 
 On Termux, run `bash install.sh`. Bootstrap installs chezmoi with `pkg`
 when it is missing. Chezmoi identifies Termux as `android`; new setups
 default to window manager `none`, and the package hook uses
 `packages.android.termux` with `pkg install` (no sudo). Existing machine
 choices are preserved when running `chezmoi init` again.
+
+### i3 desktop and work/VDI setup
+
+Both i3 profiles use an Eww bar and control panel, opaque Amp colors,
+JetBrainsMono Nerd Font, Breeze icons, and matching Rofi/Dunst styling.
+The bar replaces i3bar/i3status, Polybar, and i3blocks. Eww discovers active
+outputs and reconciles bars after display disconnects/reconnects; the tray
+appears on the primary output with vertically centered icons.
+Personal keeps Picom animations. Work starts no compositor, uses no
+GPU-specific settings or fixed output names, and is intended for X11 VDI
+sessions. Remote-session behavior still needs verification on the target VDI.
+
+| Shortcut | Action |
+| --- | --- |
+| Super+B | Toggle the control panel (music, volume, calendar, notifications) |
+| Super+Tab | Search open windows with Rofi |
+| Super+N | Recall the last notification |
+| Super+Ctrl+N | Pause/resume notifications |
+| Volume keys | Adjust audio with a progress notification |
+| Super+Shift+X (work) | Lock with i3lock |
+
+For an existing chezmoi checkout on an Arch work machine, install the desktop
+dependencies first. Keep the existing audio server; the controls use `wpctl`
+when available and fall back to `pactl`.
+
+```bash
+sudo pacman -S --needed i3-wm dunst rofi python libnotify playerctl libpulse \
+  breeze-icons ttf-jetbrains-mono-nerd xterm i3lock
+yay -S --needed eww
+chezmoi edit-config
+```
+
+Set these keys in the existing `[data.machine]` table, preserving its other keys:
+
+```toml
+[data.machine]
+profile = "work"
+wm = "i3"
+type = "desktop"
+```
+
+Apply only the desktop files; this skips provisioning scripts and unrelated
+shell/private configuration. Run the following in Bash or Zsh:
+
+```bash
+mkdir -p ~/.config/{i3,eww,rofi,dunst}
+chezmoi diff --include=files --exclude=scripts ~/.config/i3/config \
+  ~/.config/eww ~/.config/rofi/config.rasi ~/.config/rofi/amp.rasi ~/.config/dunst/dunstrc
+chezmoi apply --include=files --exclude=scripts ~/.config/i3/config \
+  ~/.config/eww ~/.config/rofi/config.rasi ~/.config/rofi/amp.rasi ~/.config/dunst/dunstrc
+i3 -C -c ~/.config/i3/config
+```
+
+After validation succeeds, activate inside the work i3 session:
+
+```bash
+pkill -x picom || true
+i3-msg reload
+python3 ~/.config/eww/bar.py start
+dunstctl reload || (dunst -config ~/.config/dunst/dunstrc >/dev/null 2>&1 &)
+```
+
+Verify the panel, audio, tray alignment, and display reconnects before removing
+old bar packages. On Arch, run `pacman -Q polybar i3status i3blocks`, then
+`sudo pacman -Rns` with only the installed, replaced package names; review the
+removal list. Keep `i3-wm`: it also supplies i3bar, which is simply unused.
+On other distributions, install native equivalents and an X11-capable Eww
+build manually; the repository package hook currently supports Arch Linux only.
 
 ### Yazi browser file picker (personal i3 desktops)
 

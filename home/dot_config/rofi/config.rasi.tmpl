@@ -9,7 +9,7 @@ configuration {
     drun-display-format: "{name}";
     window-format: "{w} · {c}";
     font: "JetBrainsMono Nerd Font 10";
-    terminal: "st";
+    terminal: "{{ if eq .machine.profile "work" }}i3-sensible-terminal{{ else }}st{{ end }}";
     fallback-icon: "application-x-executable";
 }
 

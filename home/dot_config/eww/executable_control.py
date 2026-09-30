@@ -5,6 +5,7 @@ import argparse
 import datetime
 import json
 import math
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -13,11 +14,16 @@ from typing import Any
 CONFIG = Path.home() / ".config/eww"
 
 
-def run(*args: str, timeout: float = 2) -> str | None:
+def run(*args: str, timeout: float = 2, c_locale: bool = False) -> str | None:
     """Treat absent programs, unavailable services and timeouts as unavailable."""
     try:
         result = subprocess.run(
-            args, capture_output=True, text=True, timeout=timeout, check=False
+            args,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+            env={**os.environ, "LC_ALL": "C"} if c_locale else None,
         )
         return result.stdout.strip() if result.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
@@ -32,11 +38,23 @@ def eww(*args: str) -> str | None:
 
 def volume_state() -> dict[str, Any]:
     raw = run("wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@") or ""
-    match = re.search(r"Volume:\s+([0-9.]+)", raw)
+    match = re.search(r"Volume:\s+([0-9]+(?:\.[0-9]+)?)", raw)
+    if match:
+        return {
+            "available": True,
+            "backend": "wpctl",
+            "value": round(float(match[1]) * 100),
+            "muted": "[MUTED]" in raw,
+        }
+    raw = run("pactl", "get-sink-volume", "@DEFAULT_SINK@", c_locale=True) or ""
+    levels = [int(value) for value in re.findall(r"(\d+)%", raw)]
+    mute = run("pactl", "get-sink-mute", "@DEFAULT_SINK@", c_locale=True)
+    available = bool(levels) and mute in ("Mute: yes", "Mute: no")
     return {
-        "available": bool(match),
-        "value": round(float(match[1]) * 100) if match else 0,
-        "muted": "[MUTED]" in raw,
+        "available": available,
+        "backend": "pactl" if available else "",
+        "value": max(levels) if available else 0,
+        "muted": mute == "Mute: yes",
     }
 
 
@@ -90,17 +108,33 @@ def notify(
 
 
 def volume(action: str, value: float | None = None) -> None:
-    if action == "mute":
-        result = run("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle")
-    else:
-        target = {"up": "5%+", "down": "5%-"}.get(action, "")
-        if action == "set":
-            if value is None or not math.isfinite(value):
-                raise ValueError("volume set requires a finite number")
-            target = f"{min(100, max(0, round(value)))}%"
-        result = run(
-            "wpctl", "set-volume", "--limit", "1.0", "@DEFAULT_AUDIO_SINK@", target
-        )
+    if action not in ("up", "down", "mute", "set"):
+        raise ValueError("unknown volume action")
+    if action == "set" and (value is None or not math.isfinite(value)):
+        raise ValueError("volume set requires a finite number")
+    before = volume_state()
+    result = None
+    if before["backend"] == "wpctl":
+        if action == "mute":
+            result = run("wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle")
+        else:
+            target = {"up": "5%+", "down": "5%-"}.get(action)
+            if target is None:
+                target = f"{min(100, max(0, round(value or 0)))}%"
+            result = run(
+                "wpctl", "set-volume", "--limit", "1.0", "@DEFAULT_AUDIO_SINK@", target
+            )
+    elif before["backend"] == "pactl":
+        if action == "mute":
+            result = run("pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle")
+        else:
+            target_value = (
+                value
+                if action == "set"
+                else before["value"] + (5 if action == "up" else -5)
+            )
+            target = f"{min(100, max(0, round(target_value or 0)))}%"
+            result = run("pactl", "set-sink-volume", "@DEFAULT_SINK@", target)
     current = volume_state()
     if result is None or not current["available"]:
         notify("Audio unavailable", "No default audio output is available")

@@ -53,11 +53,12 @@ official = [
   "i3-wm",
   "i3lock",
   "libnotify",
+  "libpulse",
   "playerctl",
   "python",
   "rofi",
   "ttf-jetbrains-mono-nerd",
-  "wireplumber",
+  "xterm",
 ]
 # The desktop requires Eww even when optional packages are disabled.
 aur = ["eww"]
