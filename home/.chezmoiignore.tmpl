@@ -38,6 +38,16 @@
 {{- end }}
 {{- end }}
 
+{{- if and (eq .chezmoi.os "linux") (eq .machine.wm "i3") }}
+# Eww replaces the old bars on both personal and work i3 desktops.
+.config/polybar
+.config/i3/i3status.conf
+.config/i3/i3blocks.conf
+.config/i3/i3_vici
+{{- else }}
+.config/eww
+{{- end }}
+
 {{- if not .machine.secrets }}
 # Secret-backed files are skipped on machines without the gopass
 # dotfiles-secrets/ namespace populated. Set machine.secrets = true

@@ -29,6 +29,11 @@ official_packages=(
 {{- range .packages.linux.arch.official }}
     {{ . | quote }}
 {{- end }}
+{{- if eq .machine.wm "i3" }}
+{{- range .packages.linux.arch.i3_desktop.official }}
+    {{ . | quote }}
+{{- end }}
+{{- end }}
 {{- if and (eq .machine.profile "personal") (eq .machine.wm "i3") }}
 {{- range .packages.linux.arch.i3_filechooser.official }}
     {{ . | quote }}
@@ -43,8 +48,13 @@ fi
 
 sudo pacman -S --needed --noconfirm "${official_packages[@]}"
 
-{{- if .machine.install_optional }}
 aur_packages=(
+{{- if eq .machine.wm "i3" }}
+{{- range .packages.linux.arch.i3_desktop.aur }}
+    {{ . | quote }}
+{{- end }}
+{{- end }}
+{{- if .machine.install_optional }}
 {{- range .packages.linux.arch.aur }}
     {{ . | quote }}
 {{- end }}
@@ -53,16 +63,16 @@ aur_packages=(
     {{ . | quote }}
 {{- end }}
 {{- end }}
+{{- end }}
 )
 
 if ((${#aur_packages[@]})); then
     if ! command -v yay >/dev/null 2>&1; then
-        printf '%s\n' 'ERROR: yay is required for optional AUR packages' >&2
+        printf '%s\n' 'ERROR: yay is required for the selected AUR packages (Eww is required on i3)' >&2
         exit 1
     fi
     yay -S --needed --noconfirm "${aur_packages[@]}"
 fi
-{{- end }}
 {{- else }}
 printf '%s\n' 'ERROR: unsupported Linux distribution; configure a package hook for this OS' >&2
 exit 1

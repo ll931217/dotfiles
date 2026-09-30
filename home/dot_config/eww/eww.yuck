@@ -63,7 +63,8 @@
           :timeout "5s" :onclick "python3 ~/.config/eww/bar.py workspace ${ws.id}"
           (label :text {ws.name} :limit-width 20))))
     (box :hexpand true)
-    (literal :content {primary ? "(systray :icon-size 18 :spacing 10)" : "(box)"})
+    (literal :valign "center" :vexpand false
+      :content {primary ? "(systray :valign \"center\" :vexpand false :icon-size 18 :spacing 10)" : "(box)"})
     (button :class "bar-status" :timeout "5s" :tooltip "Toggle mute" :onclick "python3 ~/.config/eww/control.py volume mute"
       {bar_status.volume.available ? bar_status.volume.muted ? "AUDIO  muted" : "AUDIO  ${bar_status.volume.value}%" : "AUDIO  —"})
     (button :class "bar-status" :timeout "5s" :tooltip "Toggle notification pause" :onclick "python3 ~/.config/eww/control.py notifications pause"

@@ -46,6 +46,22 @@ official = [
 ]
 aur = []
 
+[packages.linux.arch.i3_desktop]
+official = [
+  "breeze-icons",
+  "dunst",
+  "i3-wm",
+  "i3lock",
+  "libnotify",
+  "playerctl",
+  "python",
+  "rofi",
+  "ttf-jetbrains-mono-nerd",
+  "wireplumber",
+]
+# The desktop requires Eww even when optional packages are disabled.
+aur = ["eww"]
+
 [packages.linux.arch.i3_filechooser]
 official = [
   "xdg-desktop-portal",
