@@ -1,0 +1,40 @@
+$background: #0f0f0f;
+$surface: #161616;
+$accent: #e7894c;
+$text: #f2ecdd;
+$muted: #a89f91;
+
+* {
+  all: unset;
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 12px;
+  border-radius: 0;
+}
+
+window { background: $background; color: $text; }
+.panel { padding: 22px; border: 1px solid #514033; }
+.eyebrow { color: $accent; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+.clock { font-size: 40px; font-weight: bold; }
+.muted { color: $muted; }
+.small { font-size: 10px; }
+.track { font-size: 14px; font-weight: bold; }
+.card { padding: 15px; background: $surface; }
+button { padding: 9px 10px; background: #23201c; }
+button:hover { background: #3c3026; }
+button:active { background: #514033; }
+button:focus { box-shadow: inset 0 0 0 1px $accent; }
+button:disabled { color: #69645d; background: #1c1b18; }
+button.accent { color: $background; background: $accent; font-weight: bold; }
+button.accent:hover { background: #f3a56d; }
+button.accent:disabled { color: #69645d; background: #1c1b18; }
+button.close { font-size: 19px; padding: 0 7px; background: transparent; }
+scale trough { min-height: 5px; background: #39332c; }
+scale highlight { background: $accent; }
+scale slider { min-width: 10px; min-height: 14px; background: $text; }
+scale:disabled highlight { background: #69645d; }
+.calendar { padding: 10px; background: $surface; }
+.calendar:selected { color: $background; background: $accent; }
+.calendar.header { color: $accent; }
+.calendar.highlight { color: $accent; }
+.calendar:indeterminate { color: #69645d; }
+tooltip { background: $surface; color: $text; padding: 6px; }

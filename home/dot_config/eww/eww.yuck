@@ -1,0 +1,43 @@
+(defvar panel_open false)
+(defpoll desktop :interval "2s" :run-while panel_open
+  :initial '{"time":"--:--","date":"","volume":{"available":false,"value":0,"muted":false},"music":{"available":false,"playing":false,"title":"Nothing playing","artist":"Start music in a compatible app"},"notifications":{"available":false,"paused":false},"brightness":"Use your monitor controls"}'
+  "python3 ~/.config/eww/control.py state")
+
+(defwindow control-center
+  :monitor '["<primary>", 0]'
+  :geometry (geometry :x "16px" :y "44px" :width "400px" :height "640px" :anchor "top right")
+  :stacking "fg" :windowtype "dialog" :wm-ignore true
+  (box :class "panel" :orientation "vertical" :space-evenly false :spacing 18
+    (box :space-evenly false
+      (label :class "eyebrow" :hexpand true :xalign 0 :text "CONTROL CENTER")
+      (button :class "close" :tooltip "Close panel" :timeout "5s"
+        :onclick "python3 ~/.config/eww/control.py close" "×"))
+    (box :orientation "vertical" :space-evenly false :spacing 3
+      (label :class "clock" :xalign 0 :text {desktop.time})
+      (label :class "muted" :xalign 0 :text {desktop.date}))
+    (box :class "card" :orientation "vertical" :space-evenly false :spacing 12
+      (label :class "eyebrow" :xalign 0 :text "NOW PLAYING")
+      (box :orientation "vertical" :space-evenly false :spacing 4
+        (label :class "track" :xalign 0 :limit-width 32 :text {desktop.music.title})
+        (label :class "muted" :xalign 0 :limit-width 36 :text {desktop.music.artist}))
+      (box :spacing 8 :active {desktop.music.available}
+        (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py music previous" "Previous")
+        (button :class "accent" :timeout "5s" :onclick "python3 ~/.config/eww/control.py music play-pause" {desktop.music.playing ? "Pause" : "Play"})
+        (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py music next" "Next")))
+    (box :class "card" :orientation "vertical" :space-evenly false :spacing 10
+      (box :space-evenly false
+        (label :class "eyebrow" :hexpand true :xalign 0 :text "AUDIO OUTPUT")
+        (button :active {desktop.volume.available} :timeout "5s" :onclick "python3 ~/.config/eww/control.py volume mute"
+          {desktop.volume.muted ? "Unmute" : "Mute"}))
+      (box :space-evenly false :spacing 12
+        (scale :hexpand true :active {desktop.volume.available} :min 0 :max 101 :round-digits 0
+          :value {desktop.volume.value > 100 ? 100 : desktop.volume.value} :timeout "5s"
+          :onchange "python3 ~/.config/eww/control.py volume set {}")
+        (label :width 46 :text {desktop.volume.available ? "${desktop.volume.value}%" : "N/A"}))
+      (label :class "muted small" :xalign 0 :text {desktop.brightness}))
+    (box :spacing 8 :active {desktop.notifications.available}
+      (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py notifications pause"
+        {desktop.notifications.paused ? "Resume alerts" : "Pause alerts"})
+      (button :timeout "5s" :tooltip "Show the most recent dismissed notification"
+        :onclick "python3 ~/.config/eww/control.py notifications history" "Last notification"))
+    (calendar :class "calendar" :show-heading true :show-day-names true :show-week-numbers false)))
