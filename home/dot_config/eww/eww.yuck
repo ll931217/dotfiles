@@ -3,6 +3,22 @@
   :initial '{"time":"--:--","date":"","volume":{"available":false,"value":0,"muted":false},"music":{"available":false,"playing":false,"title":"Nothing playing","artist":"Start music in a compatible app"},"notifications":{"available":false,"paused":false},"brightness":"Use your monitor controls"}'
   "python3 ~/.config/eww/control.py state")
 
+(defpoll ai_usage :interval "30s" :run-while panel_open
+  :initial '{"codex":{"available":false,"windows":[],"status":"Checking Codex limits"},"claude":{"available":false,"windows":[],"status":"Waiting for Claude status line"}}'
+  "python3 ~/.config/eww/usage.py")
+
+(defwidget quota-card [title data]
+  (box :class "card" :orientation "vertical" :space-evenly false :spacing 8
+    (label :class "eyebrow" :xalign 0 :text title)
+    (label :class "muted small" :xalign 0 :limit-width 38 :text {data.status})
+    (for quota in {data.windows}
+      (box :orientation "vertical" :space-evenly false :spacing 5
+        (box :space-evenly false
+          (label :hexpand true :xalign 0 :text {quota.label})
+          (label :text "${round(quota.remaining, 0)}% left"))
+        (progress :value {quota.used})
+        (label :class "muted small" :xalign 0 :text "Resets ${quota.reset_label}")))))
+
 (defwindow control-center
   :monitor '["<primary>", 0]'
   :geometry (geometry :x "16px" :y "44px" :width "400px" :height "640px" :anchor "top right")
@@ -12,35 +28,39 @@
       (label :class "eyebrow" :hexpand true :xalign 0 :text "CONTROL CENTER")
       (button :class "close" :tooltip "Close panel" :timeout "5s"
         :onclick "python3 ~/.config/eww/control.py close" "×"))
-    (box :orientation "vertical" :space-evenly false :spacing 3
-      (label :class "clock" :xalign 0 :text {desktop.time})
-      (label :class "muted" :xalign 0 :text {desktop.date}))
-    (box :class "card" :orientation "vertical" :space-evenly false :spacing 12
-      (label :class "eyebrow" :xalign 0 :text "NOW PLAYING")
-      (box :orientation "vertical" :space-evenly false :spacing 4
-        (label :class "track" :xalign 0 :limit-width 32 :text {desktop.music.title})
-        (label :class "muted" :xalign 0 :limit-width 36 :text {desktop.music.artist}))
-      (box :spacing 8 :active {desktop.music.available}
-        (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py music previous" "Previous")
-        (button :class "accent" :timeout "5s" :onclick "python3 ~/.config/eww/control.py music play-pause" {desktop.music.playing ? "Pause" : "Play"})
-        (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py music next" "Next")))
-    (box :class "card" :orientation "vertical" :space-evenly false :spacing 10
-      (box :space-evenly false
-        (label :class "eyebrow" :hexpand true :xalign 0 :text "AUDIO OUTPUT")
-        (button :active {desktop.volume.available} :timeout "5s" :onclick "python3 ~/.config/eww/control.py volume mute"
-          {desktop.volume.muted ? "Unmute" : "Mute"}))
-      (box :space-evenly false :spacing 12
-        (scale :hexpand true :active {desktop.volume.available} :min 0 :max 101 :round-digits 0
-          :value {desktop.volume.value > 100 ? 100 : desktop.volume.value} :timeout "5s"
-          :onchange "python3 ~/.config/eww/control.py volume set {}")
-        (label :width 46 :text {desktop.volume.available ? "${desktop.volume.value}%" : "N/A"}))
-      (label :class "muted small" :xalign 0 :text {desktop.brightness}))
-    (box :spacing 8 :active {desktop.notifications.available}
-      (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py notifications pause"
-        {desktop.notifications.paused ? "Resume alerts" : "Pause alerts"})
-      (button :timeout "5s" :tooltip "Show the most recent dismissed notification"
-        :onclick "python3 ~/.config/eww/control.py notifications history" "Last notification"))
-    (calendar :class "calendar" :show-heading true :show-day-names true :show-week-numbers false)))
+    (scroll :hscroll false :vscroll true :vexpand true
+      (box :orientation "vertical" :space-evenly false :spacing 18
+        (box :orientation "vertical" :space-evenly false :spacing 3
+          (label :class "clock" :xalign 0 :text {desktop.time})
+          (label :class "muted" :xalign 0 :text {desktop.date}))
+        (box :class "card" :orientation "vertical" :space-evenly false :spacing 12
+          (label :class "eyebrow" :xalign 0 :text "NOW PLAYING")
+          (box :orientation "vertical" :space-evenly false :spacing 4
+            (label :class "track" :xalign 0 :limit-width 32 :text {desktop.music.title})
+            (label :class "muted" :xalign 0 :limit-width 36 :text {desktop.music.artist}))
+          (box :spacing 8 :active {desktop.music.available}
+            (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py music previous" "Previous")
+            (button :class "accent" :timeout "5s" :onclick "python3 ~/.config/eww/control.py music play-pause" {desktop.music.playing ? "Pause" : "Play"})
+            (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py music next" "Next")))
+        (box :class "card" :orientation "vertical" :space-evenly false :spacing 10
+          (box :space-evenly false
+            (label :class "eyebrow" :hexpand true :xalign 0 :text "AUDIO OUTPUT")
+            (button :active {desktop.volume.available} :timeout "5s" :onclick "python3 ~/.config/eww/control.py volume mute"
+              {desktop.volume.muted ? "Unmute" : "Mute"}))
+          (box :space-evenly false :spacing 12
+            (scale :hexpand true :active {desktop.volume.available} :min 0 :max 101 :round-digits 0
+              :value {desktop.volume.value > 100 ? 100 : desktop.volume.value} :timeout "5s"
+              :onchange "python3 ~/.config/eww/control.py volume set {}")
+            (label :width 46 :text {desktop.volume.available ? "${desktop.volume.value}%" : "N/A"}))
+          (label :class "muted small" :xalign 0 :text {desktop.brightness}))
+        (box :spacing 8 :active {desktop.notifications.available}
+          (button :timeout "5s" :onclick "python3 ~/.config/eww/control.py notifications pause"
+            {desktop.notifications.paused ? "Resume alerts" : "Pause alerts"})
+          (button :timeout "5s" :tooltip "Show the most recent dismissed notification"
+            :onclick "python3 ~/.config/eww/control.py notifications history" "Last notification"))
+        (quota-card :title "CODEX LIMITS" :data {ai_usage.codex})
+        (quota-card :title "CLAUDE LIMITS" :data {ai_usage.claude})
+        (calendar :class "calendar" :show-heading true :show-day-names true :show-week-numbers false)))))
 
 
 (deflisten workspaces :initial "[]" "exec python3 ~/.config/eww/bar.py listen")

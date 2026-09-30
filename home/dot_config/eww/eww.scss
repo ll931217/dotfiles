@@ -49,3 +49,9 @@ tooltip { background: $surface; color: $text; padding: 6px; }
 .desktop-bar .workspace.urgent { color: $background; background: $accent; }
 .desktop-bar .bar-status { color: $muted; margin-left: 8px; }
 .desktop-bar .bar-clock { color: $accent; font-weight: bold; margin-left: 8px; }
+
+.panel scrollbar { min-width: 4px; margin-left: 6px; }
+.panel scrollbar slider { background: #514033; min-width: 4px; min-height: 24px; }
+
+.panel progressbar trough { min-height: 4px; background: #39332c; }
+.panel progressbar progress { min-height: 4px; background: $accent; }

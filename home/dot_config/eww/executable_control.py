@@ -133,7 +133,11 @@ def volume(action: str, value: float | None = None) -> None:
                 if action == "set"
                 else before["value"] + (5 if action == "up" else -5)
             )
-            target = f"{min(100, max(0, round(target_value or 0)))}%"
+            bounded = min(100, max(0, round(target_value or 0)))
+            # Relative adjustments preserve unequal channel levels on VDI sinks.
+            target = (
+                f"{bounded}%" if action == "set" else f"{bounded - before['value']:+d}%"
+            )
             result = run("pactl", "set-sink-volume", "@DEFAULT_SINK@", target)
     current = volume_state()
     if result is None or not current["available"]:
@@ -160,7 +164,22 @@ def toggle() -> None:
         output = next((w["output"] for w in workspaces if w.get("focused")), None)
     except (ValueError, KeyError, TypeError):
         output = None
-    args = ["open", "control-center"]
+    width, height = 400, 640
+    try:
+        outputs = json.loads(run("i3-msg", "-t", "get_outputs") or "[]")
+        monitor = next(
+            (o for o in outputs if o.get("active") and o["name"] == output), None
+        )
+        if monitor is None:
+            monitor = next(
+                (o for o in outputs if o.get("active") and o.get("primary")), None
+            )
+        if monitor:
+            width = min(400, max(240, int(monitor["rect"]["width"]) - 32))
+            height = min(840, max(220, int(monitor["rect"]["height"]) - 96))
+    except (ValueError, KeyError, TypeError):
+        pass
+    args = ["open", "control-center", "--size", f"{width}x{height}"]
     if output:
         args += ["--screen", output]
     # Daemon children inherit pipes: never capture output during daemon startup.
