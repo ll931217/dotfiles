@@ -153,35 +153,47 @@ def close() -> None:
     eww("close", "control-center")
 
 
-def toggle() -> None:
+def toggle(monitor_index: int | None = None) -> None:
     active = eww("active-windows") or ""
-    if any(line.startswith("control-center:") for line in active.splitlines()):
-        close()
-        return
-    # Open on the currently focused i3 output, with Eww's primary fallback.
     try:
         workspaces = json.loads(run("i3-msg", "-t", "get_workspaces") or "[]")
-        output = next((w["output"] for w in workspaces if w.get("focused")), None)
+        focused = next((w["output"] for w in workspaces if w.get("focused")), None)
+        outputs = [
+            o
+            for o in json.loads(run("i3-msg", "-t", "get_outputs") or "[]")
+            if o.get("active")
+        ]
+        if monitor_index is not None:
+            if not 0 <= monitor_index < len(outputs):
+                return
+            monitor = outputs[monitor_index]
+        else:
+            monitor = next((o for o in outputs if o["name"] == focused), None)
+            if monitor is None:
+                monitor = next(
+                    (o for o in outputs if o.get("primary")),
+                    outputs[0] if outputs else None,
+                )
     except (ValueError, KeyError, TypeError):
-        output = None
-    width, height = 400, 640
-    try:
-        outputs = json.loads(run("i3-msg", "-t", "get_outputs") or "[]")
-        monitor = next(
-            (o for o in outputs if o.get("active") and o["name"] == output), None
-        )
-        if monitor is None:
-            monitor = next(
-                (o for o in outputs if o.get("active") and o.get("primary")), None
-            )
-        if monitor:
-            width = min(400, max(240, int(monitor["rect"]["width"]) - 32))
-            height = min(840, max(220, int(monitor["rect"]["height"]) - 96))
-    except (ValueError, KeyError, TypeError):
-        pass
-    args = ["open", "control-center", "--size", f"{width}x{height}"]
-    if output:
-        args += ["--screen", output]
+        return
+    if monitor is None:
+        return
+    output = monitor["name"]
+    if any(line.startswith("control-center:") for line in active.splitlines()):
+        same_output = eww("get", "panel_output") == output
+        close()
+        if same_output:
+            return
+    width = min(400, max(240, int(monitor["rect"]["width"]) - 32))
+    height = min(840, max(220, int(monitor["rect"]["height"]) - 96))
+    args = [
+        "open",
+        "control-center",
+        "--size",
+        f"{width}x{height}",
+        "--arg",
+        "target=" + output,
+    ]
     # Daemon children inherit pipes: never capture output during daemon startup.
     try:
         subprocess.run(
@@ -194,15 +206,17 @@ def toggle() -> None:
     except (OSError, subprocess.TimeoutExpired):
         return
     if eww(*args) is not None:
-        eww("update", "panel_open=true")
+        eww("update", "panel_open=true", "panel_output=" + output)
         refresh()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("state", "bar-state", "toggle", "close"):
+    for name in ("state", "bar-state", "close"):
         commands.add_parser(name)
+    panel = commands.add_parser("toggle")
+    panel.add_argument("--monitor", type=int)
     audio = commands.add_parser("volume")
     audio.add_argument("action", choices=("up", "down", "mute", "set"))
     audio.add_argument("value", nargs="?", type=float)
@@ -216,7 +230,7 @@ def main() -> None:
     if args.command in ("state", "bar-state"):
         print(json.dumps(state(full=args.command == "state"), ensure_ascii=True))
     elif args.command == "toggle":
-        toggle()
+        toggle(args.monitor)
     elif args.command == "close":
         close()
     elif args.command == "volume":

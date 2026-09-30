@@ -63,7 +63,7 @@ def sync_bars() -> None:
     for stale in active - desired:
         if stale.startswith("bar-"):
             eww("close", stale)
-    for output in outputs:
+    for index, output in enumerate(outputs):
         name = output["name"]
         # Reopening an ID updates monitor geometry and primary tray ownership.
         eww(
@@ -77,6 +77,8 @@ def sync_bars() -> None:
             "output=" + name,
             "--arg",
             "primary=" + str(name == primary).lower(),
+            "--arg",
+            f"monitor_index={index}",
         )
 
 
