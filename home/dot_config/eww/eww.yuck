@@ -41,3 +41,32 @@
       (button :timeout "5s" :tooltip "Show the most recent dismissed notification"
         :onclick "python3 ~/.config/eww/control.py notifications history" "Last notification"))
     (calendar :class "calendar" :show-heading true :show-day-names true :show-week-numbers false)))
+
+
+(deflisten workspaces :initial "[]" "exec python3 ~/.config/eww/bar.py listen")
+(defpoll bar_status :interval "5s"
+  :initial '{"time":"--:--","date":"","volume":{"available":false,"value":0,"muted":false},"notifications":{"available":false,"paused":false}}'
+  "python3 ~/.config/eww/control.py bar-state")
+
+(defwindow bar [output primary]
+  :monitor output
+  :geometry (geometry :x "0px" :y "0px" :width "100%" :height "36px" :anchor "bottom center")
+  :reserve (struts :distance "36px" :side "bottom")
+  :stacking "fg" :windowtype "dock" :wm-ignore false
+  (box :class "desktop-bar" :space-evenly false
+    (button :class "bar-menu" :tooltip "Control center" :timeout "10s"
+      :onclick "python3 ~/.config/eww/control.py toggle" "MENU")
+    (box :class "workspaces" :space-evenly false :spacing 3
+      (for ws in workspaces
+        (button :visible {ws.output == output}
+          :class {ws.urgent ? "workspace urgent" : ws.focused ? "workspace focused" : ws.visible ? "workspace visible" : "workspace"}
+          :timeout "5s" :onclick "python3 ~/.config/eww/bar.py workspace ${ws.id}"
+          (label :text {ws.name} :limit-width 20))))
+    (box :hexpand true)
+    (literal :content {primary ? "(systray :icon-size 18 :spacing 10)" : "(box)"})
+    (button :class "bar-status" :timeout "5s" :tooltip "Toggle mute" :onclick "python3 ~/.config/eww/control.py volume mute"
+      {bar_status.volume.available ? bar_status.volume.muted ? "AUDIO  muted" : "AUDIO  ${bar_status.volume.value}%" : "AUDIO  —"})
+    (button :class "bar-status" :timeout "5s" :tooltip "Toggle notification pause" :onclick "python3 ~/.config/eww/control.py notifications pause"
+      {bar_status.notifications.paused ? "ALERTS  paused" : "ALERTS  on"})
+    (button :class "bar-clock" :timeout "10s" :tooltip {bar_status.date}
+      :onclick "python3 ~/.config/eww/control.py toggle" {bar_status.time})))

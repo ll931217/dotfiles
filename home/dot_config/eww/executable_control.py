@@ -40,9 +40,9 @@ def volume_state() -> dict[str, Any]:
     }
 
 
-def state() -> dict[str, Any]:
+def state(full: bool = True) -> dict[str, Any]:
     now = datetime.datetime.now(datetime.UTC).astimezone()
-    status = run("playerctl", "status")
+    status = run("playerctl", "status") if full else None
     paused = run("dunstctl", "is-paused")
     return {
         "time": now.strftime("%H:%M"),
@@ -66,6 +66,8 @@ def state() -> dict[str, Any]:
 def refresh() -> None:
     # Avoid state queries when closed, and never start Eww for media-key use.
     active = eww("active-windows") or ""
+    if any(line.startswith("bar-") for line in active.splitlines()):
+        eww("update", "bar_status=" + json.dumps(state(full=False), ensure_ascii=True))
     if any(line.startswith("control-center:") for line in active.splitlines()):
         eww("update", "desktop=" + json.dumps(state(), ensure_ascii=True))
 
@@ -146,7 +148,7 @@ def toggle() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("state", "toggle", "close"):
+    for name in ("state", "bar-state", "toggle", "close"):
         commands.add_parser(name)
     audio = commands.add_parser("volume")
     audio.add_argument("action", choices=("up", "down", "mute", "set"))
@@ -158,8 +160,8 @@ def main() -> None:
     brightness = commands.add_parser("brightness")
     brightness.add_argument("action", choices=("up", "down"))
     args = parser.parse_args()
-    if args.command == "state":
-        print(json.dumps(state(), ensure_ascii=True))
+    if args.command in ("state", "bar-state"):
+        print(json.dumps(state(full=args.command == "state"), ensure_ascii=True))
     elif args.command == "toggle":
         toggle()
     elif args.command == "close":

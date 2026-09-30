@@ -38,3 +38,14 @@ scale:disabled highlight { background: #69645d; }
 .calendar.highlight { color: $accent; }
 .calendar:indeterminate { color: #69645d; }
 tooltip { background: $surface; color: $text; padding: 6px; }
+
+.desktop-bar { background: $background; border-top: 1px solid #39332c; padding: 0 10px; }
+.desktop-bar button { padding: 0 12px; background: transparent; font-size: 11px; }
+.desktop-bar button:hover { background: #23201c; }
+.desktop-bar .bar-menu { color: $accent; font-size: 11px; font-weight: bold; padding: 0 12px 0 3px; }
+.desktop-bar .workspace { color: $muted; padding: 0 10px; border-bottom: 2px solid transparent; }
+.desktop-bar .workspace.visible { color: $text; border-bottom-color: #514033; }
+.desktop-bar .workspace.focused { color: $accent; border-bottom-color: $accent; background: #231d17; }
+.desktop-bar .workspace.urgent { color: $background; background: $accent; }
+.desktop-bar .bar-status { color: $muted; margin-left: 8px; }
+.desktop-bar .bar-clock { color: $accent; font-weight: bold; margin-left: 8px; }

@@ -1,4 +1,4 @@
-# Dunst Configuration - Amp theme (mirrors alacritty amp.toml / i3 bar)
+# Dunst Configuration - Amp theme (matches Eww and Rofi)
 # vim: ft=cfg
 
 [global]
@@ -7,22 +7,23 @@
     follow = mouse
 
     ### Geometry ###
-    width = 320
+    width = 360
     height = 150
     origin = top-right
-    offset = 20x20
-    
+    offset = 16x16
+
     # Notification spacing
     gap_size = 8
-    
+
     # Show indicator for hidden notifications
     indicate_hidden = yes
-    
+    notification_limit = 4
+
     # Notification transparency (requires compositor)
-    transparency = 5
+    transparency = 0
 
     ### Borders & Corners ###
-    frame_width = 4
+    frame_width = 2
     frame_color = "#E7894C"
     corner_radius = 0
 
@@ -31,38 +32,38 @@
     separator_color = "#262626"
 
     ### Padding ###
-    padding = 8
-    horizontal_padding = 10
+    padding = 12
+    horizontal_padding = 14
     text_icon_padding = 10
 
     ### Text ###
-    font = RecMonoLinear Nerd Font Propo Medium 10
+    font = JetBrainsMono Nerd Font 10
     line_height = 4
-    
+
     # Allow basic markup
     markup = full
-    
+
     # Message format: bold summary with body below
     format = "<b>%s</b>\n%b"
-    
+
     # Text alignment
     alignment = left
     vertical_alignment = center
-    
+
     # Word wrapping
     word_wrap = yes
     ellipsize = end
-    
+
     # Show age of old messages
     show_age_threshold = 60
-    
+
     # Ignore newlines in notifications
     ignore_newline = no
-    
+
     # Stack duplicate notifications
     stack_duplicates = true
     hide_duplicate_count = false
-    
+
     # Show URL/action indicators
     show_indicators = yes
 
@@ -71,12 +72,12 @@
     min_icon_size = 32
     max_icon_size = 48
     icon_corner_radius = 0
-    icon_path = /usr/share/icons/Adwaita/symbolic/status/:/usr/share/icons/Adwaita/symbolic/devices/:/usr/share/icons/hicolor/48x48/apps/
+    icon_theme = breeze-dark, Adwaita
 
     ### Progress Bar ###
     progress_bar = true
-    progress_bar_height = 8
-    progress_bar_frame_width = 1
+    progress_bar_height = 6
+    progress_bar_frame_width = 0
     progress_bar_min_width = 150
     progress_bar_max_width = 300
     progress_bar_corner_radius = 0
@@ -92,7 +93,7 @@
     title = Dunst
     class = Dunst
     force_xinerama = false
-    
+
     # Idle timeout
     idle_threshold = 120
 
@@ -113,7 +114,7 @@
     timeout = 6
 
 [urgency_normal]
-    # Standard style - matches i3 bar look
+    # Standard style - matches the desktop palette
     background = "#0F0F0F"
     foreground = "#F2ECDD"
     frame_color = "#E7894C"
@@ -127,6 +128,9 @@
     frame_color = "#D9634F"
     highlight = "#0F0F0F"
     timeout = 0
+
+[fullscreen_delay]
+    fullscreen = delay
 
 ### App-Specific Rules ###
 
@@ -145,16 +149,19 @@
 
 [volume]
     appname = "volume*"
-    highlight = "#E3A25A"
+    highlight = "#E7894C"
     timeout = 2
+    history_ignore = yes
+    fullscreen = show
+    format = "<b>%s</b>  %b"
 
 [brightness]
     appname = "brightness*"
-    highlight = "#E3A25A"
+    highlight = "#E7894C"
     timeout = 2
-
-[fullscreen_delay]
-    fullscreen = delay
+    history_ignore = yes
+    fullscreen = show
+    format = "<b>%s</b>  %b"
 
 [fullscreen_critical]
     msg_urgency = critical
