@@ -22,7 +22,7 @@ set $mod Mod4
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
 # font pango:System San Francisco Display 8
 # font pango:JetBrainsMono Nerd Font Medium 8
-font pango:RecMonoLinear Nerd Font Propo Medium 8
+font pango:JetBrainsMono Nerd Font 10
 
 # Before i3 v4.8, we used to recommend this one as the default:
 # font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
@@ -62,7 +62,11 @@ bindsym $mod+q kill
 # start dmenu (a program launcher)
 #bindsym $mod+d exec dmenu_run
 # bindsym $mod+d exec killall rofi || ~/.config/rofi/launchers/type-7/launcher.sh
-bindsym $mod+d exec killall rofi || rofi -show drun --theme ~/.config/rofi/amp.rasi
+bindsym $mod+d exec --no-startup-id rofi -show drun
+bindsym $mod+Tab exec --no-startup-id rofi -show window
+bindsym $mod+b exec --no-startup-id python3 $HOME/.config/eww/control.py toggle
+bindsym $mod+n exec --no-startup-id dunstctl history-pop
+bindsym $mod+Ctrl+n exec --no-startup-id dunstctl set-paused toggle
 # bindsym $mod+Shift+q exec ~/.config/rofi/powermenu_kanso
 bindsym $mod+Shift+q exec i3-msg exit
 # There also is the (new) i3-dmenu-desktop which only displays applications
@@ -130,8 +134,7 @@ bindsym $mod+g focus parent
 # bindsym $mod+Shift+s exec scrot -s -f -e 'xclip -selection clipboard -t image/png -i $f && mv $f ~/Pictures/Screenshots/ && notify-send "Screenshot saved to ~/Pictures/Screenshots/"'
 bindsym $mod+Shift+s exec flameshot gui
 
-#HU9YTfmz6v1wFCpuTpjh
-bindsym $mod+o exec echo -n "mEXF*gG5" | xclip -selection c
+bindsym $mod+o exec bat -p ~/.pvt/pw | xclip -r -selection c
 bindsym $mod+Shift+d exec rofi-rbw
 
 # The following works but it doesn't copy the screenshot to clipboard
@@ -194,14 +197,10 @@ bindsym $mod+Shift+r restart
 # exit i3 (logs you out of your X session)
 #bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 
-# i3-gaps
-# gaps inner 10
-# gaps inner 5
-# gaps outer 5
-# Spacing for polybar
-# gaps bottom 40
-# If using polybar, turn this off for better aesthetics
-smart_gaps off
+# Window spacing
+gaps inner 6
+gaps outer 2
+smart_gaps on
 
 # Disables cursor follow
 focus_follows_mouse yes
@@ -248,8 +247,8 @@ mode "$mode_gaps_outer" {
 }
 
 # IMPORTANT: Fix for undrawn block on top, a bug that comes from i3-gaps
-for_window [class="^.*"] border pixel 4
-# default_border pixel 4
+for_window [class="^.*"] border pixel 2
+default_border pixel 2
 
 # Floating
 for_window [class="^yazi-file-picker$"] floating enable, border pixel 2, resize set 70 ppt 70 ppt, move position center
@@ -265,7 +264,7 @@ for_window [class="Chromium"] border none
 for_window [class="qutebrowser"] border none
 
 # for_window [class="ghostty$"] border pixel 4
-for_window [class="wezterm$"] border pixel 4
+for_window [class="wezterm$"] border pixel 2
 
 # switch to workspace with urgent window automatically
 # Disabled: auto-navigating to urgent windows is superseded by click-to-navigate via the
@@ -290,22 +289,22 @@ exec --no-startup-id dbus-update-activation-environment --systemd DISPLAY XAUTHO
 # exec --no-startup-id $HOME/.screenlayout/default.sh
 exec --no-startup-id fcitx5 -d
 # exec --no-startup-id fcitx5 -d
-# exec --no-startup-id ~/.config/polybar/launch.sh
 exec --no-startup-id dunst -config $HOME/.config/dunst/dunstrc
 exec_always --no-startup-id $HOME/.scripts/alacritty-focus-highlight/alacritty_focus_highlight.py
 exec_always --no-startup-id $HOME/GitHub/i3-alternating-layout/alternating_layouts.py
 exec --no-startup-id picom --config $HOME/.config/picom.conf --daemon
+exec_always --no-startup-id python3 $HOME/.config/eww/bar.py start
 exec_always --no-startup-id sh $HOME/.fehbg
 # exec_always --no-startup-id conky
 
-# Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume 0 +5% #increase sound volume
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume 0 -5% #decrease sound volume
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute 0 toggle # mute sound
+# Audio controls with progress feedback
+bindsym XF86AudioRaiseVolume exec --no-startup-id python3 $HOME/.config/eww/control.py volume up
+bindsym XF86AudioLowerVolume exec --no-startup-id python3 $HOME/.config/eww/control.py volume down
+bindsym XF86AudioMute exec --no-startup-id python3 $HOME/.config/eww/control.py volume mute
 
-# Sreen brightness controls
-bindsym XF86MonBrightnessUp exec xbacklight -inc 20 # increase screen brightness
-bindsym XF86MonBrightnessDown exec xbacklight -dec 20 # decrease screen brightness
+# External-display brightness guidance
+bindsym XF86MonBrightnessUp exec --no-startup-id python3 $HOME/.config/eww/control.py brightness up
+bindsym XF86MonBrightnessDown exec --no-startup-id python3 $HOME/.config/eww/control.py brightness down
 
 # Media player controls
 bindsym XF86AudioPlay exec playerctl play-pause
@@ -327,7 +326,7 @@ mode "Exit (L)ogout, (R)eboot, (P)oweroff" {
 bindsym $mod+Shift+e mode "Exit (L)ogout, (R)eboot, (P)oweroff"
 
 # Lock screen settings
-bindsym $mod+Shift+x exec lock
+bindsym $mod+Shift+x exec --no-startup-id /usr/bin/i3lock -c 0f0f0f
 
 # resize window (you can also use the mouse for that)
 mode "resize" {
@@ -361,41 +360,3 @@ client.focused            $bg-color           $bg-color           $text-color   
 client.unfocused          $inactive-bg-color  $inactive-bg-color  $inactive-text-color  $inactive-bg-color
 client.focused_inactive   $inactive-bg-color  $inactive-bg-color  $text-color           $inactive-bg-color
 client.urgent             $urgent-bg-color    $urgent-bg-color    $text-color           $urgent-bg-color
-
-bar {
-    output rdp0
-    status_command i3status --config ~/.config/i3/i3status.conf
-    position bottom
-    workspace_buttons yes
-
-    colors {
-        background #0F0F0F
-        statusline #F2ECDD
-        separator  #262626
-
-        # border bg text
-        focused_workspace  #E7894C #E7894C #0F0F0F
-        active_workspace   #1A1A1A #1A1A1A #F2ECDD
-        inactive_workspace #161616 #161616 #B8AFA0
-        urgent_workspace   #D9634F #D9634F #0F0F0F
-    }
-}
-
-bar {
-    output rdp1
-    status_command i3status --config ~/.config/i3/i3status.conf
-    position bottom
-    workspace_buttons yes
-
-    colors {
-        background #0F0F0F
-        statusline #F2ECDD
-        separator  #262626
-
-        # border bg text
-        focused_workspace  #E7894C #E7894C #0F0F0F
-        active_workspace   #1A1A1A #1A1A1A #F2ECDD
-        inactive_workspace #161616 #161616 #B8AFA0
-        urgent_workspace   #D9634F #D9634F #0F0F0F
-    }
-}

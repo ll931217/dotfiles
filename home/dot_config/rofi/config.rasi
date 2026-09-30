@@ -1,13 +1,15 @@
 configuration {
-    modi: "drun,run,window";
+    modi: "drun,window,run,filebrowser";
     display-drun: "Apps";
-    display-run: "Run";
     display-window: "Windows";
+    display-run: "Run";
+    display-filebrowser: "Files";
     show-icons: true;
-    icon-theme: "Papirus";
+    icon-theme: "breeze-dark";
     drun-display-format: "{name}";
-    font: "JetBrains Mono 10";
-    terminal: "kitty";
+    window-format: "{w} · {c}";
+    font: "JetBrainsMono Nerd Font 10";
+    terminal: "st";
     fallback-icon: "application-x-executable";
 }
 
