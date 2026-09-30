@@ -1,0 +1,5 @@
+{{- if eq .machine.profile "work" -}}
+{{ includeTemplate "i3-work.conf" . -}}
+{{- else -}}
+{{ includeTemplate "i3-personal.conf" . -}}
+{{- end -}}

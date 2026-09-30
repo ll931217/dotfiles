@@ -56,6 +56,8 @@
 {{- end }}
 
 {{- if eq .machine.profile "work" }}
+# VDI sessions use opaque widgets without a compositor.
+.config/picom.conf
 # Znap + fzf-tab policy file. The work profile runs antigen with no fzf-tab
 # (bundles: chrissicool, MichaelAquilina, robbyrussell, spaceship-prompt,
 # zsh-users), and work_zshrc never sources it, so it is dead weight there.
