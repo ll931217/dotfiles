@@ -8,6 +8,35 @@
   :initial '{"codex":{"available":false,"windows":[],"status":"Checking Codex limits"},"claude":{"available":false,"windows":[],"status":"Waiting for Claude status line"}}'
   "python3 ~/.config/eww/usage.py")
 
+(defpoll network :interval "10s" :run-while panel_open
+  :initial '{"available":false,"reset_available":false,"status":"Checking connections","interfaces":[],"wifi_available":false,"wifi_status":"Checking Wi-Fi"}'
+  "python3 ~/.config/eww/network.py state")
+
+(defwidget network-card []
+  (box :class "card network-card" :orientation "vertical" :space-evenly false :spacing 10
+    (box :space-evenly false
+      (label :class "eyebrow" :hexpand true :xalign 0 :text "NETWORK")
+      (button :active {network.reset_available} :timeout "190s"
+        :tooltip "Restore automatic connection priority"
+        :onclick "python3 ~/.config/eww/network.py reset" "Automatic"))
+    (label :class "muted small" :xalign 0 :limit-width 37 :tooltip {network.status} :text {network.status})
+    (for iface in {network.interfaces}
+      (box :class "network-interface" :orientation "vertical" :space-evenly false :spacing 5
+        (box :space-evenly false :spacing 8
+          (box :hexpand true :orientation "vertical" :space-evenly false :spacing 3
+            (label :xalign 0 :text {iface.name} :limit-width 18)
+            (label :class "muted small" :xalign 0
+              :text {iface.connected ? iface.kind == "wlan" ? "Wi-Fi · connected" : "Wired · connected" : "Disconnected"}))
+          (button :active {network.available && iface.eligible && iface.connected}
+            :timeout "190s" :tooltip {iface.reason == "" ? "Prefer this connection" : iface.reason}
+            :onclick "python3 ~/.config/eww/network.py prefer ${iface.index}"
+            {iface.preferred ? "Preferred" : "Prefer"}))
+        (label :class "network-badge" :visible {iface.current_default} :xalign 0 :text "IPv4 default")
+        (label :class "muted small" :visible {iface.reason != ""} :xalign 0 :limit-width 37
+          :tooltip {iface.reason} :text {iface.reason})))
+    (button :active {network.wifi_available} :timeout "10s" :tooltip {network.wifi_status}
+      :onclick "python3 ~/.config/eww/network.py wifi" "Choose Wi-Fi network")))
+
 (defwidget quota-card [title data]
   (box :class "card" :orientation "vertical" :space-evenly false :spacing 8
     (label :class "eyebrow" :xalign 0 :text title)
@@ -59,6 +88,7 @@
             {desktop.notifications.paused ? "Resume alerts" : "Pause alerts"})
           (button :timeout "5s" :tooltip "Show the most recent dismissed notification"
             :onclick "python3 ~/.config/eww/control.py notifications history" "Last notification"))
+        (network-card)
         (quota-card :title "CODEX LIMITS" :data {ai_usage.codex})
         (quota-card :title "CLAUDE LIMITS" :data {ai_usage.claude})
         (calendar :class "calendar" :show-heading true :show-day-names true :show-week-numbers false)))))

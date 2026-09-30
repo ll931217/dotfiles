@@ -55,3 +55,7 @@ tooltip { background: $surface; color: $text; padding: 6px; }
 
 .panel progressbar trough { min-height: 4px; background: #39332c; }
 .panel progressbar progress { min-height: 4px; background: $accent; }
+
+.network-card button { padding: 6px 9px; font-size: 11px; }
+.network-interface { padding: 9px 0; border-top: 1px solid #39332c; }
+.network-badge { color: $accent; font-size: 10px; }

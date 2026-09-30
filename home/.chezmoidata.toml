@@ -63,6 +63,10 @@ official = [
 # The desktop requires Eww even when optional packages are disabled.
 aur = ["eww"]
 
+[packages.linux.arch.i3_network]
+official = ["polkit-gnome"]
+aur = ["iwgtk"]
+
 [packages.linux.arch.i3_filechooser]
 official = [
   "xdg-desktop-portal",

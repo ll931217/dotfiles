@@ -35,6 +35,9 @@ official_packages=(
 {{- end }}
 {{- end }}
 {{- if and (eq .machine.profile "personal") (eq .machine.wm "i3") }}
+{{- range .packages.linux.arch.i3_network.official }}
+    {{ . | quote }}
+{{- end }}
 {{- range .packages.linux.arch.i3_filechooser.official }}
     {{ . | quote }}
 {{- end }}
@@ -51,6 +54,11 @@ sudo pacman -S --needed --noconfirm "${official_packages[@]}"
 aur_packages=(
 {{- if eq .machine.wm "i3" }}
 {{- range .packages.linux.arch.i3_desktop.aur }}
+    {{ . | quote }}
+{{- end }}
+{{- end }}
+{{- if and (eq .machine.profile "personal") (eq .machine.wm "i3") }}
+{{- range .packages.linux.arch.i3_network.aur }}
     {{ . | quote }}
 {{- end }}
 {{- end }}

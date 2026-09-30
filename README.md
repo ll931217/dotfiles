@@ -134,13 +134,17 @@ JetBrainsMono Nerd Font, Breeze icons, and matching Rofi/Dunst styling.
 The bar replaces i3bar/i3status, Polybar, and i3blocks. Eww discovers active
 outputs and reconciles bars after display disconnects/reconnects; the tray
 appears on the primary output with vertically centered icons.
+Menu opens the panel above the clicked bar on that monitor; clicking again
+closes it, and clicking the other monitor's Menu moves it there. Super+B uses
+the focused monitor. The panel scrolls on small displays; local X11 tests cover
+800×600 and 1024×768 without a compositor.
 Personal keeps Picom animations. Work starts no compositor, uses no
 GPU-specific settings or fixed output names, and is intended for X11 VDI
 sessions. Remote-session behavior still needs verification on the target VDI.
 
 | Shortcut | Action |
 | --- | --- |
-| Super+B | Toggle the control panel (music, volume, calendar, notifications) |
+| Super+B | Toggle controls, network selection, AI limits, and calendar |
 | Super+Tab | Search open windows with Rofi |
 | Super+N | Recall the last notification |
 | Super+Ctrl+N | Pause/resume notifications |
@@ -194,6 +198,59 @@ old bar packages. On Arch, run `pacman -Q polybar i3status i3blocks`, then
 removal list. Keep `i3-wm`: it also supplies i3bar, which is simply unused.
 On other distributions, install native equivalents and an X11-capable Eww
 build manually; the repository package hook currently supports Arch Linux only.
+
+#### Network controls
+
+On personal Arch/i3 desktops, the package hook installs `iwgtk` and
+`polkit-gnome`. For an existing system using **systemd-networkd + iwd**:
+
+```bash
+sudo pacman -S --needed polkit-gnome
+yay -S --needed iwgtk
+sudo bash scripts/install-eww-network.sh  # Run from this repository's root.
+```
+
+Installation does not change connections or routes. The panel offers connected
+physical NICs with simple, separate DHCP profiles in `/etc/systemd/network`.
+Selecting a preferred NIC requires administrator authentication and persists
+route metrics across reboots: 50 for the selected NIC, 600 for alternatives.
+Other connections stay available. “Automatic” removes only these managed
+overrides and restores the original priorities, including after a NIC is unplugged.
+The current-default label refers to IPv4; the saved preference also sets IPv6
+router-advertisement metrics. Wi-Fi networks opens iwgtk for scanning and
+credential entry; Eww never handles Wi-Fi passwords.
+
+Static routes, policy routing, shared profiles, and unrelated profile overrides
+are left to the host administrator. Work/VDI needs no privileged helper or Wi-Fi
+package; unsupported hosts display “Network managed by host.” The setup keeps
+the existing network stack. Preference transactions, rollback, and cancellation
+are tested with fixtures; setup verification does not switch the live route.
+
+#### Claude Code and Codex limits
+
+Codex reads quota metadata through its documented
+[`account/rateLimits/read`](https://developers.openai.com/codex/app-server)
+method, using the existing CLI login without starting an inference turn.
+All returned quota windows retain their provider-reported duration and reset time.
+The panel checks every 30 seconds while open; Codex responses are cached for
+three minutes. Unavailable data stays unknown, and stale data is labelled.
+
+Claude captures only quota percentages and reset times from its documented
+[status-line input](https://code.claude.com/docs/en/statusline). After deploying
+Eww, opt in on each machine that uses Claude Code:
+
+```bash
+python3 ~/.config/eww/claude_usage.py --install
+# To restore the previous status line before removing Eww:
+python3 ~/.config/eww/claude_usage.py --uninstall
+```
+
+The wrapper preserves the existing status-line renderer and forwards its input
+unchanged. Claude limits appear after a subsequent Claude response supplies
+quota data; unsupported accounts show an unavailable/waiting state. Private
+quota caches live under `~/.cache/eww-usage`; the original renderer is saved under
+`~/.local/state/eww-usage` (respecting XDG overrides). No credentials,
+conversation text, or quota caches are committed to dotfiles.
 
 ### Yazi browser file picker (personal i3 desktops)
 
