@@ -98,6 +98,16 @@
 (defpoll bar_status :interval "5s"
   :initial '{"time":"--:--","date":"","volume":{"available":false,"value":0,"muted":false},"notifications":{"available":false,"paused":false}}'
   "python3 ~/.config/eww/control.py bar-state")
+(defpoll load_avg :interval "5s" :initial "—" "cut -d' ' -f1 /proc/loadavg")
+
+(defwidget bar-metrics []
+  (box :space-evenly false
+    (label :class {EWW_DISK["/"].free < EWW_DISK["/"].total / 10 ? "bar-status metric warn" : "bar-status metric"}
+      :text "DISK  ${round(EWW_DISK["/"].used_perc, 0)}% (${round(EWW_DISK["/"].free / 1073741824, 1)}G free)")
+    (label :class "bar-status metric" :text "LOAD  ${load_avg}")
+    (label :class "bar-status metric" :text "CPU  ${round(EWW_CPU.avg, 0)}%")
+    (label :class {EWW_RAM.available_mem < 1073741824 ? "bar-status metric warn" : "bar-status metric"}
+      :text {EWW_RAM.available_mem < 1073741824 ? "RAM  < ${round(EWW_RAM.available_mem / 1048576, 0)}M" : "RAM  ${round(EWW_RAM.used_mem_perc, 0)}%"})))
 
 (defwindow bar [output primary monitor_index]
   :monitor output
@@ -116,6 +126,7 @@
     (box :hexpand true)
     (literal :valign "center" :vexpand false
       :content {primary ? "(systray :valign \"center\" :vexpand false :icon-size 18 :spacing 10)" : "(box)"})
+    (bar-metrics)
     (button :class "bar-status" :timeout "5s" :tooltip "Toggle mute" :onclick "python3 ~/.config/eww/control.py volume mute"
       {bar_status.volume.available ? bar_status.volume.muted ? "AUDIO  muted" : "AUDIO  ${bar_status.volume.value}%" : "AUDIO  —"})
     (button :class "bar-status" :timeout "5s" :tooltip "Toggle notification pause" :onclick "python3 ~/.config/eww/control.py notifications pause"

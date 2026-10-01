@@ -48,6 +48,8 @@ tooltip { background: $surface; color: $text; padding: 6px; }
 .desktop-bar .workspace.focused { color: $accent; border-bottom-color: $accent; background: #231d17; }
 .desktop-bar .workspace.urgent { color: $background; background: $accent; }
 .desktop-bar .bar-status { color: $muted; margin-left: 8px; }
+.desktop-bar .metric { padding: 0 12px; }
+.desktop-bar .metric.warn { color: $accent; font-weight: bold; }
 .desktop-bar .bar-clock { color: $accent; font-weight: bold; margin-left: 8px; }
 
 .panel scrollbar { min-width: 4px; margin-left: 6px; }
