@@ -217,6 +217,73 @@ detecturl(int col, int row, int draw)
 }
 #endif // REFLOW_PATCH
 
+static Window urltipwin;
+static Pixmap urltippix;
+static int urltipw, urltiph, urltipshown;
+
+void
+hideurltip(void)
+{
+	if (urltipshown) {
+		XUnmapWindow(xw.dpy, urltipwin);
+		urltipshown = 0;
+	}
+}
+
+/* show url_tooltip near pointer position (px, py), relative to the st window */
+static void
+showurltip(int px, int py)
+{
+	XGlyphInfo ext;
+	XftDraw *draw;
+	int x, y, pad = dc.font.height / 4;
+
+	if (!urltipshown) {
+		/* rebuilt on every show so font zoom changes are picked up */
+		XftTextExtentsUtf8(xw.dpy, dc.font.match, (FcChar8 *)url_tooltip,
+				strlen(url_tooltip), &ext);
+		urltipw = ext.xOff + 4 * pad;
+		urltiph = dc.font.height + 2 * pad;
+		if (urltippix)
+			XFreePixmap(xw.dpy, urltippix);
+		#if ALPHA_PATCH
+		urltippix = XCreatePixmap(xw.dpy, xw.win, urltipw, urltiph, xw.depth);
+		#else
+		urltippix = XCreatePixmap(xw.dpy, xw.win, urltipw, urltiph,
+				DefaultDepth(xw.dpy, xw.scr));
+		#endif // ALPHA_PATCH
+		draw = XftDrawCreate(xw.dpy, urltippix, xw.vis, xw.cmap);
+		XftDrawRect(draw, &dc.col[defaultfg], 0, 0, urltipw, urltiph);
+		XftDrawStringUtf8(draw, &dc.col[defaultbg], dc.font.match, 2 * pad,
+				pad + dc.font.ascent, (FcChar8 *)url_tooltip, strlen(url_tooltip));
+		XftDrawDestroy(draw);
+		if (!urltipwin)
+			urltipwin = XCreateSimpleWindow(xw.dpy, xw.win, 0, 0,
+					urltipw, urltiph, 0, 0, 0);
+		XResizeWindow(xw.dpy, urltipwin, urltipw, urltiph);
+		/* background pixmap lets the X server repaint it, no Expose handling */
+		XSetWindowBackgroundPixmap(xw.dpy, urltipwin, urltippix);
+	}
+
+	x = MIN(px + 12, win.w - urltipw);
+	y = (py + 20 + urltiph <= win.h) ? py + 20 : py - urltiph - 8;
+	XMoveWindow(xw.dpy, urltipwin, MAX(x, 0), MAX(y, 0));
+	if (!urltipshown) {
+		XMapRaised(xw.dpy, urltipwin);
+		urltipshown = 1;
+	}
+}
+
+static void
+urlleave(XEvent *e)
+{
+	/* NotifyInferior: pointer only moved onto the tooltip itself */
+	if (e->xcrossing.detail == NotifyInferior)
+		return;
+	hideurltip();
+	clearurl();
+}
+
 void
 openUrlOnClick(int col, int row, char* url_opener)
 {

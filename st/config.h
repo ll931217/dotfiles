@@ -9,8 +9,7 @@ static char *font = "JetBrainsMonoNL Nerd Font:size=11:style=Bold:antialias=true
 #if FONT2_PATCH
 /* Spare fonts */
 static char *font2[] = {
-/*	"Inconsolata for Powerline:pixelsize=12:antialias=true:autohint=true", */
-/*	"Hack Nerd Font Mono:pixelsize=11:antialias=true:autohint=true", */
+	"Symbols Nerd Font Mono:size=11:antialias=true:autohint=true",
 };
 #endif // FONT2_PATCH
 
@@ -36,6 +35,8 @@ static int borderpx = 2;
 /* modkey options: ControlMask, ShiftMask or XK_ANY_MOD */
 static uint url_opener_modkey = ControlMask;
 static char *url_opener = "xdg-open";
+/* shown next to the pointer while hovering a URL; keep in sync with url_opener_modkey */
+static char *url_tooltip = "Ctrl+click to open link";
 #endif // OPENURLONCLICK_PATCH
 
 /*

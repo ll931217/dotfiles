@@ -165,6 +165,9 @@ static void (*handler[LASTEvent])(XEvent *) = {
 	[MotionNotify] = bmotion,
 	[ButtonPress] = bpress,
 	[ButtonRelease] = brelease,
+	#if OPENURLONCLICK_PATCH
+	[LeaveNotify] = urlleave,
+	#endif // OPENURLONCLICK_PATCH
 /*
  * Uncomment if you want the selection to disappear when you select something
  * different in another window.
@@ -561,6 +564,7 @@ bpress(XEvent *e)
 
 		#if OPENURLONCLICK_PATCH
 		clearurl();
+		hideurltip();
 		url_click = 1;
 		#endif // OPENURLONCLICK_PATCH
 	}
@@ -885,10 +889,13 @@ bmotion(XEvent *e)
 	#endif // HIDECURSOR_PATCH
 	#if OPENURLONCLICK_PATCH
 	if (!IS_SET(MODE_MOUSE)) {
-		if (!(e->xbutton.state & Button1Mask) && detecturl(evcol(e), evrow(e), 1))
+		if (!(e->xbutton.state & Button1Mask) && detecturl(evcol(e), evrow(e), 1)) {
 			XDefineCursor(xw.dpy, xw.win, xw.upointer);
-		else
+			showurltip(e->xmotion.x, e->xmotion.y);
+		} else {
 			XDefineCursor(xw.dpy, xw.win, xw.vpointer);
+			hideurltip();
+		}
 	}
 	url_click = 0;
 	#endif // OPENURLONCLICK_PATCH
@@ -1558,7 +1565,7 @@ xinit(int cols, int rows)
 		;
 	xw.attrs.colormap = xw.cmap;
 	#if OPENURLONCLICK_PATCH
-	xw.attrs.event_mask |= PointerMotionMask;
+	xw.attrs.event_mask |= PointerMotionMask | LeaveWindowMask;
 	#endif // OPENURLONCLICK_PATCH
 
 	root = XRootWindow(xw.dpy, xw.scr);
