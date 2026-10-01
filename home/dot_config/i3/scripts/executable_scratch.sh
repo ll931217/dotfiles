@@ -117,7 +117,6 @@ for i in out:
     subprocess.run(['i3-msg', f'[instance=\"{i}\"] move scratchpad'])
 "
 
-i3-msg "[instance=\"$INSTANCE\"] scratchpad show"
-sleep 0.05
+# One i3-msg means one render, so the window never flashes at its old spot.
 # Non-absolute center uses the focused output, not the span of all monitors.
-i3-msg "[instance=\"$INSTANCE\"] move position center"
+i3-msg "[instance=\"$INSTANCE\"] scratchpad show, move position center"
