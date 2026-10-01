@@ -204,7 +204,8 @@ On Ubuntu, build Eww with X11 support and link it into a directory on i3's
 `bar.py start` exits silently when `eww` is missing, leaving no bar.
 
 ```bash
-sudo apt install cargo libgtk-3-dev libdbusmenu-gtk3-dev
+sudo apt install rustup libgtk-3-dev libdbusmenu-gtk3-dev
+rustup default stable   # Eww pins Rust 1.81; apt's cargo package is 1.75
 cargo install --locked --git https://github.com/elkowar/eww \
   --no-default-features --features x11 eww
 ln -s ~/.cargo/bin/eww ~/.local/bin/eww
