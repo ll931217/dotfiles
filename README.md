@@ -199,6 +199,19 @@ removal list. Keep `i3-wm`: it also supplies i3bar, which is simply unused.
 On other distributions, install native equivalents and an X11-capable Eww
 build manually; the repository package hook currently supports Arch Linux only.
 
+On Ubuntu, build Eww with X11 support and link it into a directory on i3's
+`PATH`. i3 does not inherit `~/.cargo/bin` from the login shell, and
+`bar.py start` exits silently when `eww` is missing, leaving no bar.
+
+```bash
+sudo apt install cargo libgtk-3-dev libdbusmenu-gtk3-dev
+cargo install --locked --git https://github.com/elkowar/eww \
+  --no-default-features --features x11 eww
+ln -s ~/.cargo/bin/eww ~/.local/bin/eww
+python3 ~/.config/eww/bar.py start
+eww --config ~/.config/eww active-windows   # expect one bar-<output> per screen
+```
+
 #### Network controls
 
 On personal Arch/i3 desktops, the package hook installs `iwgtk` and
