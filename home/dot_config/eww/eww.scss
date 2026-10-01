@@ -3,6 +3,11 @@ $surface: #161616;
 $accent: #e7894c;
 $text: #f2ecdd;
 $muted: #a89f91;
+$teal: #8fc4c4;
+$blue: #6a9fcc;
+$sage: #7c9b96;
+$amber: #e3a25a;
+$red: #d9634f;
 
 * {
   all: unset;
@@ -49,7 +54,13 @@ tooltip { background: $surface; color: $text; padding: 6px; }
 .desktop-bar .workspace.urgent { color: $background; background: $accent; }
 .desktop-bar .bar-status { color: $muted; margin-left: 8px; }
 .desktop-bar .metric { padding: 0 12px; }
-.desktop-bar .metric.warn { color: $accent; font-weight: bold; }
+.desktop-bar .stat-key { font-weight: bold; }
+.desktop-bar .stat-key.teal { color: $teal; }
+.desktop-bar .stat-key.blue { color: $blue; }
+.desktop-bar .stat-key.sage { color: $sage; }
+.desktop-bar .stat-key.amber { color: $amber; }
+.desktop-bar .stat-value { color: $text; }
+.desktop-bar .stat-value.warn { color: $red; font-weight: bold; }
 .desktop-bar .bar-clock { color: $accent; font-weight: bold; margin-left: 8px; }
 
 .panel scrollbar { min-width: 4px; margin-left: 6px; }

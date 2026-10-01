@@ -100,14 +100,23 @@
   "python3 ~/.config/eww/control.py bar-state")
 (defpoll load_avg :interval "5s" :initial "—" "cut -d' ' -f1 /proc/loadavg")
 
+(defwidget stat [key tone value warn]
+  (box :space-evenly false :spacing 8
+    (label :class "stat-key ${tone}" :text key)
+    (label :class {warn ? "stat-value warn" : "stat-value"} :text value)))
+
 (defwidget bar-metrics []
   (box :space-evenly false
-    (label :class {EWW_DISK["/"].free < EWW_DISK["/"].total / 10 ? "bar-status metric warn" : "bar-status metric"}
-      :text "DISK  ${round(EWW_DISK["/"].used_perc, 0)}% (${round(EWW_DISK["/"].free / 1073741824, 1)}G free)")
-    (label :class "bar-status metric" :text "LOAD  ${load_avg}")
-    (label :class "bar-status metric" :text "CPU  ${round(EWW_CPU.avg, 0)}%")
-    (label :class {EWW_RAM.available_mem < 1073741824 ? "bar-status metric warn" : "bar-status metric"}
-      :text {EWW_RAM.available_mem < 1073741824 ? "RAM  < ${round(EWW_RAM.available_mem / 1048576, 0)}M" : "RAM  ${round(EWW_RAM.used_mem_perc, 0)}%"})))
+    (box :class "bar-status metric"
+      (stat :key "DISK" :tone "teal" :warn {EWW_DISK["/"].free < EWW_DISK["/"].total / 10}
+        :value "${round(EWW_DISK["/"].used_perc, 0)}% (${round(EWW_DISK["/"].free / 1073741824, 1)}G free)"))
+    (box :class "bar-status metric"
+      (stat :key "LOAD" :tone "blue" :warn false :value load_avg))
+    (box :class "bar-status metric"
+      (stat :key "CPU" :tone "sage" :warn false :value "${round(EWW_CPU.avg, 0)}%"))
+    (box :class "bar-status metric"
+      (stat :key "RAM" :tone "amber" :warn {EWW_RAM.available_mem < 1073741824}
+        :value {EWW_RAM.available_mem < 1073741824 ? "< ${round(EWW_RAM.available_mem / 1048576, 0)}M" : "${round(EWW_RAM.used_mem_perc, 0)}%"}))))
 
 (defwindow bar [output primary monitor_index]
   :monitor output
@@ -128,8 +137,10 @@
       :content {primary ? "(systray :valign \"center\" :vexpand false :icon-size 18 :spacing 10)" : "(box)"})
     (bar-metrics)
     (button :class "bar-status" :timeout "5s" :tooltip "Toggle mute" :onclick "python3 ~/.config/eww/control.py volume mute"
-      {bar_status.volume.available ? bar_status.volume.muted ? "AUDIO  muted" : "AUDIO  ${bar_status.volume.value}%" : "AUDIO  —"})
+      (stat :key "AUDIO" :tone "teal" :warn {bar_status.volume.available && bar_status.volume.muted}
+        :value {bar_status.volume.available ? bar_status.volume.muted ? "muted" : "${bar_status.volume.value}%" : "—"}))
     (button :class "bar-status" :timeout "5s" :tooltip "Toggle notification pause" :onclick "python3 ~/.config/eww/control.py notifications pause"
-      {bar_status.notifications.paused ? "ALERTS  paused" : "ALERTS  on"})
+      (stat :key "ALERTS" :tone "blue" :warn {bar_status.notifications.paused}
+        :value {bar_status.notifications.paused ? "paused" : "on"}))
     (button :class "bar-clock" :timeout "10s" :tooltip {bar_status.date}
       :onclick "python3 ~/.config/eww/control.py toggle --monitor ${monitor_index}" {bar_status.time})))
