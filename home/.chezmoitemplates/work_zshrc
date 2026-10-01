@@ -29,6 +29,10 @@ antigen bundle lein
 antigen bundle command-not-found
 antigen bundle zsh-users/zsh-syntax-highlighting
 antigen bundle chrissicool/zsh-256color
+antigen bundle colored-man-pages
+antigen bundle hlissner/zsh-autopair
+antigen bundle MichaelAquilina/zsh-you-should-use
+antigen bundle zdharma-continuum/history-search-multi-word --branch=main
 antigen apply
 
 # --- Modular config ---------------------------------------------------------
@@ -132,4 +136,9 @@ export LS_COLORS="${LS_COLORS//tw=30;42/tw=01;34}"
 # Also from the retired ~/.zshrc shim: arrow-key selection in the completion
 # menu. Nothing else in this profile sets it.
 zstyle ':completion:*' menu select
+# Same matcher as personal completions.zsh: case-insensitive, then substring.
+zstyle ':completion:*' matcher-list \
+  'm:{[:lower:][:upper:]}={[:upper:][:lower:]}' \
+  'r:|=*' \
+  'l:|=* r:|=*'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
