@@ -49,8 +49,6 @@ if ! flock -n 9; then
   exit 0
 fi
 
-source "$HOME/.config/i3/scripts/common.sh"
-
 exists() {
   i3-msg -t get_tree |
     jq -e --arg inst "$INSTANCE" \
@@ -121,4 +119,5 @@ for i in out:
 
 i3-msg "[instance=\"$INSTANCE\"] scratchpad show"
 sleep 0.05
-i3-msg "[instance=\"$INSTANCE\"] move position $px $py"
+# Non-absolute center uses the focused output, not the span of all monitors.
+i3-msg "[instance=\"$INSTANCE\"] move position center"
