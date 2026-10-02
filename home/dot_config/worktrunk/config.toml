@@ -35,6 +35,9 @@ jira_issues = '''set -u
 # everything asked of it. `git config core.quotepath false` fixes the quoting;
 # this stays tolerant because the fact that matters is whether the file ARRIVED.
 wt step copy-ignored || echo "wt pre-start: copy-ignored reported an error; checking what landed" >&2
+# only a repo whose main checkout carries the file must have it arrive
+main="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
+[ -e "$main/.claude/jira_issues" ] || exit 0
 [ -e .claude/jira_issues ] || {
   echo "wt pre-start: .claude/jira_issues is not here" >&2
   exit 1
