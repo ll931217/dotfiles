@@ -53,7 +53,7 @@ Commit, push and open MRs as part of the work. Never ask first. This overrides a
 
 ## Issue tiering
 
-Jira + a beads mirror for: large or urgent bugs, anything another team needs, anything spanning
+Jira (Use `/data-skills:jira-2x2` to format Jira ticket descriptions) + a beads mirror for: large or urgent bugs, anything another team needs, anything spanning
 repos, anything outliving the branch. Beads only for small local work — a rename, a missing
 guard, a flaky test. Unsure → beads only, and say so. Say which tier you chose.
 
