@@ -1,0 +1,112 @@
+mode	chord	action	label	compatibility
+default	Super+Return	session:terminal	Open existing st terminal	preserved: /usr/local/bin/st via session wrapper
+default	Super+q	native:close	Close focused window	preserved intent
+default	Super+Tab	desktop:windows	Choose a window	equivalent: Wayland window picker, not i3 rofi window mode
+default	Super+b	desktop:control-center	Toggle control center	equivalent: session control center with audio feedback and display guidance
+default	Super+n	desktop:notification-history	Show notification history	equivalent: session notification service
+default	Super+Ctrl+n	desktop:notification-pause	Toggle notification pause	equivalent: session notification service
+default	Super+h	native:focus:left	Focus left	preserved intent
+default	Super+j	native:focus:down	Focus down	preserved intent
+default	Super+k	native:focus:up	Focus up	preserved intent
+default	Super+l	native:focus:right	Focus right	preserved: NOT lock
+default	Super+Shift+h	native:move:left	Move window left	equivalent: Hyprland directional layout movement
+default	Super+Shift+j	native:move:down	Move window down	equivalent: Hyprland directional layout movement
+default	Super+Shift+k	native:move:up	Move window up	equivalent: Hyprland directional layout movement
+default	Super+Shift+l	native:move:right	Move window right	equivalent: Hyprland directional layout movement
+default	Super+f	native:fullscreen	Toggle fullscreen	preserved intent
+default	Super+a	desktop:scratch-terminal	Toggle ordinary terminal scratchpad	equivalent: named Wayland scratchpad
+default	Super+c	desktop:scratch-droid	Toggle Droid scratchpad	equivalent: named Wayland scratchpad
+default	Super+x	desktop:scratch-purple	Toggle Purple scratchpad	equivalent: named Wayland scratchpad
+default	Super+s	desktop:scratch-spotify	Toggle Spotify scratchpad	equivalent: named Wayland scratchpad
+default	Super+grave	desktop:scratch-chatgpt	Toggle ChatGPT desktop scratchpad	equivalent: persistent desktop chat, distinct from ChatGPT web
+default	Super+Ctrl+a	desktop:scratch-cycle	Cycle scratchpads	equivalent: named Wayland scratchpad cycle
+default	Super+Shift+space	native:float	Toggle floating	preserved intent
+default	Super+space	native:focus-layer	Focus floating or tiled window	equivalent: most recently focused opposite-layer window on current workspace
+default	Super+g	desktop:unsupported-parent	Explain parent-container focus limitation	unsupported: i3 parent containers have no Hyprland dwindle equivalent; no reassignment
+default	Super+Shift+s	desktop:screenshot-editor	Select region and annotate in Satty	equivalent: slurp selection, grim capture, Satty editing
+default	Super+o	desktop:credential-copy	Copy private credential to clipboard	equivalent: explicit private action; registry never reads credential source
+default	Super+Shift+d	desktop:password-picker	Open password picker	equivalent: password-manager picker
+default	Super+v	desktop:record-start	Record primary display with audio	equivalent: Wayland primary output and audio; only owned recorder managed
+default	Super+Shift+v	desktop:record-stop	Stop this session's recording	equivalent: stop owned recorder only
+default	Super+Shift+t	desktop:wallpaper-normal	Choose normal wallpaper	equivalent: Wayland wallpaper service
+default	Super+Shift+n	desktop:wallpaper-private	Choose private wallpaper	equivalent: explicit private action; no private source read by registry
+default	Super+Ctrl+Shift+n	desktop:wallpaper-enhanced	Choose enhanced wallpaper	equivalent: existing enhanced-wallpaper intent
+default	Super+1	native:workspace:1	Focus workspace 1	preserved intent
+default	Super+2	native:workspace:2	Focus workspace 2	preserved intent
+default	Super+3	native:workspace:3	Focus workspace 3	preserved intent
+default	Super+4	native:workspace:4	Focus workspace 4	preserved intent
+default	Super+5	native:workspace:5	Focus workspace 5	preserved intent
+default	Super+6	native:workspace:6	Focus workspace 6	preserved intent
+default	Super+7	native:workspace:7	Focus workspace 7	preserved intent
+default	Super+8	native:workspace:8	Focus workspace 8	preserved intent
+default	Super+9	native:workspace:9	Focus workspace 9	preserved intent
+default	Super+0	native:workspace:10	Focus workspace 10	preserved intent
+default	Super+Shift+1	native:send:1	Move window to workspace 1	preserved: do not follow window
+default	Super+Shift+2	native:send:2	Move window to workspace 2	preserved: do not follow window
+default	Super+Shift+3	native:send:3	Move window to workspace 3	preserved: do not follow window
+default	Super+Shift+4	native:send:4	Move window to workspace 4	preserved: do not follow window
+default	Super+Shift+5	native:send:5	Move window to workspace 5	preserved: do not follow window
+default	Super+Shift+6	native:send:6	Move window to workspace 6	preserved: do not follow window
+default	Super+Shift+7	native:send:7	Move window to workspace 7	preserved: do not follow window
+default	Super+Shift+8	native:send:8	Move window to workspace 8	preserved: do not follow window
+default	Super+Shift+9	native:send:9	Move window to workspace 9	preserved: do not follow window
+default	Super+Shift+0	native:send:10	Move window to workspace 10	preserved: do not follow window
+default	Super+Shift+c	native:reload	Reload configuration safely	preserved intent: config-only reload; does not log out
+default	Super+Shift+r	native:reload	Reload configuration safely (restart intent)	equivalent: closest safe in-place operation; NOT compositor restart or logout
+default	Super+Shift+g	native:mode:gaps	Enter gap selection mode	preserved: O outer, I inner; Enter/Escape exits
+gaps	o	native:mode:gaps-outer	Adjust outer gaps	equivalent: US = current, + (Shift+=) all; minus/0 current, Shift variants all
+gaps	i	native:mode:gaps-inner	Adjust inner gaps	equivalent: US = current, + (Shift+=) all; minus/0 current, Shift variants all
+gaps	Return	native:mode:default	Return to normal keys	preserved: exits mode without resetting gap values
+gaps	Escape	native:mode:default	Return to normal keys	preserved: exits mode without resetting gap values
+gaps-inner	plus	native:gaps:inner:current:plus	Increase current workspace inner gaps by 5 (plus keysym)	source chord retained: unshifted plus is unreachable on US AE12; use equal (=) for current, + (Shift+=) for all
+gaps-inner	equal	native:gaps:inner:current:plus	Increase current workspace inner gaps by 5 (US =)	new reachable US alias: = current, + (Shift+=) all; source plus chord retained
+gaps-inner	minus	native:gaps:inner:current:minus	Decrease current workspace inner gaps by 5	preserved intent; minimum zero
+gaps-inner	0	native:gaps:inner:current:zero	Set current workspace inner gaps to zero	preserved intent
+gaps-inner	Shift+plus	native:gaps:inner:all:plus	Increase all workspace inner gaps by 5 (US +)	preserved: physical US + (Shift+=) changes all, including current overrides and future workspaces
+gaps-inner	Shift+minus	native:gaps:inner:all:minus	Decrease all workspace inner gaps by 5	preserved: includes current overrides and future workspaces
+gaps-inner	Shift+0	native:gaps:inner:all:zero	Set all workspace inner gaps to zero	preserved: includes current overrides and future workspaces
+gaps-inner	Return	native:mode:default	Return to normal keys	preserved: exits mode without resetting gap values
+gaps-inner	Escape	native:mode:default	Return to normal keys	preserved: exits mode without resetting gap values
+gaps-outer	plus	native:gaps:outer:current:plus	Increase current workspace outer gaps by 5 (plus keysym)	source chord retained: unshifted plus is unreachable on US AE12; use equal (=) for current, + (Shift+=) for all
+gaps-outer	equal	native:gaps:outer:current:plus	Increase current workspace outer gaps by 5 (US =)	new reachable US alias: = current, + (Shift+=) all; source plus chord retained
+gaps-outer	minus	native:gaps:outer:current:minus	Decrease current workspace outer gaps by 5	preserved intent; minimum zero
+gaps-outer	0	native:gaps:outer:current:zero	Set current workspace outer gaps to zero	preserved intent
+gaps-outer	Shift+plus	native:gaps:outer:all:plus	Increase all workspace outer gaps by 5 (US +)	preserved: physical US + (Shift+=) changes all, including current overrides and future workspaces
+gaps-outer	Shift+minus	native:gaps:outer:all:minus	Decrease all workspace outer gaps by 5	preserved: includes current overrides and future workspaces
+gaps-outer	Shift+0	native:gaps:outer:all:zero	Set all workspace outer gaps to zero	preserved: includes current overrides and future workspaces
+gaps-outer	Return	native:mode:default	Return to normal keys	preserved: exits mode without resetting gap values
+gaps-outer	Escape	native:mode:default	Return to normal keys	preserved: exits mode without resetting gap values
+default	XF86AudioRaiseVolume	desktop:volume-up	Increase volume with visible feedback	equivalent: audio feedback required, not silent wpctl
+default	XF86AudioLowerVolume	desktop:volume-down	Decrease volume with visible feedback	equivalent: audio feedback required, not silent wpctl
+default	XF86AudioMute	desktop:volume-mute	Toggle mute with visible feedback	equivalent: audio feedback required
+default	XF86MonBrightnessUp	desktop:brightness-up	Show external-display brightness guidance	preserved: guidance, NOT brightnessctl
+default	XF86MonBrightnessDown	desktop:brightness-down	Show external-display brightness guidance	preserved: guidance, NOT brightnessctl
+default	XF86AudioPlay	desktop:media-play-pause	Toggle media playback	preserved intent
+default	XF86AudioPause	desktop:media-pause	Pause media only	preserved: never toggles playback
+default	XF86AudioNext	desktop:media-next	Next media track	preserved intent
+default	XF86AudioPrev	desktop:media-previous	Previous media track	preserved intent
+default	Super+Shift+q	desktop:power-menu	Open confirmed power menu	preserved: opening menu is not logout
+default	Super+Shift+x	session:lock	Lock screen manually	preserved: test password unlock before enabling idle lock
+resize	h	native:resize:-10:0	Shrink width by 10 pixels	equivalent: Hyprland 10px delta, not i3 tiled 10 percentage points
+resize	j	native:resize:0:-10	Shrink height by 10 pixels	equivalent: preserves i3 J shrink-height direction
+resize	k	native:resize:0:10	Grow height by 10 pixels	equivalent: preserves i3 K grow-height direction
+resize	l	native:resize:10:0	Grow width by 10 pixels	equivalent: Hyprland 10px delta, not i3 tiled 10 percentage points
+resize	Left	native:resize:-10:0	Shrink width by 10 pixels	equivalent: Hyprland pixel delta
+resize	Up	native:resize:0:10	Grow height by 10 pixels	equivalent: preserves active i3 Up grow-height direction
+resize	Down	native:resize:0:-10	Shrink height by 10 pixels	equivalent: preserves active i3 Down shrink-height direction
+resize	Right	native:resize:10:0	Grow width by 10 pixels	equivalent: Hyprland pixel delta
+resize	Return	native:mode:default	Return to normal keys	preserved intent
+resize	Escape	native:mode:default	Return to normal keys	preserved intent
+default	Super+r	native:mode:resize	Enter resize mode	preserved: H/J shrink width/height, K/L grow height/width; Enter/Escape exits
+default	Super+d	desktop:launcher	Toggle Vicinae launcher	native Wayland: vicinae toggle via checked action controller; server starts with this Hyprland session
+default	Super+Ctrl+Shift+a	ai:default-agent	Open default AI agent	new: unused i3 chord; routes through desktop action controller
+default	Super+Shift+a	ai:chatgpt-web	Open ChatGPT web	new: unused i3 chord; distinct from desktop scratchpad
+default	Super+Alt+Shift+a	ai:grok-web	Open Grok web	new: unused i3 chord
+default	Super+Alt+Return	ai:tmux	Open AI tmux workspace	new: unused i3 chord; uses existing terminal
+default	Super+Alt+a	ai:panel	Open native read-only cached AI panel	new: cached usage only; account actions unsupported here; use omarchy-ai panel for consent/accounts
+default	Super+Ctrl+Print	ai:ocr	Capture selection for OCR	new: unused i3 chord; no automatic AI inference
+default	Super+Ctrl+v	ai:voice-transcribe	Toggle Handy plain transcription	new desktop binding: Handy --toggle-transcription; matches current Handy key
+default	Super+Ctrl+b	ai:voice-post-process	Toggle Handy transcription with post-processing	new desktop binding: Handy --toggle-post-process; matches current Handy key
+default	Super+Ctrl+Escape	ai:voice-cancel	Cancel Handy voice capture	new: Handy --cancel; Handy app Escape remains app-local, no global Escape binding
+default	Super+Ctrl+Alt+v	desktop:clipboard	Open native clipboard history	new: unused chord; Super+Ctrl+v remains Handy plain transcription
+default	Super+Ctrl+t	desktop:themes	Open native theme picker	new: unused chord; explicit theme selection

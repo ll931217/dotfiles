@@ -1,0 +1,201 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+config_dir="$HOME/.config/hypr-omarchy"
+config="$config_dir/hyprland.lua"
+
+fail() {
+    printf 'omarchy-inspired-session: %s\n' "$*" >&2
+    exit 2
+}
+
+require_session() {
+    [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} && ${XDG_SESSION_TYPE:-} != x11 ]] || fail 'No Hyprland session. Log out, then select "Hyprland — Omarchy-inspired" in SDDM; i3 remains available.'
+}
+
+require_profile() {
+    require_session
+    /usr/bin/python -I - "$config" "$HYPRLAND_INSTANCE_SIGNATURE" <<'PY' || fail 'Not the active Omarchy-inspired Hyprland profile; no helpers started.'
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+try:
+    instances = json.loads(subprocess.check_output(["/usr/bin/hyprctl", "-j", "instances"]))
+    instance = next(item for item in instances if item["instance"] == sys.argv[2])
+    process = Path("/proc") / str(int(instance["pid"]))
+    assert process.stat().st_uid == os.getuid()
+    args = (process / "cmdline").read_bytes().decode().rstrip("\0").split("\0")
+    assert Path(args[args.index("--config") + 1]).resolve() == Path(sys.argv[1]).resolve()
+except (AssertionError, OSError, ValueError, KeyError, StopIteration, IndexError, subprocess.SubprocessError):
+    sys.exit(1)
+PY
+}
+
+case "${1:---start}" in
+    --handy)
+        [[ $# -eq 1 ]] || fail 'Unexpected Handy arguments. Use --handy.'
+        require_profile
+        if /usr/bin/pgrep -u "$UID" -x handy >/dev/null; then
+            printf 'Handy already running; leaving it unchanged.\n'
+            exit 0
+        fi
+        [[ -x /usr/bin/handy ]] || fail 'Missing /usr/bin/handy; no dictation helper started.'
+        exec /usr/bin/handy --start-hidden
+        ;;
+    --help|-h)
+        exec /usr/bin/python -I "$config_dir/keymap.py" --help
+        ;;
+    --check)
+        [[ $# -le 2 ]] || fail 'Too many --check arguments. Use --check [LUA_CONFIG].'
+        config="${2:-$config}"
+        [[ -r $config ]] || fail "Cannot read configuration: $config. Restore that file or pass --check /path/to/hyprland.lua."
+        [[ -x /usr/bin/Hyprland ]] || fail 'Missing Hyprland. Install the reviewed Arch hyprland package, then run --check again.'
+        if /usr/bin/Hyprland --verify-config --config "$config"; then
+            printf 'Configuration OK: %s\n' "$config"
+        else
+            fail "Configuration failed: $config. Fix the reported Lua errors, then run --check again."
+        fi
+        exit 0
+        ;;
+    --terminal)
+        require_session
+        [[ -x /usr/local/bin/st ]] || fail 'Missing your i3 terminal /usr/local/bin/st. Restore that executable, then retry Super+Return.'
+        exec /usr/local/bin/st
+        ;;
+    --apps)
+        require_session
+        [[ -r $config_dir/rofi.rasi ]] || fail "Missing launcher config: $config_dir/rofi.rasi. Restore that file before opening Apps."
+        exec /usr/bin/rofi -config "$config_dir/rofi.rasi" -show drun
+        ;;
+    --lock)
+        require_session
+        [[ -r $config_dir/hyprlock.conf ]] || fail "Missing lock config: $config_dir/hyprlock.conf. Restore that file before locking."
+        printf 'Locking Hyprland with %s; type your login password and press Enter to unlock.\n' "$config_dir/hyprlock.conf"
+        exec /usr/bin/hyprlock --config "$config_dir/hyprlock.conf"
+        ;;
+    --logout)
+        require_session
+        choice=$(printf 'Cancel\nLog out Hyprland\n' | /usr/bin/rofi -config "$config_dir/rofi.rasi" -dmenu -i -no-custom -p 'Log out? Unsaved work may be lost') || {
+            printf 'Logout cancelled; Hyprland session unchanged.\n'
+            exit 0
+        }
+        if [[ $choice == 'Log out Hyprland' ]]; then
+            printf 'Logging out of Hyprland. Select i3 in SDDM to return.\n'
+            exec /usr/bin/hyprctl dispatch 'hl.dsp.exit()'
+        fi
+        printf 'Logout cancelled; Hyprland session unchanged.\n'
+        exit 0
+        ;;
+    --services)
+        require_profile
+        [[ $# -eq 1 ]] || fail 'Unexpected service arguments. Use --services only from the session startup configuration.'
+        instance_dir="${XDG_RUNTIME_DIR:-/run/user/$UID}/hypr/$HYPRLAND_INSTANCE_SIGNATURE"
+        [[ -S $instance_dir/.socket2.sock ]] || fail "Missing Hyprland event socket: $instance_dir/.socket2.sock. Run --services only inside the active Hyprland session."
+        for program in awww awww-daemon socat flock pgrep; do
+            [[ -x /usr/bin/$program ]] || fail "Missing $program. Install its reviewed Arch package, then retry this login."
+        done
+        for file in background.png; do
+            [[ -r $config_dir/$file ]] || fail "Missing session asset: $config_dir/$file. Restore that file, then retry this login."
+        done
+        exec 9<"$instance_dir"
+        if ! /usr/bin/flock --nonblock 9; then
+            printf 'Session helpers already running for %s; no duplicate services started.\n' "$HYPRLAND_INSTANCE_SIGNATURE"
+            exit 0
+        fi
+        children=()
+        declare -A names=()
+        cleanup() {
+            trap '' HUP INT TERM
+            local pid
+            local -a running
+            mapfile -t running < <(jobs -pr)
+            for pid in "${running[@]}"; do
+                kill "$pid" 2>/dev/null || true
+            done
+            for pid in "${running[@]}"; do
+                wait "$pid" 2>/dev/null || true
+            done
+            printf 'Session helpers stopped for %s; only children owned by this supervisor were terminated.\n' "$HYPRLAND_INSTANCE_SIGNATURE"
+        }
+        trap cleanup EXIT
+        trap 'exit 0' HUP INT TERM
+        /usr/bin/socat -u "UNIX-CONNECT:$instance_dir/.socket2.sock" /dev/null 9<&- &
+        monitor=$!
+        children+=("$monitor")
+        names[$monitor]="Hyprland event connection"
+        if /usr/bin/awww query 9<&- >/dev/null 2>&1; then
+            printf 'Wallpaper daemon already serving this Wayland socket; leaving it and the current wallpaper unchanged.\n'
+        else
+            /usr/bin/awww-daemon --no-cache 9<&- &
+            children+=("$!")
+            names[$!]="awww wallpaper"
+            wallpaper_ready=false
+            for _ in {1..50}; do
+                if /usr/bin/awww query 9<&- >/dev/null 2>&1; then
+                    wallpaper_ready=true
+                    break
+                fi
+                /usr/bin/sleep 0.1 9<&-
+            done
+            if [[ $wallpaper_ready == true ]]; then
+                /usr/bin/awww img "$config_dir/background.png" 9<&- || printf 'Wallpaper image setup failed; other helpers will still start.\n' >&2
+            else
+                printf 'Wallpaper daemon not ready; other helpers will still start. Check the SDDM session log.\n' >&2
+            fi
+        fi
+        agent=/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+        if /usr/bin/pgrep -u "$UID" -f "^$agent([[:space:]]|$)" 9<&- >/dev/null; then
+            printf 'Authentication agent already running; leaving it unchanged.\n'
+        elif [[ -x $agent ]]; then
+            "$agent" 9<&- &
+            children+=("$!")
+            names[$!]="Polkit authentication agent"
+        else
+            printf 'Authentication agent unavailable: %s. Install polkit-gnome for graphical authorization prompts.\n' "$agent" >&2
+        fi
+        if /usr/bin/pgrep -u "$UID" -x fcitx5 9<&- >/dev/null; then
+            printf 'Fcitx5 input method already running; leaving it unchanged.\n'
+        elif [[ -x /usr/bin/fcitx5 ]]; then
+            /usr/bin/fcitx5 -D 9<&- &
+            children+=("$!")
+            names[$!]="Fcitx5 input method"
+        fi
+        printf 'Session helpers launched from %s; automatic idle locking OFF; helpers stop on Hyprland logout.\n' "$config_dir"
+        while ((${#children[@]})); do
+            status=0
+            finished=
+            wait -n -p finished "${children[@]}" || status=$?
+            [[ -n $finished ]] || fail 'Lost track of owned helper children.'
+            if [[ $finished == "$monitor" ]]; then
+                exit "$status"
+            fi
+            printf '%s stopped (exit %s); other helpers remain running. Check %s/.local/share/sddm/wayland-session.log.\n' "${names[$finished]}" "$status" "$HOME" >&2
+            remaining=()
+            for pid in "${children[@]}"; do
+                [[ $pid == "$finished" ]] || remaining+=("$pid")
+            done
+            children=("${remaining[@]}")
+            unset 'names[$finished]'
+        done
+        ;;
+    --start)
+        [[ $# -le 1 ]] || fail 'Unexpected arguments. Run --help for supported actions.'
+        ;;
+    *) fail "Unknown action: $1. Run omarchy-inspired-session --help for supported actions." ;;
+esac
+
+[[ -z ${HYPRLAND_INSTANCE_SIGNATURE:-} && ${XDG_SESSION_TYPE:-} != x11 && -z ${WAYLAND_DISPLAY:-} ]] || fail 'An active graphical session was detected. Log out when ready, then select "Hyprland — Omarchy-inspired" in SDDM; do not start it inside i3.'
+if /usr/bin/pgrep -u "$UID" -x 'i3|Hyprland' >/dev/null; then
+    fail 'Another i3 or Hyprland desktop is running for this user. Log out of that desktop before selecting "Hyprland — Omarchy-inspired" in SDDM.'
+fi
+[[ -r $config ]] || fail "Missing configuration: $config. Restore it before selecting this session."
+[[ -x /usr/local/bin/st ]] || fail 'Missing your i3 terminal /usr/local/bin/st. Restore it before selecting this session.'
+for program in Hyprland start-hyprland kitty rofi awww awww-daemon hyprlock socat flock pgrep; do
+    [[ -x /usr/bin/$program ]] || fail "Missing $program. Install its reviewed Arch package, then retry this login."
+done
+export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=Hyprland XDG_SESSION_TYPE=wayland
+printf 'Starting Hyprland — Omarchy-inspired with %s; existing i3 remains available.\n' "$config"
+exec /usr/bin/start-hyprland -- --config "$config"

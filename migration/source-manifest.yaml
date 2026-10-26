@@ -32,6 +32,17 @@ managed:
       target: ~/.config
       mode: directory
       policy: "Migrate by subsystem; exclude generated, private, and host-state files."
+  hypr_omarchy:
+    - source: home/dot_config/hypr-omarchy
+      target: ~/.config/hypr-omarchy
+      mode: allowlisted_files
+      condition: 'personal Arch amd64, HOME == "/home/ll931217", independent of machine.wm'
+      policy: "Existing-host profile only; preserve i3, external reviewed native-shell runtime and system session registration. Never use exact directory ownership."
+    - source: home/dot_local/bin/executable_omarchy-inspired-session
+      target: ~/.local/bin/omarchy-inspired-session
+      mode: file
+      preserve_executable_bits: true
+      condition: 'personal Arch amd64, HOME == "/home/ll931217", independent of machine.wm'
   macos_config:
     - source: macos
       target: ~
@@ -52,6 +63,10 @@ managed:
       mode: post_apply_hook_or_target_tree
 
 excluded:
+  - source: .local/state/omarchy-inspired
+    reason: "Private generated runtime, histories, consent, approvals, journals and recovery evidence; not portable configuration."
+  - source: .local/share/omarchy-inspired
+    reason: "External manifest-bound helper code; chezmoi must not hot-edit approved runtime adapters."
   - source: .config/zsh/keys.zsh
     reason: "Plaintext credentials; imported into gopass and rendered only through a secret-backed template."
   - source: .config/hypr/custom/private.env

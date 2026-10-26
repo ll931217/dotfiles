@@ -8,6 +8,22 @@
 .local/share/fonts
 .wallpapers
 
+# Never export Omarchy runtime data, local approvals, or retired host state.
+.local/state/omarchy-inspired
+.local/share/omarchy-inspired
+.config/hypr-omarchy/.git
+.config/hypr-omarchy/__pycache__
+.config/hypr-omarchy/.ruff_cache
+.config/hypr-omarchy/.ui-design
+.config/hypr-omarchy/*.backup.*
+
+{{- if not (and (eq .chezmoi.os "linux") (eq .chezmoi.arch "amd64") (eq (get .chezmoi.osRelease "id") "arch") (eq .machine.profile "personal") (eq .chezmoi.homeDir "/home/ll931217")) }}
+# Existing-host alternate session, independent of the i3/Hyprland default.
+# The reviewed scripts contain absolute paths; do not deploy to another HOME.
+.config/hypr-omarchy
+.local/bin/omarchy-inspired-session
+{{- end }}
+
 {{- if ne .chezmoi.os "darwin" }}
 # macOS-only source paths are excluded on Linux.
 .aerospace.toml

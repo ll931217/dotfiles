@@ -1,0 +1,61 @@
+configuration {
+    modi: "drun,run";
+    show-icons: true;
+    terminal: "kitty";
+    display-drun: "Apps";
+    display-run: "Run command";
+    font: "DejaVu Sans Mono 13";
+    drun-display-format: "{name}";
+}
+
+* {
+    background: #1a1b26;
+    foreground: #a9b1d6;
+    selected-background: #7aa2f7;
+    selected-foreground: #1a1b26;
+    background-color: @background;
+    text-color: @foreground;
+    border-color: #7aa2f7;
+    spacing: 8px;
+}
+
+window {
+    width: 620px;
+    border: 2px;
+    padding: 20px;
+    location: center;
+    anchor: center;
+}
+
+mainbox { children: [ inputbar, message, listview, mode-switcher ]; }
+inputbar { children: [ prompt, entry ]; spacing: 12px; padding: 4px 0 12px; }
+prompt { text-color: #7aa2f7; }
+entry { placeholder: "Type to search · Enter opens · Esc cancels"; }
+message { padding: 0; }
+textbox { background-color: transparent; }
+listview { lines: 8; fixed-height: false; spacing: 4px; }
+element { padding: 9px; spacing: 12px; }
+/* Override every built-in row state; alternate/active/urgent otherwise inherit Solarized. */
+element normal.normal, element alternate.normal {
+    background-color: @background;
+    text-color: @foreground;
+}
+element normal.active, element alternate.active {
+    background-color: @background;
+    text-color: #7aa2f7;
+}
+element normal.urgent, element alternate.urgent {
+    background-color: @background;
+    text-color: #f7768e;
+}
+element selected.normal, element selected.active, element selected.urgent {
+    background-color: @selected-background;
+    text-color: @selected-foreground;
+}
+element-icon { size: 24px; background-color: transparent; }
+element-text { background-color: transparent; text-color: inherit; vertical-align: 0.5; }
+mode-switcher { spacing: 12px; padding: 12px 0 0; }
+button { padding: 6px; }
+button selected { background-color: @selected-background; text-color: @selected-foreground; }
+
+@import "/home/ll931217/.local/state/omarchy-inspired/native-ui/current/rofi.rasi"
