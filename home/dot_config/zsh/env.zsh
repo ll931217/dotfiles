@@ -160,6 +160,10 @@ case ":$PATH:" in
 esac
 # pnpm end
 
+# mise shims so non-interactive shells (scripts, editors, agents) find mise tools.
+# Interactive shells use `mise activate zsh` in .zshrc, which replaces the shims dir.
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+
 [ -f $HOME/.proxy ] && source $HOME/.proxy
 
 # Executor CLI (remote server at 172.21.10.105:4788)

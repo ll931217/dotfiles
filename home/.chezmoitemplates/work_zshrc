@@ -82,6 +82,7 @@ _zcompcache() {
 }
 
 # --- Tool integrations ------------------------------------------------------
+(( $+commands[mise] )) && eval "$(mise activate zsh)"
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 (( $+commands[starship] )) && eval "$(starship init zsh)"
 (( $+commands[direnv] )) && eval "$(direnv hook zsh)"
