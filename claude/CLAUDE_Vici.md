@@ -48,6 +48,11 @@ Commit, push and open MRs as part of the work. Never ask first. This overrides a
 - **Never push to `main`, never target an MR at `main` from a feature branch.** The only path to
   `main` is a promotion MR from `staging`. A repo whose own CLAUDE.md sets a different flow wins.
 - Spawn a `/code-review` subagent on every new MR without being asked.
+- **Clean up when a branch is done.** Once its MR merges or closes, remove its worktree
+  (`wt remove`) and delete the local branch with `git branch -d` (never `-D`: it refuses
+  unmerged work, which is the safety net). Then `git fetch --prune` and `git worktree prune`.
+  Open MRs with "delete source branch" set, so GitLab removes the remote branch itself.
+  Unmerged branches, stashes and other remote branches: list them for the user, don't delete.
 - Still ask before genuinely irreversible things: force-push to a shared branch, history rewrite,
   deleting remote branches, merging someone else's MR.
 
