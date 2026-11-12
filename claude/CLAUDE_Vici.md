@@ -18,6 +18,16 @@ IDs, comment density, subagent edits, pipeline watch, reap, automerge, DoD lense
 3. **UNRELATED ERRORS.** Blocking the task → fix, and say so in the commit. Not blocking → log a
    `bd` issue and move on.
 4. **GRILL FIRST.** If the task is complicated or ambiguous, offer `/grilling` before implementing.
+5. **INVENTORY BEFORE YOU BUILD OR FIX, IN EVERY REPO.** Before the first code change or run, write
+   down everything the thing needs. This applies to a DAG, a service, a job, a script or a deploy.
+   - Databases and tables: are there rows for the test date, and what fills them, production
+     included?
+   - Data files: parquet, csv, pcap and configs, each at its exact path.
+   - Programs the entrypoint calls: are they inside the pinned image?
+   - Connections, secrets, env keys, and every network egress.
+
+   Mark each one present or missing with read-only checks. Send all the gaps at once, one bundled
+   list per owner. Put the doc in the task file or the MR body. A run proves; it never discovers.
 
 ## Code quality
 
@@ -55,11 +65,19 @@ Commit, push and open MRs as part of the work. Never ask first. This overrides a
   Unmerged branches, stashes and other remote branches: list them for the user, don't delete.
 - Still ask before genuinely irreversible things: force-push to a shared branch, history rewrite,
   deleting remote branches, merging someone else's MR.
+- You have access to glab that uses my personal credentials, do not ask me to manually interact
+  with GitLab unless it is for actions that definitely requires my attention such as reviewing
+  MRs.
 
 ## Issue tiering
 
 Jira (Use `/data-skills:jira-2x2` to format Jira ticket descriptions) + a beads mirror for: large or urgent bugs, anything another team needs, anything spanning
 repos, anything outliving the branch. Beads only for small local work — a rename, a missing
 guard, a flaky test. Unsure → beads only, and say so. Say which tier you chose.
+
+Jira titles start with a project tag: `[ROM] Fix …`, `[Atlas] …`. The tag must be one of the
+`match` words in `~/Services/daily-planner/projects/*.json`; that tag is how a ticket reaches its
+project board, since epics are scope-based. Scope codes like `[26H2-E3]` may go before it. No
+project fits → no tag; never invent one.
 
 @RTK.md
