@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Runs this repo's non-interactive checks and records the verdict the push gate reads.
+# Usage: scripts/verify [--changed]   (the checks are cheap, so --changed runs them all)
+# Steps: bash-syntax (bash -n on scripts/*.sh), work-zsh-profile, yazi-file-picker.
+# check-zsh-completion-profile.sh is not a step: it fails on master today (see bd issue).
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel)" || exit 2
+
+ARGS="$*"
+failed=()
+
+step() { # step <name> <command...>
+  local name=$1 rc=0
+  shift
+  "$@" >"${TMPDIR:-/tmp}/verify-$name.log" 2>&1 || rc=$?
+  if [ $rc = 0 ]; then
+    echo "PASS $name"
+  else
+    tail -n 20 "${TMPDIR:-/tmp}/verify-$name.log" | sed 's/^/  /'
+    echo "FAIL $name (exit $rc)"
+    failed+=("$name")
+  fi
+}
+
+bash_syntax() {
+  local f rc=0
+  for f in scripts/*.sh scripts/verify; do bash -n "$f" || rc=1; done
+  return $rc
+}
+
+step bash-syntax bash_syntax
+step work-zsh-profile bash scripts/check-work-zsh-profile.sh
+step yazi-file-picker bash scripts/check-yazi-file-picker.sh
+
+# the worker push gate reads this: <HEAD sha> PASS|FAIL <failed steps, or -> <args>
+verdict=PASS
+steps=-
+if [ ${#failed[@]} -gt 0 ]; then
+  verdict=FAIL
+  steps=$(printf '%s\n' "${failed[@]}" | paste -sd,)
+fi
+vdir=$(git rev-parse --absolute-git-dir) && vsha=$(git rev-parse HEAD) &&
+  printf '%s %s %s %s\n' "$vsha" "$verdict" "$steps" "$ARGS" >"$vdir/verify-verdict"
+
+if [ "$verdict" = FAIL ]; then
+  echo "FAIL: ${failed[*]}"
+  exit 1
+fi
+echo "PASS"
