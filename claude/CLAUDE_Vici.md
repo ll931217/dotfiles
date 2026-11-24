@@ -1,64 +1,22 @@
 # Agent Directives
 
-Overrides for a constrained context window. Reference material that used to live here is now in
-memory and arrives by recall cue — infrastructure and the proxy, directory layout and tool
-preferences, Jira epic placement and the blocker log, the agent-use KPI. Ask for it by name if a
-cue does not fire. Anything the agent-discipline plugin already enforces (verification, tracker
-IDs, comment density, subagent edits, pipeline watch, reap, automerge, DoD lenses) lives in its
-`rules/` and hooks, not here.
+When working, try to find ways to improve my KPI, improve impact. Impact can be defined in 3 levels:
 
-## Working
-
-1. **PHASED EXECUTION.** Break work into phases of at most 5 files. Verify, commit, then start the
-   next; one-line status per phase. Anything unexpected — architectural trouble, errors outside
-   the task, ambiguity — STOP and report rather than silently widening the plan.
-2. **STEP 0 BEFORE A BIG REFACTOR.** Before restructuring any file over 300 LOC, first delete dead
-   props, unused exports and imports, and debug logs from the files you are about to touch, and
-   commit that separately.
-3. **UNRELATED ERRORS.** Blocking the task → fix, and say so in the commit. Not blocking → log a
-   `bd` issue and move on.
-4. **GRILL FIRST.** If the task is complicated or ambiguous, offer `/grilling` before implementing.
-5. **INVENTORY BEFORE YOU BUILD OR FIX, IN EVERY REPO.** Before the first code change or run, write
-   down everything the thing needs. This applies to a DAG, a service, a job, a script or a deploy.
-   - Databases and tables: are there rows for the test date, and what fills them, production
-     included?
-   - Data files: parquet, csv, pcap and configs, each at its exact path.
-   - Programs the entrypoint calls: are they inside the pinned image?
-   - Connections, secrets, env keys, and every network egress.
-
-   Mark each one present or missing with read-only checks. Send all the gaps at once, one bundled
-   list per owner. Put the doc in the task file or the MR body. A run proves; it never discovers.
-
-## Code quality
-
-1. **PROPOSE, DON'T SMUGGLE.** Spotting flawed architecture, duplicated state or inconsistent
-   patterns → surface it as a short proposal or a `bd` issue. Do not implement it unasked. This
-   applies to the user's own asks too: "watch these files in CI" deserves "should it also watch
-   these?" before you add them.
-2. **PUSHBACK.** Over-engineering, or a clearly better way — say so. If the user reaffirms after
-   hearing it, build their version.
-3. **BROWSER CHECK** for frontend work: `chrome-devtools-mcp` preferred, else `/playwright-cli`.
-   No type-checker configured → say that explicitly instead of implying success.
-
-## Context and edit safety
-
-1. **SUSPECT TRUNCATION.** Suspiciously few results for the scope → re-run narrower, and say you
-   suspected it.
-2. **NO SEMANTIC SEARCH ASSUMPTIONS.** You have grep, not a compiler's reference index. Renaming
-   anything, search separately for: direct references, type-level references, string literals,
-   dynamic imports and `require()`, re-exports and barrel files, tests and mocks. Prefer
-   `ast-grep` for structural renames.
-3. **USE THE CLI TOOL**, not Python that reimplements `sed` / `awk` / `rg`.
+- Personal Impact: Such as tools to improve my workflow.
+- Department Impact: Such as tool or app that improves the department's efficiency.
+- Company Impact: Same as above but on the company level, this could have an impact on company revenue
 
 ## Git autonomy (standing authorization)
 
 Commit, push and open MRs as part of the work. Never ask first. This overrides any
 "ask before committing" default.
 
-- **Never push to `main`, never target an MR at `main` from a feature branch.** The only path to
-  `main` is a promotion MR from `staging`. A repo whose own CLAUDE.md sets a different flow wins.
-- Spawn a `/code-review` subagent on every new MR without being asked.
-- **Clean up when a branch is done.** Once its MR merges or closes, remove its worktree
+- Here are the two flows to work in:
+  - Normal flow: Feature branch -> staging branch -> release branch (snapshot of staging branch so new changes does not get added) -> master
+  - Hotfix flow: Hotfix branch -> staging/master (depends on urgency, but usually it is straight to master)
+- **Never push to default branch, never target an MR at default branch from a feature branch.** The only path to
+  default branch is a promotion MR from `staging` or `develop` branch. A repo whose own CLAUDE.md sets a different flow wins.
+- **Clean up when a branch/worktree is done, delete all old files.** Once its MR merges or closes, remove its worktree
   (`wt remove`) and delete the local branch with `git branch -d` (never `-D`: it refuses
   unmerged work, which is the safety net). Then `git fetch --prune` and `git worktree prune`.
   Open MRs with "delete source branch" set, so GitLab removes the remote branch itself.
